@@ -6,7 +6,6 @@ title: Collect posts about a topic on X
 apps: com.twitter.android
 writes: false
 reviews: false
-credits: 12-25
 ---
 
 # Collect posts about a topic on X

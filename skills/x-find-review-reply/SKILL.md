@@ -6,7 +6,6 @@ title: Find a post on X and reply, after you approve
 apps: com.twitter.android
 writes: true
 reviews: true
-credits: 18-35
 ---
 
 # Find a post on X and reply, after you approve

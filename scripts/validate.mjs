@@ -12,7 +12,7 @@ import { join } from "node:path";
 
 const SKILL_DIR = "skills";
 const REQUIRED = ["name", "description"];
-const WORKFLOW_REQUIRED = ["title", "apps", "writes", "reviews", "credits"];
+const WORKFLOW_REQUIRED = ["title", "apps", "writes", "reviews"];
 const KNOWN = new Set([...REQUIRED, ...WORKFLOW_REQUIRED, "kind"]);
 const SECRET = /\b(sk-[A-Za-z0-9]{16,}|[0-9a-f]{40,}|Bearer\s+[A-Za-z0-9._-]{16,})\b/;
 
@@ -67,11 +67,6 @@ function checkSkill(dir) {
   if (fields.title && fields.title.length > 70) warn(where, `title is long for a card (${fields.title.length} chars)`);
   for (const app of (fields.apps ?? "").split(",").map((a) => a.trim()).filter(Boolean)) {
     if (!/^[a-zA-Z][\w.]*\.[\w.]+$/.test(app)) fail(where, `apps: ${app} is not an Android package name`);
-  }
-  if (fields.credits && !/^\d+\s*-\s*\d+$/.test(fields.credits)) fail(where, 'credits must be a range like "12-25"');
-  else if (fields.credits) {
-    const [low, high] = fields.credits.split("-").map((n) => Number(n.trim()));
-    if (low > high) fail(where, "credits range is the wrong way round");
   }
 
   const writes = bool(fields.writes);

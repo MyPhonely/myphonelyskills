@@ -15,7 +15,6 @@ title: Collect posts about a topic on X
 apps: com.twitter.android        # packages it touches, comma separated
 writes: false                    # true if it can send, post, connect, like, follow or delete
 reviews: false                   # true if it pauses for the user before acting
-credits: 12-25                   # rough range; one credit per action the operator takes
 ---
 ```
 
