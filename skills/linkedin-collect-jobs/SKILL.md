@@ -42,7 +42,7 @@ phone_task({
                 "company": "the company name",
                 "location": "the location line, including Remote or Hybrid if shown",
                 "posted": "how long ago it was posted, and any Promoted or Easy Apply label" },
-    "where": "the Jobs tab of the search results is showing",
+    "where": "a list of job postings with titles and company names is showing",
     "count": <count>
   }
 })

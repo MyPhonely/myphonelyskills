@@ -42,7 +42,7 @@ phone_task({
                 "views": "the view count, if shown",
                 "age": "how long ago it was posted, if shown",
                 "length": "the video length, if shown" },
-    "where": "the Videos tab of the search results is showing",
+    "where": "a list of videos with titles and channel names is showing",
     "count": <count>
   }
 })

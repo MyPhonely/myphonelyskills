@@ -43,7 +43,7 @@ phone_task({
                 "age": "how long ago it was posted, if shown" },
     "judge": { "organic": "the card is a normal note, not an advertisement labelled Ads or 广告" },
     "require": { "organic": 0.7 },
-    "where": "the note search results are showing",
+    "where": "a grid or list of note cards with titles and authors is showing",
     "count": <count>
   }
 })

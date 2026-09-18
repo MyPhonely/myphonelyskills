@@ -43,7 +43,7 @@ phone_task({
                 "headline": "their headline, the line under the name",
                 "location": "their location, if shown",
                 "context": "the current role, school or mutual-connections line, if shown" },
-    "where": "the People tab of the search results is showing",
+    "where": "a list of people with names and headlines is showing",
     "count": <count>
   }
 })

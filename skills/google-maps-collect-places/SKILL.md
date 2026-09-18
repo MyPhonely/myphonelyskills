@@ -37,11 +37,10 @@ phone_task({
   "collect": {
     "record": "a business in the Maps results list",
     "fields": { "name": "the business name",
-                "rating": "the star rating, if shown",
-                "reviews": "the number of reviews, if shown",
-                "category": "the business category, if shown",
-                "address": "the address or area line, if shown" },
-    "where": "the list of search results is showing",
+                "rating": "the star rating",
+                "reviews": "the rating line as shown, which carries the number of ratings",
+                "category": "the business category" },
+    "where": "a list of places with names and star ratings is showing",
     "count": <count>
   }
 })
@@ -51,18 +50,19 @@ Poll `get_task_status(task_id, wait_seconds: 30)` until `done`.
 
 ## What comes back
 
-`result.collected` holds one record per business. Fields the card did not show
-come back empty rather than invented, so a place with no rating yet has an
-empty rating.
+`result.collected` holds one record per business: name, rating, the rating
+line with its count, and the category. Fields the card did not show come back
+empty rather than invented, so a place with no rating yet has an empty one.
+
+Addresses and phone numbers are not on the results list, only on each place's
+own page. That is a second task per place, so ask for it for the handful you
+actually want, not the whole list.
 
 ## Notes
 
 - Maps sometimes lands on the map with results in a sheet at the bottom. If
   the run reports few records, add "drag the results sheet up so the list
   fills the screen" to the goal.
-- Phone numbers and websites are on each place's own page, not the list. That
-  is a second pass, one `phone_task` per place, and it costs an action per
-  tap, so ask for it only for the places you actually want.
 - There is no app playbook for Maps yet, so the operator works from the live
   screen alone here. It is the one workflow in this catalog without that
   backing.

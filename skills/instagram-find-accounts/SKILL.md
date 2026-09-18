@@ -40,7 +40,7 @@ phone_task({
     "fields": { "username": "the @username",
                 "name": "the display name or the line under the username",
                 "context": "the followers or mutual-follow line, if shown" },
-    "where": "the Accounts tab of the search results is showing",
+    "where": "a list of accounts with usernames is showing",
     "count": <count>
   }
 })
