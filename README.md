@@ -30,9 +30,15 @@ Then tell me you are ready.
 skills/
   phone-operator/        how to plan, review, verify and recover with the phone tools
 workflows/
-  find-review-reply.md   find a post, pause for the user's comment, post it
-  collect-feed.md        read N posts about a topic with authors, filtered by a claim
+  README.md              the workflow format, and how to add one
+  <name>.json            one use case each: inputs, phases, and its catalog copy
+scripts/validate.mjs     checks every workflow before you open a pull request
 ```
+
+A **skill** teaches an agent how to use the phone tools well. A **workflow**
+is one use case with declared inputs that the server runs on demand, the way
+a store listing is also the thing that executes. The listings on myphonely.ai
+are generated from `workflows/`.
 
 Per-app playbooks (screens, routes, verification rules, limits for X,
 LinkedIn, Reddit, Instagram, Xiaohongshu and more) are served by the MCP
@@ -41,6 +47,7 @@ returns them free to any caller driving the phone directly.
 
 Each skill is a `SKILL.md` with frontmatter (`name`, `description`) and the
 guidance in the body, the layout Claude Code, pi and `npx skills` all read.
+Each workflow is JSON; see `workflows/README.md` for the format.
 
 ## How MyPhonely works
 
@@ -60,8 +67,10 @@ own apps and accounts: actions are real.
 
 ## Contributing
 
-Workflows and improvements to the operator skill are welcome as pull
-requests. Never include api keys, account names or private content in an
+New workflows and improvements to the operator skill are welcome as pull
+requests. Run `node scripts/validate.mjs` first; it checks the shape, that
+every `{{placeholder}}` is declared, and that a workflow's `writes` flag
+matches what its phases actually do. Never include api keys, account names or private content in an
 example. Something you learned about an app on a real device — a screen, a
 route, a limit — belongs in the server's playbooks: open an issue and we
 will fold it in.
