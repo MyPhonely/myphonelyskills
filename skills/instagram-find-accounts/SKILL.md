@@ -32,7 +32,7 @@ phone_task({
   "goal": "In the Instagram app, tap the Search tab at the bottom, tap the search bar at the top, type '<keyword>', and submit. On the results screen tap the Accounts tab so only accounts are listed, then keep scrolling the results. Do not open a profile, and do not follow, like or message anyone.",
   "steps": ["Instagram is open",
             "Search results for '<keyword>' are showing",
-            "The Accounts tab is active"],
+            "A list of accounts with usernames is showing"],
   "typeTexts": ["<keyword>"],
   "maxSteps": 14,
   "collect": {

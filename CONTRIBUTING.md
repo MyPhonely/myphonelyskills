@@ -47,11 +47,12 @@ Four sections, in this order.
 - **Say what not to do in the goal.** "Do not like, repost, follow or reply"
   is the difference between a read workflow and an accident.
 - **One route per call.** More than about ten taps means split it.
-- **Write `where` as what is on the screen, not where you navigated to.** "a
+- **Write every `step` and `where` as what is on the screen, not where you
+  navigated to.** "a
   list of people with names and headlines is showing" is something the
   operator can see and score highly; "the People tab is active" asks it to
-  judge navigation state and scores low, so nothing gets collected on the
-  right screen.
+  judge navigation state and scores low, so the plan never completes and
+  nothing gets collected on the right screen.
 - **Verify by effect, report the verified count.** A tap on Post is not a
   post; `result.sent` only lists writes whose effect showed on screen.
 - **No accounts, keys, handles or private content** anywhere in the file.

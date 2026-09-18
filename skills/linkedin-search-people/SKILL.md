@@ -34,7 +34,7 @@ phone_task({
   "goal": "In the LinkedIn app, tap the search bar at the top, type '<query>', and submit. The results may open on the Jobs tab; tap the People tab so people results are showing. Then keep scrolling the people results. Do not tap any person's name, do not open a profile, and do not tap Connect, Invite or Message.",
   "steps": ["LinkedIn is open",
             "Search results for '<query>' are showing",
-            "The People tab is active"],
+            "A list of people with names and headlines is showing"],
   "typeTexts": ["<query>"],
   "maxSteps": 16,
   "collect": {

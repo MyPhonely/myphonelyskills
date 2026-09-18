@@ -33,7 +33,7 @@ phone_task({
   "goal": "In the LinkedIn app, tap the search bar at the top, type '<query> <where>', and submit. Make sure the Jobs tab is the active tab so job results are showing, then keep scrolling the job results. Do not open a job, do not tap Save, Apply or Easy Apply.",
   "steps": ["LinkedIn is open",
             "Search results for '<query>' are showing",
-            "The Jobs tab is active"],
+            "A list of job postings with titles and company names is showing"],
   "typeTexts": ["<query> <where>"],
   "maxSteps": 16,
   "collect": {

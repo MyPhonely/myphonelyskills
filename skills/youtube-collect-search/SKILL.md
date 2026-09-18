@@ -32,7 +32,7 @@ phone_task({
   "goal": "In the YouTube app, tap the search icon at the top, type '<query>', and submit. On the results screen tap the Videos filter tab so only videos are listed, then keep scrolling the results. Do not open a video, do not subscribe, like or comment.",
   "steps": ["YouTube is open",
             "Search results for '<query>' are showing",
-            "The Videos tab is active"],
+            "A list of videos with titles and channel names is showing"],
   "typeTexts": ["<query>"],
   "maxSteps": 14,
   "collect": {
