@@ -30,7 +30,7 @@ Nothing is liked, collected, followed or commented on.
 ```json
 phone_task({
   "launch": "com.xingin.xhs",
-  "goal": "In the Xiaohongshu app, tap the search icon at the top, type '<query>', and submit. On the results screen make sure the notes tab is active, and tap 最新 or Latest if that sort is offered. Then keep scrolling the note results. Do not open a note, and do not like, collect, follow or comment.",
+  "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<query>', and submit. On the results screen tap 最新 or Latest if that sort is offered. Then keep scrolling the note results. Do not open a note, and do not like, collect, follow or comment.",
   "steps": ["Xiaohongshu is open",
             "Search results for '<query>' are showing"],
   "typeTexts": ["<query>"],
@@ -57,14 +57,13 @@ own page.
 
 ## Notes
 
-- **Known limitation, measured 2026-09-18.** On the English build we tested,
-  Xiaohongshu's home screen exposes no search control to the accessibility
-  tree at all: the only icons are like counts and a category-more button, and
-  the top tabs read For You / Video / Live / Tips rather than the
-  Following / Explore / Nearby the app's playbook describes. A run therefore
-  reaches the home feed and stops, because there is nothing to tap to search.
-  Until the route is found, use this workflow only if your build shows a
-  search control, and check the run's first steps.
+- The search control is labelled `Search`, top right of the home feed beside
+  the Following / Explore / Nearby tabs. Name it that way: an earlier goal
+  said "the search icon" and the run never found anything to tap.
+- This goal used to say "make sure the notes tab is active", and that one
+  clause halved the collect gate. Holding the screen and the gate claim
+  fixed, the gate scored 0.96 without it and 0.48 with it, because the goal
+  asserted a precondition the operator could not confirm from the screen.
 - Ads are labelled `Ads` or `广告` on the card, which is what the judge claim
   keys on. Marketing posts by real accounts are not ads and are kept.
 - The app's language follows the account, so tabs may read 综合 / 笔记 / 用户

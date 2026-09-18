@@ -51,6 +51,12 @@ Four sections, in this order.
   feed of exactly the shape you are looking for, and a gate that says "a list
   of posts is showing" is true there too, so the run harvests the front page
   and stops before it ever searches. "a list of posts about '<topic>'" is not.
+- **Do not put a precondition in the goal that the screen cannot confirm.**
+  The goal is read alongside every judgment, so "make sure the notes tab is
+  active" does not just fail to help, it makes the operator doubt it is in the
+  right place at all: on one measured screen that clause alone took the
+  collect gate from 0.96 to 0.48, with everything else identical. Say what to
+  tap, not what must already be true.
 - **Ask only for fields the screen exposes.** A gate that names a field the
   cards do not carry scores near zero on the right screen: YouTube shows video
   titles as labels but not channel names, and a gate asking for both collected
