@@ -44,7 +44,7 @@ phone_task({
                 "text": "the post's text" },
     "judge":  { "on_topic": "<claim>" },
     "require": { "on_topic": <bar> },
-    "where": "the Latest tab of the search results is showing",
+    "where": "a list of posts about '<topic>' is showing",
     "count": <count>
   }
 })

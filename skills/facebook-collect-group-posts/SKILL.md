@@ -43,7 +43,7 @@ phone_task({
                 "text": "the post text, as far as the card shows it",
                 "age": "how long ago it was posted",
                 "engagement": "the reaction and comment counts, if shown" },
-    "where": "a feed of posts written by people, with authors and post text, is showing",
+    "where": "a feed of posts from the <group> group is showing",
     "count": <count>
   }
 })

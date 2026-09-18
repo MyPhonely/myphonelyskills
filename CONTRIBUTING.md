@@ -47,6 +47,14 @@ Four sections, in this order.
 - **Say what not to do in the goal.** "Do not like, repost, follow or reply"
   is the difference between a read workflow and an accident.
 - **One route per call.** More than about ten taps means split it.
+- **Name the topic in `where`, not just the shape.** Most apps open on a home
+  feed of exactly the shape you are looking for, and a gate that says "a list
+  of posts is showing" is true there too, so the run harvests the front page
+  and stops before it ever searches. "a list of posts about '<topic>'" is not.
+- **Ask only for fields the screen exposes.** A gate that names a field the
+  cards do not carry scores near zero on the right screen: YouTube shows video
+  titles as labels but not channel names, and a gate asking for both collected
+  nothing across five steps.
 - **Write every `step` and `where` as what is on the screen, not where you
   navigated to.** "a
   list of people with names and headlines is showing" is something the

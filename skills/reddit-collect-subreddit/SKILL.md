@@ -41,7 +41,7 @@ phone_task({
                 "age": "how long ago it was posted",
                 "upvotes": "the upvote count, if shown",
                 "comments": "the comment count, if shown" },
-    "where": "a list of posts with titles and vote counts is showing",
+    "where": "a list of posts from <subreddit> is showing",
     "count": <count>
   }
 })

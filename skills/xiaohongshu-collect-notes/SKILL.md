@@ -43,7 +43,7 @@ phone_task({
                 "age": "how long ago it was posted, if shown" },
     "judge": { "organic": "the card is a normal note, not an advertisement labelled Ads or 广告" },
     "require": { "organic": 0.7 },
-    "where": "a grid or list of note cards with titles and authors is showing",
+    "where": "a list of note cards about '<query>' is showing",
     "count": <count>
   }
 })
@@ -57,6 +57,14 @@ own page.
 
 ## Notes
 
+- **Known limitation, measured 2026-09-18.** On the English build we tested,
+  Xiaohongshu's home screen exposes no search control to the accessibility
+  tree at all: the only icons are like counts and a category-more button, and
+  the top tabs read For You / Video / Live / Tips rather than the
+  Following / Explore / Nearby the app's playbook describes. A run therefore
+  reaches the home feed and stops, because there is nothing to tap to search.
+  Until the route is found, use this workflow only if your build shows a
+  search control, and check the run's first steps.
 - Ads are labelled `Ads` or `广告` on the card, which is what the judge claim
   keys on. Marketing posts by real accounts are not ads and are kept.
 - The app's language follows the account, so tabs may read 综合 / 笔记 / 用户
