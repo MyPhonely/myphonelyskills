@@ -78,8 +78,11 @@ function checkSkill(dir) {
   for (const heading of ["## Inputs", "## Run it"]) {
     if (!body.includes(heading)) fail(where, `body has no "${heading}" section`);
   }
-  const acts = /"allowWrites"\s*:\s*true|allowWrites:\s*true/.test(body);
-  const pauses = /pauseWhen/.test(body);
+  // Judge the calls the workflow actually makes, not prose that mentions them:
+  // a read workflow may well explain what a follow-up write task would set.
+  const code = [...body.matchAll(/```[\s\S]*?```/g)].map((m) => m[0]).join("\n");
+  const acts = /"allowWrites"\s*:\s*true|allowWrites:\s*true/.test(code);
+  const pauses = /pauseWhen/.test(code);
   if (writes === false && acts) fail(where, "writes is false but the body sets allowWrites");
   if (writes === true && !acts) warn(where, "writes is true but the body never sets allowWrites");
   if (reviews === false && pauses) fail(where, "reviews is false but the body uses pauseWhen");
