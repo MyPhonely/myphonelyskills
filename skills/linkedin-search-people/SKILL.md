@@ -31,12 +31,12 @@ Nothing is sent. No connection requests, no messages, no profile opens.
 ```json
 phone_task({
   "launch": "com.linkedin.android",
-  "goal": "In the LinkedIn app, tap the search bar at the top, type '<query>', and submit. The results may open on the Jobs tab; tap the People tab so people results are showing. Then keep scrolling the people results. Do not tap any person's name, do not open a profile, and do not tap Connect, Invite or Message.",
+  "goal": "In the LinkedIn app, tap the search bar at the top, type '<query>', and submit. The results may open on the Jobs tab; tap the People tab so people results are showing. Then keep scrolling the people results. Do not tap any person's name, do not open a profile, do not tap the filter chips, and do not tap Connect, Invite or Message.",
   "steps": ["LinkedIn is open",
             "Search results for '<query>' are showing",
             "A list of people with names and headlines is showing"],
   "typeTexts": ["<query>"],
-  "maxSteps": 16,
+  "maxSteps": 20,
   "collect": {
     "record": "a person in the People search results",
     "fields": { "name": "the person's name",
@@ -61,6 +61,8 @@ opening each profile, which is a separate task per person.
 
 ## Notes
 
+- LinkedIn settles slowly after a search, so the step budget is 20 rather
+  than the usual 14. Ten people takes roughly that.
 - Results open on **Jobs** on current builds. The goal above says to switch
   tabs, and the step list makes the operator confirm it before reading.
 - Each card has a small Invite or Message button on the right. The goal
