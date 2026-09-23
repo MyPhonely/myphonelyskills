@@ -3,7 +3,7 @@
 Skills for AI agents that operate a real Android phone through the
 [MyPhonely](https://myphonely.ai) MCP server. Install them and your agent
 knows both how to drive a phone and the use cases it can do end to end:
-32 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
+33 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
 Facebook, TikTok, WeChat and Google Play.
 
 ## Install
@@ -55,7 +55,7 @@ they are about to do, and continue only on `resume_task`.
 | app | read | write, after you approve |
 |---|---|---|
 | X | collect posts about a topic · an account's recent posts · replies to a post | reply to a post · publish a post |
-| LinkedIn | find people · one profile in detail · a person's recent posts · search posts by keyword · a company's employees · job postings | connection request with a note · publish a post |
+| LinkedIn | find people · one profile in detail · a person's recent posts · search posts by keyword · a company's employees · job postings · connection requests you have sent | connection request with a note · publish a post |
 | Reddit | posts from a subreddit · search posts · comments on a post | |
 | YouTube | videos from a search · a channel's videos · comments on a video | |
 | Google Maps | local businesses · a place's details · a place's reviews | |
@@ -69,6 +69,9 @@ they are about to do, and continue only on `resume_task`.
 Each listing says what has been run on a real phone and what has not. The
 catalog at [myphonely.ai/workflows](https://www.myphonely.ai/workflows) is
 built from these files and refreshes within minutes of a merge.
+
+Playbooks that chain these workflows across apps, such as a daily outreach
+campaign, live in [MyPhonely/GTM](https://github.com/MyPhonely/GTM).
 
 Per-app playbooks, the screens, routes, verification rules and limits for
 each app, are not here. The server holds them: the operator loads the right
