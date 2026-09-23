@@ -70,9 +70,6 @@ Each listing says what has been run on a real phone and what has not. The
 catalog at [myphonely.ai/workflows](https://www.myphonely.ai/workflows) is
 built from these files and refreshes within minutes of a merge.
 
-Playbooks that chain these workflows across apps, such as a daily outreach
-campaign, live in [MyPhonely/GTM](https://github.com/MyPhonely/GTM).
-
 Per-app playbooks, the screens, routes, verification rules and limits for
 each app, are not here. The server holds them: the operator loads the right
 one for every task, and `phone_app_guide` returns them free to any caller
