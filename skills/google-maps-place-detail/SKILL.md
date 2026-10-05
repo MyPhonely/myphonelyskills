@@ -25,26 +25,28 @@ Nothing is called, saved or navigated to.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.google.android.apps.maps",
-  "goal": "In Google Maps, tap the search box at the top, type '<place>', and submit. Tap the first result so the place's own page opens, then scroll down its Overview until the address, phone number, website and hours have been seen. Do not tap Call, Website, Directions, Save or Share.",
-  "steps": [
-    "A place page named <place> is showing",
-    "The place's address and phone number are visible"
-  ],
-  "typeTexts": [
-    "<place>"
-  ],
-  "maxSteps": 12,
-  "collect": {
-    "record": "one detail line on the place's page: its category, rating line, address, phone number, website, or opening hours",
-    "fields": {
-      "kind": "which detail: category, rating, address, phone, website or hours",
-      "value": "the detail's text as shown"
-    },
-    "where": "the page of <place> with its address or phone number is showing",
-    "count": 6
-  }
+run_task({
+  "phases": [{
+    "launch": "com.google.android.apps.maps",
+    "goal": "In Google Maps, tap the search box at the top, type '<place>', and submit. Tap the first result so the place's own page opens, then scroll down its Overview until the address, phone number, website and hours have been seen. Do not tap Call, Website, Directions, Save or Share.",
+    "steps": [
+      "A place page named <place> is showing",
+      "The place's address and phone number are visible"
+    ],
+    "typeTexts": [
+      "<place>"
+    ],
+    "maxSteps": 12,
+    "collect": {
+      "record": "one detail line on the place's page: its category, rating line, address, phone number, website, or opening hours",
+      "fields": {
+        "kind": "which detail: category, rating, address, phone, website or hours",
+        "value": "the detail's text as shown"
+      },
+      "where": "the page of <place> with its address or phone number is showing",
+      "count": 6
+    }
+  }]
 })
 ```
 

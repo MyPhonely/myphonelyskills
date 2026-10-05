@@ -27,31 +27,33 @@ Nothing is upvoted, commented on or joined.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.reddit.frontpage",
-  "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything', type '<post>', press enter, and tap the post result whose title matches, from <subreddit>. On the post page, scroll down past the post body to the comments and keep scrolling them. Do not tap the Ask button, do not upvote, reply, share or join.",
-  "steps": [
-    "A post page whose title is '<post>' is showing",
-    "Comments under the post, with authors and comment text, are showing"
-  ],
-  "typeTexts": [
-    "<post>"
-  ],
-  "findTexts": [
-    "<post>"
-  ],
-  "maxSteps": 20,
-  "collect": {
-    "record": "one comment under the post",
-    "fields": {
-      "author": "the commenter's username",
-      "text": "the comment text",
-      "score": "the vote count, if shown",
-      "age": "how long ago it was posted, if shown"
-    },
-    "where": "comments under the post '<post>' are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.reddit.frontpage",
+    "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything', type '<post>', press enter, and tap the post result whose title matches, from <subreddit>. On the post page, scroll down past the post body to the comments and keep scrolling them. Do not tap the Ask button, do not upvote, reply, share or join.",
+    "steps": [
+      "A post page whose title is '<post>' is showing",
+      "Comments under the post, with authors and comment text, are showing"
+    ],
+    "typeTexts": [
+      "<post>"
+    ],
+    "findTexts": [
+      "<post>"
+    ],
+    "maxSteps": 20,
+    "collect": {
+      "record": "one comment under the post",
+      "fields": {
+        "author": "the commenter's username",
+        "text": "the comment text",
+        "score": "the vote count, if shown",
+        "age": "how long ago it was posted, if shown"
+      },
+      "where": "comments under the post '<post>' are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

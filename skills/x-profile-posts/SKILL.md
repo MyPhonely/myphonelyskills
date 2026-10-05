@@ -27,22 +27,24 @@ Nothing is liked, reposted, replied to or followed.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.twitter.android",
-  "openUrl": "https://x.com/<handle_bare>",
-  "goal": "The X app is showing the profile of <handle>. Keep scrolling down the profile's posts. Do not like, repost, reply, follow or open any post.",
-    "maxSteps": 16,
-  "collect": {
-    "record": "a post on the profile's timeline",
-    "fields": {
-      "text": "the post text",
-      "age": "how long ago it was posted",
-      "engagement": "the reply, repost and like counts, if shown",
-      "kind": "whether it is an original post, a repost, or a reply"
-    },
-    "where": "posts by <handle> are showing on the profile page",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.twitter.android",
+    "openUrl": "https://x.com/<handle_bare>",
+    "goal": "The X app is showing the profile of <handle>. Keep scrolling down the profile's posts. Do not like, repost, reply, follow or open any post.",
+      "maxSteps": 16,
+    "collect": {
+      "record": "a post on the profile's timeline",
+      "fields": {
+        "text": "the post text",
+        "age": "how long ago it was posted",
+        "engagement": "the reply, repost and like counts, if shown",
+        "kind": "whether it is an original post, a repost, or a reply"
+      },
+      "where": "posts by <handle> are showing on the profile page",
+      "count": <count>
+    }
+  }]
 })
 ```
 

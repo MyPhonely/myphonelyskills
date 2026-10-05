@@ -26,28 +26,30 @@ Nothing is liked, followed, commented on or watched to the end.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.zhiliaoapp.musically",
-  "goal": "In the TikTok app, the For You feed may show a 'Something went wrong / Try again later' message with a Retry button; that message is harmless and does not block search, so ignore it and do not tap Retry. Tap the Search icon at the top right, tap the search field, type '<query>', and submit. On the results, tap the Videos tab if one is offered, then keep scrolling the results. Do not open a video, do not like, follow or comment.",
-  "steps": [
-    "Search results for '<query>' are showing",
-    "A list of video results about '<query>' with captions is showing"
-  ],
-  "typeTexts": [
-    "<query>"
-  ],
-  "maxSteps": 16,
-  "collect": {
-    "record": "a video in the search results",
-    "fields": {
-      "caption": "the video's caption or title text",
-      "creator": "the creator's name or handle",
-      "stats": "the view or like count, if shown",
-      "age": "how long ago it was posted, if shown"
-    },
-    "where": "video results about '<query>' with captions are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.zhiliaoapp.musically",
+    "goal": "In the TikTok app, the For You feed may show a 'Something went wrong / Try again later' message with a Retry button; that message is harmless and does not block search, so ignore it and do not tap Retry. Tap the Search icon at the top right, tap the search field, type '<query>', and submit. On the results, tap the Videos tab if one is offered, then keep scrolling the results. Do not open a video, do not like, follow or comment.",
+    "steps": [
+      "Search results for '<query>' are showing",
+      "A list of video results about '<query>' with captions is showing"
+    ],
+    "typeTexts": [
+      "<query>"
+    ],
+    "maxSteps": 16,
+    "collect": {
+      "record": "a video in the search results",
+      "fields": {
+        "caption": "the video's caption or title text",
+        "creator": "the creator's name or handle",
+        "stats": "the view or like count, if shown",
+        "age": "how long ago it was posted, if shown"
+      },
+      "where": "video results about '<query>' with captions are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

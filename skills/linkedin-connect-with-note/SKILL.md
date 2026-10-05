@@ -25,13 +25,15 @@ The write no scraper can do. Finds a person in the LinkedIn app, opens their pro
 **1. Reach the point of no return, and stop.** Nothing is written here.
 
 ```json
-phone_task({
-  "launch": "com.linkedin.android",
-  "goal": "In the LinkedIn app, tap the search bar at the top, type '<person> <context>', then press enter. Tap the People tab, then tap the result whose name is <person> to open their profile. On the profile tap Connect; if Connect is not shown, tap More and then Connect. When a dialog offers 'Add a note', tap it so the note field is open. Do not type and do not tap Send.",
-  "typeTexts": ["<person> <context>"],
-  "findTexts": ["<person>", "Connect", "Add a note"],
-  "pauseWhen": "LinkedIn's connection note dialog is open for <person>: a text field for the note and a Send button are showing",
-  "maxSteps": 18
+run_task({
+  "phases": [{
+    "launch": "com.linkedin.android",
+    "goal": "In the LinkedIn app, tap the search bar at the top, type '<person> <context>', then press enter. Tap the People tab, then tap the result whose name is <person> to open their profile. On the profile tap Connect; if Connect is not shown, tap More and then Connect. When a dialog offers 'Add a note', tap it so the note field is open. Do not type and do not tap Send.",
+    "typeTexts": ["<person> <context>"],
+    "findTexts": ["<person>", "Connect", "Add a note"],
+    "pauseWhen": "LinkedIn's connection note dialog is open for <person>: a text field for the note and a Send button are showing",
+    "maxSteps": 18
+  }]
 })
 ```
 
@@ -57,7 +59,7 @@ Poll until `done`. To walk away, `resume_task({ task_id, abandon: true })` close
 
 ## What comes back
 
-`result.sent` lists the request only when its effect was verified: the profile's button reading Pending. LinkedIn accepts a tap and silently drops the request once the weekly cap is hit, so the tap count is not the truth; the Sent list under My Network is.
+`result.phases[0].sent` lists the request only when its effect was verified: the profile's button reading Pending. LinkedIn accepts a tap and silently drops the request once the weekly cap is hit, so the tap count is not the truth; the Sent list under My Network is.
 
 ## Notes
 

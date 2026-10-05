@@ -27,23 +27,25 @@ posts that are hidden from logged-out visitors.
 ## Run it
 
 ```json
-phone_task({
-  "launch": "com.reddit.frontpage",
-  "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything', type '<subreddit>', press enter, and tap the community result for <subreddit>, not a post. On the subreddit feed, tap the sort label under the header and choose <sort>. Then keep scrolling the post list. Do not tap the Ask button, do not open a post, and do not upvote, comment or join.",
-  "steps": ["Reddit is open",
-            "The <subreddit> community feed is showing",
-            "The sort label under the header reads <sort>"],
-  "typeTexts": ["<subreddit>"],
-  "maxSteps": 24,
-  "collect": {
-    "record": "a post in the subreddit feed",
-    "fields": { "title": "the post title",
-                "age": "how long ago it was posted",
-                "upvotes": "the upvote count, if shown",
-                "comments": "the comment count, if shown" },
-    "where": "a list of posts from <subreddit> is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.reddit.frontpage",
+    "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything', type '<subreddit>', press enter, and tap the community result for <subreddit>, not a post. On the subreddit feed, tap the sort label under the header and choose <sort>. Then keep scrolling the post list. Do not tap the Ask button, do not open a post, and do not upvote, comment or join.",
+    "steps": ["Reddit is open",
+              "The <subreddit> community feed is showing",
+              "The sort label under the header reads <sort>"],
+    "typeTexts": ["<subreddit>"],
+    "maxSteps": 24,
+    "collect": {
+      "record": "a post in the subreddit feed",
+      "fields": { "title": "the post title",
+                  "age": "how long ago it was posted",
+                  "upvotes": "the upvote count, if shown",
+                  "comments": "the comment count, if shown" },
+      "where": "a list of posts from <subreddit> is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

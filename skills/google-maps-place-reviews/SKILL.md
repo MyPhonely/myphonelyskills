@@ -26,28 +26,30 @@ Nothing is rated, reviewed or saved.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.google.android.apps.maps",
-  "goal": "In Google Maps, tap the search box at the top, type '<place>', and submit. Tap the first result so the place's own page opens, then keep scrolling down its page past the photos and the address until reviews with star ratings are showing, and keep scrolling through them. Do not tap Write a review, do not rate, save, call or start navigation.",
-  "steps": [
-    "A place page named <place> is showing",
-    "Reviews with star ratings and review text are showing"
-  ],
-  "typeTexts": [
-    "<place>"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "one review on the place's Reviews tab",
-    "fields": {
-      "rating": "the star rating of the review",
-      "text": "the review text as shown",
-      "reviewer": "the reviewer's name",
-      "age": "how long ago it was written"
-    },
-    "where": "reviews of <place> with star ratings are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.google.android.apps.maps",
+    "goal": "In Google Maps, tap the search box at the top, type '<place>', and submit. Tap the first result so the place's own page opens, then keep scrolling down its page past the photos and the address until reviews with star ratings are showing, and keep scrolling through them. Do not tap Write a review, do not rate, save, call or start navigation.",
+    "steps": [
+      "A place page named <place> is showing",
+      "Reviews with star ratings and review text are showing"
+    ],
+    "typeTexts": [
+      "<place>"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "one review on the place's Reviews tab",
+      "fields": {
+        "rating": "the star rating of the review",
+        "text": "the review text as shown",
+        "reviewer": "the reviewer's name",
+        "age": "how long ago it was written"
+      },
+      "where": "reviews of <place> with star ratings are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

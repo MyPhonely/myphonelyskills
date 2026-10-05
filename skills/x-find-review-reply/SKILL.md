@@ -33,12 +33,14 @@ the second call, never before the first.
 **1. Find the post and open its reply box.** Nothing is written here.
 
 ```json
-phone_task({
-  "launch": "com.twitter.android",
-  "goal": "In the X app, tap the Explore or Search tab, tap the search field, type '<topic>', and submit. On the results screen tap the Latest tab. Then, on the first post in the results that is <about>, tap the Reply button that belongs to that post — the Reply in the same card as its text, not the post text itself — so the reply composer opens for it. Do not type, post, like, repost or follow.",
-  "typeTexts": ["<topic>"],
-  "pauseWhen": "X's reply composer is open: a 'Replying to @…' line and a 'Post your reply' field are showing, with the keyboard up",
-  "maxSteps": 16
+run_task({
+  "phases": [{
+    "launch": "com.twitter.android",
+    "goal": "In the X app, tap the Explore or Search tab, tap the search field, type '<topic>', and submit. On the results screen tap the Latest tab. Then, on the first post in the results that is <about>, tap the Reply button that belongs to that post — the Reply in the same card as its text, not the post text itself — so the reply composer opens for it. Do not type, post, like, repost or follow.",
+    "typeTexts": ["<topic>"],
+    "pauseWhen": "X's reply composer is open: a 'Replying to @…' line and a 'Post your reply' field are showing, with the keyboard up",
+    "maxSteps": 16
+  }]
 })
 ```
 
@@ -68,7 +70,7 @@ released, and nothing is posted.
 
 ## What comes back
 
-`result.sent` lists the reply only when its effect was verified on screen, the
+`result.phases[0].sent` lists the reply only when its effect was verified on screen, the
 composer closing and the thread returning. Report that, not the tap. An
 unanswered pause expires after ten minutes and the phone is released.
 

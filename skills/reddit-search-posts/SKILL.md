@@ -26,28 +26,30 @@ Nothing is upvoted, commented on or joined.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.reddit.frontpage",
-  "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything', type '<query>', and press enter. On the results, tap the Posts tab so only posts are listed, then keep scrolling the results. Do not tap the Ask button, do not open a post, and do not upvote, comment or join.",
-  "steps": [
-    "Search results for '<query>' are showing",
-    "A list of post results about '<query>' is showing"
-  ],
-  "typeTexts": [
-    "<query>"
-  ],
-  "maxSteps": 20,
-  "collect": {
-    "record": "a post in the search results",
-    "fields": {
-      "title": "the post title",
-      "community": "the r/ community it was posted in",
-      "age": "how long ago it was posted",
-      "score": "the vote and comment counts, if shown"
-    },
-    "where": "a list of posts about '<query>' is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.reddit.frontpage",
+    "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything', type '<query>', and press enter. On the results, tap the Posts tab so only posts are listed, then keep scrolling the results. Do not tap the Ask button, do not open a post, and do not upvote, comment or join.",
+    "steps": [
+      "Search results for '<query>' are showing",
+      "A list of post results about '<query>' is showing"
+    ],
+    "typeTexts": [
+      "<query>"
+    ],
+    "maxSteps": 20,
+    "collect": {
+      "record": "a post in the search results",
+      "fields": {
+        "title": "the post title",
+        "community": "the r/ community it was posted in",
+        "age": "how long ago it was posted",
+        "score": "the vote and comment counts, if shown"
+      },
+      "where": "a list of posts about '<query>' is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

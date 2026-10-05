@@ -26,30 +26,32 @@ Nothing is liked, commented on, shared or followed.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.facebook.katana",
-  "goal": "In the Facebook app, tap the search icon, type '<page>', submit, and open the page named <page> from the results, choosing the Pages result over people or groups. On the page, scroll down to its posts and keep scrolling them. Do not like, comment, share, follow or message.",
-  "steps": [
-    "A page named <page> is showing",
-    "A feed of posts from the <page> page is showing"
-  ],
-  "typeTexts": [
-    "<page>"
-  ],
-  "findTexts": [
-    "<page>"
-  ],
-  "maxSteps": 20,
-  "collect": {
-    "record": "a post on the page's feed",
-    "fields": {
-      "text": "the post text as far as the card shows it",
-      "age": "how long ago it was posted",
-      "engagement": "the reaction and comment counts, if shown"
-    },
-    "where": "a feed of posts from the <page> page is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.facebook.katana",
+    "goal": "In the Facebook app, tap the search icon, type '<page>', submit, and open the page named <page> from the results, choosing the Pages result over people or groups. On the page, scroll down to its posts and keep scrolling them. Do not like, comment, share, follow or message.",
+    "steps": [
+      "A page named <page> is showing",
+      "A feed of posts from the <page> page is showing"
+    ],
+    "typeTexts": [
+      "<page>"
+    ],
+    "findTexts": [
+      "<page>"
+    ],
+    "maxSteps": 20,
+    "collect": {
+      "record": "a post on the page's feed",
+      "fields": {
+        "text": "the post text as far as the card shows it",
+        "age": "how long ago it was posted",
+        "engagement": "the reaction and comment counts, if shown"
+      },
+      "where": "a feed of posts from the <page> page is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

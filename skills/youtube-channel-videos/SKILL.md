@@ -26,31 +26,33 @@ Nothing is watched, liked or subscribed to.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.google.android.youtube",
-  "goal": "In the YouTube app, tap the search icon at the top, type '<channel>', then press enter. Tap the channel result named <channel> so the channel page opens, then tap its Videos tab. Keep scrolling the videos. Do not open a video, do not subscribe, like or comment.",
-  "steps": [
-    "A channel page named <channel> is showing",
-    "A list of videos from <channel> is showing"
-  ],
-  "typeTexts": [
-    "<channel>"
-  ],
-  "findTexts": [
-    "Videos"
-  ],
-  "maxSteps": 16,
-  "collect": {
-    "record": "a video on the channel's Videos tab",
-    "fields": {
-      "title": "the video title",
-      "views": "the view count, if shown",
-      "age": "how long ago it was posted, if shown",
-      "length": "the video length, if shown"
-    },
-    "where": "a list of video results from <channel> is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.google.android.youtube",
+    "goal": "In the YouTube app, tap the search icon at the top, type '<channel>', then press enter. Tap the channel result named <channel> so the channel page opens, then tap its Videos tab. Keep scrolling the videos. Do not open a video, do not subscribe, like or comment.",
+    "steps": [
+      "A channel page named <channel> is showing",
+      "A list of videos from <channel> is showing"
+    ],
+    "typeTexts": [
+      "<channel>"
+    ],
+    "findTexts": [
+      "Videos"
+    ],
+    "maxSteps": 16,
+    "collect": {
+      "record": "a video on the channel's Videos tab",
+      "fields": {
+        "title": "the video title",
+        "views": "the view count, if shown",
+        "age": "how long ago it was posted, if shown",
+        "length": "the video length, if shown"
+      },
+      "where": "a list of video results from <channel> is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

@@ -27,22 +27,24 @@ Nothing is followed, liked or messaged.
 ## Run it
 
 ```json
-phone_task({
-  "launch": "com.instagram.android",
-  "goal": "In the Instagram app, tap the Search tab at the bottom, tap the search bar at the top, type '<keyword>', and submit. On the results screen tap the Accounts tab so only accounts are listed, then keep scrolling the results. Do not open a profile, and do not follow, like or message anyone.",
-  "steps": ["Instagram is open",
-            "Search results for '<keyword>' are showing",
-            "A list of accounts with usernames is showing"],
-  "typeTexts": ["<keyword>"],
-  "maxSteps": 14,
-  "collect": {
-    "record": "an account in the Accounts search results",
-    "fields": { "username": "the @username",
-                "name": "the display name or the line under the username",
-                "context": "the followers or mutual-follow line, if shown" },
-    "where": "a list of accounts matching '<keyword>' is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.instagram.android",
+    "goal": "In the Instagram app, tap the Search tab at the bottom, tap the search bar at the top, type '<keyword>', and submit. On the results screen tap the Accounts tab so only accounts are listed, then keep scrolling the results. Do not open a profile, and do not follow, like or message anyone.",
+    "steps": ["Instagram is open",
+              "Search results for '<keyword>' are showing",
+              "A list of accounts with usernames is showing"],
+    "typeTexts": ["<keyword>"],
+    "maxSteps": 14,
+    "collect": {
+      "record": "an account in the Accounts search results",
+      "fields": { "username": "the @username",
+                  "name": "the display name or the line under the username",
+                  "context": "the followers or mutual-follow line, if shown" },
+      "where": "a list of accounts matching '<keyword>' is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

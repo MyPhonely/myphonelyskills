@@ -26,30 +26,32 @@ Nothing is sent: no connection request, no message, no follow.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.linkedin.android",
-  "goal": "In the LinkedIn app, tap the search bar at the top, type '<person> <context>', then press enter. Tap the People tab, then tap the result whose name is <person> to open their profile. On the profile, keep scrolling down through About, Experience and Education. Do not tap Connect, Follow, Message or More.",
-  "steps": [
-    "Search results for '<person>' are showing",
-    "A profile page with the name <person> in its header is showing"
-  ],
-  "typeTexts": [
-    "<person> <context>"
-  ],
-  "findTexts": [
-    "<person>"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "a section or entry on the profile page: the header, the About text, one Experience entry, or one Education entry",
-    "fields": {
-      "section": "which part: header, about, experience or education",
-      "text": "the entry's text: title and company for experience, school and degree for education, the paragraph for about, name and headline for the header",
-      "dates": "the date range, if the entry shows one"
-    },
-    "where": "a profile page whose header names <person> is showing",
-    "count": 6
-  }
+run_task({
+  "phases": [{
+    "launch": "com.linkedin.android",
+    "goal": "In the LinkedIn app, tap the search bar at the top, type '<person> <context>', then press enter. Tap the People tab, then tap the result whose name is <person> to open their profile. On the profile, keep scrolling down through About, Experience and Education. Do not tap Connect, Follow, Message or More.",
+    "steps": [
+      "Search results for '<person>' are showing",
+      "A profile page with the name <person> in its header is showing"
+    ],
+    "typeTexts": [
+      "<person> <context>"
+    ],
+    "findTexts": [
+      "<person>"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "a section or entry on the profile page: the header, the About text, one Experience entry, or one Education entry",
+      "fields": {
+        "section": "which part: header, about, experience or education",
+        "text": "the entry's text: title and company for experience, school and degree for education, the paragraph for about, name and headline for the header",
+        "dates": "the date range, if the entry shows one"
+      },
+      "where": "a profile page whose header names <person> is showing",
+      "count": 6
+    }
+  }]
 })
 ```
 

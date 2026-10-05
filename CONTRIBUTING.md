@@ -68,7 +68,7 @@ Four sections, in this order.
   judge navigation state and scores low, so the plan never completes and
   nothing gets collected on the right screen.
 - **Verify by effect, report the verified count.** A tap on Post is not a
-  post; `result.sent` only lists writes whose effect showed on screen.
+  post; `result.phases[0].sent` only lists writes whose effect showed on screen.
 - **No accounts, keys, handles or private content** anywhere in the file.
 
 ## Before the pull request

@@ -26,30 +26,32 @@ Nothing is sent, followed, or shared.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.tencent.mm",
-  "goal": "In WeChat, tap the search icon at the top, type '<account>', and open the official account named <account> from the results, the one marked as an Official Account or 公众号. On the account's page, open its message history or article list, then keep scrolling the articles. Do not follow, unfollow, send a message or open an article.",
-  "steps": [
-    "The official account <account> is open",
-    "A list of articles from <account> with titles is showing"
-  ],
-  "typeTexts": [
-    "<account>"
-  ],
-  "findTexts": [
-    "<account>"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "one article in the account's history",
-    "fields": {
-      "title": "the article title",
-      "date": "the publication date or time, if shown",
-      "summary": "the summary line under the title, if shown"
-    },
-    "where": "articles published by <account> with titles are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.tencent.mm",
+    "goal": "In WeChat, tap the search icon at the top, type '<account>', and open the official account named <account> from the results, the one marked as an Official Account or 公众号. On the account's page, open its message history or article list, then keep scrolling the articles. Do not follow, unfollow, send a message or open an article.",
+    "steps": [
+      "The official account <account> is open",
+      "A list of articles from <account> with titles is showing"
+    ],
+    "typeTexts": [
+      "<account>"
+    ],
+    "findTexts": [
+      "<account>"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "one article in the account's history",
+      "fields": {
+        "title": "the article title",
+        "date": "the publication date or time, if shown",
+        "summary": "the summary line under the title, if shown"
+      },
+      "where": "articles published by <account> with titles are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

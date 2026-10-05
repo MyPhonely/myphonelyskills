@@ -26,31 +26,33 @@ Nothing is liked, replied to or subscribed.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.google.android.youtube",
-  "goal": "In the YouTube app, tap the search icon at the top, type '<video>', then press enter. Tap the video result whose title matches so it starts playing, then scroll down past the description until the Comments section is showing, and tap it to expand if it is collapsed. Keep scrolling the comments. Do not like, reply, subscribe or tap any other video.",
-  "steps": [
-    "A video with the title '<video>' is playing",
-    "A list of comments with authors and comment text is showing"
-  ],
-  "typeTexts": [
-    "<video>"
-  ],
-  "findTexts": [
-    "Comments"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "one comment under the video",
-    "fields": {
-      "author": "the commenter's name or handle",
-      "text": "the comment text",
-      "age": "how long ago it was posted, if shown",
-      "likes": "the like count, if shown"
-    },
-    "where": "comments with authors and comment text under the video are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.google.android.youtube",
+    "goal": "In the YouTube app, tap the search icon at the top, type '<video>', then press enter. Tap the video result whose title matches so it starts playing, then scroll down past the description until the Comments section is showing, and tap it to expand if it is collapsed. Keep scrolling the comments. Do not like, reply, subscribe or tap any other video.",
+    "steps": [
+      "A video with the title '<video>' is playing",
+      "A list of comments with authors and comment text is showing"
+    ],
+    "typeTexts": [
+      "<video>"
+    ],
+    "findTexts": [
+      "Comments"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "one comment under the video",
+      "fields": {
+        "author": "the commenter's name or handle",
+        "text": "the comment text",
+        "age": "how long ago it was posted, if shown",
+        "likes": "the like count, if shown"
+      },
+      "where": "comments with authors and comment text under the video are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

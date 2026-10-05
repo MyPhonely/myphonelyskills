@@ -27,28 +27,30 @@ Nothing is liked, reposted, replied to or followed.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.twitter.android",
-  "goal": "In the X app, tap the Explore or Search tab, tap the search field, type 'from:<handle> <words>', and press enter. Tap the Latest tab, then tap the text of the matching post so it opens on its own page. Scroll down past the post to the replies and keep scrolling them. Do not like, repost, reply or follow.",
-  "steps": [
-    "A single post by <handle> is open on its own page",
-    "Replies under the post, with authors, are showing"
-  ],
-  "typeTexts": [
-    "from:<handle> <words>"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "one reply under the post",
-    "fields": {
-      "author": "the replier's name or handle",
-      "text": "the reply text",
-      "age": "how long ago it was posted",
-      "engagement": "the reply's like and reply counts, if shown"
-    },
-    "where": "replies under the post by <handle> are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.twitter.android",
+    "goal": "In the X app, tap the Explore or Search tab, tap the search field, type 'from:<handle> <words>', and press enter. Tap the Latest tab, then tap the text of the matching post so it opens on its own page. Scroll down past the post to the replies and keep scrolling them. Do not like, repost, reply or follow.",
+    "steps": [
+      "A single post by <handle> is open on its own page",
+      "Replies under the post, with authors, are showing"
+    ],
+    "typeTexts": [
+      "from:<handle> <words>"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "one reply under the post",
+      "fields": {
+        "author": "the replier's name or handle",
+        "text": "the reply text",
+        "age": "how long ago it was posted",
+        "engagement": "the reply's like and reply counts, if shown"
+      },
+      "where": "replies under the post by <handle> are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

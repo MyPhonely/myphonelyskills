@@ -23,11 +23,13 @@ Opens X's composer, stops with the phone held so you see the account it will pos
 **1. Reach the point of no return, and stop.** Nothing is written here.
 
 ```json
-phone_task({
-  "launch": "com.twitter.android",
-  "goal": "In the X app, tap the compose button, the plus or feather icon at the bottom right, so the post composer opens with the text field focused. Do not type and do not tap Post.",
-  "pauseWhen": "X's post composer is open: a 'What's happening?' field and a Post button are showing",
-  "maxSteps": 6
+run_task({
+  "phases": [{
+    "launch": "com.twitter.android",
+    "goal": "In the X app, tap the compose button, the plus or feather icon at the bottom right, so the post composer opens with the text field focused. Do not type and do not tap Post.",
+    "pauseWhen": "X's post composer is open: a 'What's happening?' field and a Post button are showing",
+    "maxSteps": 6
+  }]
 })
 ```
 
@@ -53,7 +55,7 @@ Poll until `done`. `resume_task({ task_id, abandon: true })` closes the composer
 
 ## What comes back
 
-`result.sent` lists the post only when the composer closed and the timeline returned. To attach an image, push it first with `phone_push_file` and add 'tap the image icon and choose the newest photo' to the resume goal.
+`result.phases[0].sent` lists the post only when the composer closed and the timeline returned. To attach an image, push it first with `phone_push_file` and add 'tap the image icon and choose the newest photo' to the resume goal.
 
 ## Notes
 

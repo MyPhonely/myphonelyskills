@@ -27,33 +27,35 @@ Nothing is liked or commented on.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.linkedin.android",
-  "goal": "In the LinkedIn app, tap the search bar at the top, type '<person> <context>', then press enter. Tap the People tab, then tap the result whose name is <person> to open their profile. Scroll down to the Activity section and tap 'Show all posts' or 'Show all activity'. Then keep scrolling the posts. Do not tap Like, Comment, Repost, Connect or Follow.",
-  "steps": [
-    "A profile page with the name <person> in its header is showing",
-    "A list of posts by <person> is showing"
-  ],
-  "typeTexts": [
-    "<person> <context>"
-  ],
-  "findTexts": [
-    "<person>",
-    "Show all posts",
-    "Show all activity"
-  ],
-  "maxSteps": 22,
-  "collect": {
-    "record": "a post written or reposted by <person>",
-    "fields": {
-      "text": "the post text as far as the card shows it",
-      "age": "how long ago it was posted",
-      "reactions": "the reaction and comment counts, if shown",
-      "kind": "whether it is an original post, a repost, or a comment on someone else's post"
-    },
-    "where": "a list of posts by <person> is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.linkedin.android",
+    "goal": "In the LinkedIn app, tap the search bar at the top, type '<person> <context>', then press enter. Tap the People tab, then tap the result whose name is <person> to open their profile. Scroll down to the Activity section and tap 'Show all posts' or 'Show all activity'. Then keep scrolling the posts. Do not tap Like, Comment, Repost, Connect or Follow.",
+    "steps": [
+      "A profile page with the name <person> in its header is showing",
+      "A list of posts by <person> is showing"
+    ],
+    "typeTexts": [
+      "<person> <context>"
+    ],
+    "findTexts": [
+      "<person>",
+      "Show all posts",
+      "Show all activity"
+    ],
+    "maxSteps": 22,
+    "collect": {
+      "record": "a post written or reposted by <person>",
+      "fields": {
+        "text": "the post text as far as the card shows it",
+        "age": "how long ago it was posted",
+        "reactions": "the reaction and comment counts, if shown",
+        "kind": "whether it is an original post, a repost, or a comment on someone else's post"
+      },
+      "where": "a list of posts by <person> is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

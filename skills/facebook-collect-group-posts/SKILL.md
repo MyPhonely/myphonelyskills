@@ -30,22 +30,24 @@ Nothing is posted, commented, liked or joined.
 ## Run it
 
 ```json
-phone_task({
-  "launch": "com.facebook.katana",
-  "goal": "In the Facebook app, tap the search icon, type '<group>', submit, and open the group named <group> from the results. On the group feed, keep scrolling the posts. Do not tap 'Write something', do not like, comment, share or join anything.",
-  "steps": ["Facebook is open",
-            "The <group> group feed is showing"],
-  "typeTexts": ["<group>"],
-  "maxSteps": 20,
-  "collect": {
-    "record": "a post in the group feed",
-    "fields": { "author": "who posted it",
-                "text": "the post text, as far as the card shows it",
-                "age": "how long ago it was posted",
-                "engagement": "the reaction and comment counts, if shown" },
-    "where": "a feed of posts from the <group> group is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.facebook.katana",
+    "goal": "In the Facebook app, tap the search icon, type '<group>', submit, and open the group named <group> from the results. On the group feed, keep scrolling the posts. Do not tap 'Write something', do not like, comment, share or join anything.",
+    "steps": ["Facebook is open",
+              "The <group> group feed is showing"],
+    "typeTexts": ["<group>"],
+    "maxSteps": 20,
+    "collect": {
+      "record": "a post in the group feed",
+      "fields": { "author": "who posted it",
+                  "text": "the post text, as far as the card shows it",
+                  "age": "how long ago it was posted",
+                  "engagement": "the reaction and comment counts, if shown" },
+      "where": "a feed of posts from the <group> group is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

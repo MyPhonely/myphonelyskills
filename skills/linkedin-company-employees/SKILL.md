@@ -27,31 +27,33 @@ No one is connected with or messaged.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.linkedin.android",
-  "goal": "In the LinkedIn app, tap the search bar at the top, type '<company>', then press enter. Tap the Companies tab and tap the company result named <company> to open its page. On the company page tap the People tab. If a search field for people appears and a role was given, type '<role>' into it. Then keep scrolling the people list. Do not tap Follow, Connect or Message.",
-  "steps": [
-    "A company page named <company> is showing",
-    "A list of people who work at <company> is showing"
-  ],
-  "typeTexts": [
-    "<company>",
-    "<role>"
-  ],
-  "findTexts": [
-    "People"
-  ],
-  "maxSteps": 22,
-  "collect": {
-    "record": "a person listed under the company's People section",
-    "fields": {
-      "name": "the person's name",
-      "headline": "their role or headline line",
-      "location": "their location, if shown"
-    },
-    "where": "a list of people at <company> with names and roles is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.linkedin.android",
+    "goal": "In the LinkedIn app, tap the search bar at the top, type '<company>', then press enter. Tap the Companies tab and tap the company result named <company> to open its page. On the company page tap the People tab. If a search field for people appears and a role was given, type '<role>' into it. Then keep scrolling the people list. Do not tap Follow, Connect or Message.",
+    "steps": [
+      "A company page named <company> is showing",
+      "A list of people who work at <company> is showing"
+    ],
+    "typeTexts": [
+      "<company>",
+      "<role>"
+    ],
+    "findTexts": [
+      "People"
+    ],
+    "maxSteps": 22,
+    "collect": {
+      "record": "a person listed under the company's People section",
+      "fields": {
+        "name": "the person's name",
+        "headline": "their role or headline line",
+        "location": "their location, if shown"
+      },
+      "where": "a list of people at <company> with names and roles is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

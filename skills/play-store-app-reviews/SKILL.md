@@ -26,32 +26,34 @@ Nothing is installed, rated or reviewed.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.android.vending",
-  "goal": "In the Play Store, tap the search bar at the top, type '<app>', and submit. Tap the app result named <app> so its listing opens. Scroll down to 'Ratings and reviews' and tap 'See all reviews'. Keep scrolling the reviews. Do not tap Install, Update, Open, or any rating star.",
-  "steps": [
-    "The listing page for the app <app> is showing",
-    "A list of user reviews with star ratings and review text is showing"
-  ],
-  "typeTexts": [
-    "<app>"
-  ],
-  "findTexts": [
-    "See all reviews",
-    "Ratings and reviews"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "one user review of the app",
-    "fields": {
-      "rating": "the star rating of the review",
-      "text": "the review text",
-      "reviewer": "the reviewer's name",
-      "date": "the review date"
-    },
-    "where": "user reviews of <app> with star ratings are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.android.vending",
+    "goal": "In the Play Store, tap the search bar at the top, type '<app>', and submit. Tap the app result named <app> so its listing opens. Scroll down to 'Ratings and reviews' and tap 'See all reviews'. Keep scrolling the reviews. Do not tap Install, Update, Open, or any rating star.",
+    "steps": [
+      "The listing page for the app <app> is showing",
+      "A list of user reviews with star ratings and review text is showing"
+    ],
+    "typeTexts": [
+      "<app>"
+    ],
+    "findTexts": [
+      "See all reviews",
+      "Ratings and reviews"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "one user review of the app",
+      "fields": {
+        "rating": "the star rating of the review",
+        "text": "the review text",
+        "reviewer": "the reviewer's name",
+        "date": "the review date"
+      },
+      "where": "user reviews of <app> with star ratings are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

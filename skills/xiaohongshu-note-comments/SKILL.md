@@ -26,28 +26,30 @@ Nothing is liked, collected, followed or commented.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.xingin.xhs",
-  "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<words>', and submit. Tap the note whose title matches so it opens. On the note, tap the comment bubble icon at the bottom so the comment sheet opens, then keep scrolling the comments. Do not like, collect, follow, or type anything.",
-  "steps": [
-    "A note whose title contains '<words>' is open",
-    "A sheet of comments with author nicknames and comment text is showing"
-  ],
-  "typeTexts": [
-    "<words>"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "one comment in the note's comment sheet",
-    "fields": {
-      "author": "the commenter's nickname",
-      "text": "the comment text",
-      "likes": "the like count, if shown",
-      "age": "how long ago it was posted, if shown"
-    },
-    "where": "comments on the note about '<words>' are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.xingin.xhs",
+    "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<words>', and submit. Tap the note whose title matches so it opens. On the note, tap the comment bubble icon at the bottom so the comment sheet opens, then keep scrolling the comments. Do not like, collect, follow, or type anything.",
+    "steps": [
+      "A note whose title contains '<words>' is open",
+      "A sheet of comments with author nicknames and comment text is showing"
+    ],
+    "typeTexts": [
+      "<words>"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "one comment in the note's comment sheet",
+      "fields": {
+        "author": "the commenter's nickname",
+        "text": "the comment text",
+        "likes": "the like count, if shown",
+        "age": "how long ago it was posted, if shown"
+      },
+      "where": "comments on the note about '<words>' are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

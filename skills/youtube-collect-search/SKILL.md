@@ -27,24 +27,26 @@ Nothing is watched, liked or subscribed to.
 ## Run it
 
 ```json
-phone_task({
-  "launch": "com.google.android.youtube",
-  "goal": "In the YouTube app, tap the search icon at the top, type '<query>', and submit. On the results screen tap the Videos filter tab so only videos are listed, then keep scrolling the results. Do not open a video, do not subscribe, like or comment.",
-  "steps": ["YouTube is open",
-            "Search results for '<query>' are showing",
-            "A list of video results about '<query>' is showing"],
-  "typeTexts": ["<query>"],
-  "maxSteps": 14,
-  "collect": {
-    "record": "a video in the search results",
-    "fields": { "title": "the video title",
-                "channel": "the channel name, if the card shows one",
-                "views": "the view count, if shown",
-                "age": "how long ago it was posted, if shown",
-                "length": "the video length, if shown" },
-    "where": "a list of video results about '<query>' is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.google.android.youtube",
+    "goal": "In the YouTube app, tap the search icon at the top, type '<query>', and submit. On the results screen tap the Videos filter tab so only videos are listed, then keep scrolling the results. Do not open a video, do not subscribe, like or comment.",
+    "steps": ["YouTube is open",
+              "Search results for '<query>' are showing",
+              "A list of video results about '<query>' is showing"],
+    "typeTexts": ["<query>"],
+    "maxSteps": 14,
+    "collect": {
+      "record": "a video in the search results",
+      "fields": { "title": "the video title",
+                  "channel": "the channel name, if the card shows one",
+                  "views": "the view count, if shown",
+                  "age": "how long ago it was posted, if shown",
+                  "length": "the video length, if shown" },
+      "where": "a list of video results about '<query>' is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

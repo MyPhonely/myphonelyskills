@@ -28,23 +28,25 @@ Nothing is applied for and nothing is saved.
 ## Run it
 
 ```json
-phone_task({
-  "launch": "com.linkedin.android",
-  "goal": "In the LinkedIn app, tap the search bar at the top, type '<query> <where>', and submit. Make sure the Jobs tab is the active tab so job results are showing, then keep scrolling the job results. Do not open a job, do not tap Save, Apply or Easy Apply.",
-  "steps": ["LinkedIn is open",
-            "Search results for '<query>' are showing",
-            "A list of job postings with titles and company names is showing"],
-  "typeTexts": ["<query> <where>"],
-  "maxSteps": 16,
-  "collect": {
-    "record": "a job posting in the Jobs search results",
-    "fields": { "title": "the job title",
-                "company": "the company name",
-                "location": "the location line, including Remote or Hybrid if shown",
-                "posted": "how long ago it was posted, and any Promoted or Easy Apply label" },
-    "where": "a list of job postings with titles and company names is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.linkedin.android",
+    "goal": "In the LinkedIn app, tap the search bar at the top, type '<query> <where>', and submit. Make sure the Jobs tab is the active tab so job results are showing, then keep scrolling the job results. Do not open a job, do not tap Save, Apply or Easy Apply.",
+    "steps": ["LinkedIn is open",
+              "Search results for '<query>' are showing",
+              "A list of job postings with titles and company names is showing"],
+    "typeTexts": ["<query> <where>"],
+    "maxSteps": 16,
+    "collect": {
+      "record": "a job posting in the Jobs search results",
+      "fields": { "title": "the job title",
+                  "company": "the company name",
+                  "location": "the location line, including Remote or Hybrid if shown",
+                  "posted": "how long ago it was posted, and any Promoted or Easy Apply label" },
+      "where": "a list of job postings with titles and company names is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

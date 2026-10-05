@@ -79,10 +79,11 @@ driving the phone directly.
 
 Two ways to use the server, per goal:
 
-- **Mode 1** — hand a goal to the operator: `phone_task` runs one route in
-  one app; `phone_read` turns a list into records; `dispatch_task` plans a
+- **Mode 1** — hand a goal to the operator: `run_task` runs phases you
+  planned (one route in one app each); `phone_read` turns a list into
+  records; `run_task` with a `request` plans a
   plain-language request into phases and runs them in order. Give
-  `phone_task` a `pauseWhen` and it stops on that screen with the phone
+  a phase a `pauseWhen` and it stops on that screen with the phone
   held, for you to review; `resume_task` continues it or abandons it. Poll
   with `get_task_status(task_id, wait_seconds)`, which returns as soon as
   anything changes.

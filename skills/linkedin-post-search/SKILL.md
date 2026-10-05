@@ -26,29 +26,31 @@ Nothing is liked, commented on or reposted.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.linkedin.android",
-  "goal": "In the LinkedIn app, tap the search bar at the top, type '<query>', then press enter. Tap the Posts tab so post results are listed, then keep scrolling the posts. Do not open a post, do not tap Like, Comment, Repost, Send or Follow.",
-  "steps": [
-    "Search results for '<query>' are showing",
-    "A list of posts with authors and post text is showing"
-  ],
-  "typeTexts": [
-    "<query>"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "a post in the Posts search results",
-    "fields": {
-      "author": "the name of the account that posted it",
-      "headline": "the author's headline line, if shown",
-      "text": "the post text as far as the card shows it",
-      "age": "how long ago it was posted",
-      "reactions": "the reaction and comment counts, if shown"
-    },
-    "where": "a list of posts about '<query>' with their authors is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.linkedin.android",
+    "goal": "In the LinkedIn app, tap the search bar at the top, type '<query>', then press enter. Tap the Posts tab so post results are listed, then keep scrolling the posts. Do not open a post, do not tap Like, Comment, Repost, Send or Follow.",
+    "steps": [
+      "Search results for '<query>' are showing",
+      "A list of posts with authors and post text is showing"
+    ],
+    "typeTexts": [
+      "<query>"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "a post in the Posts search results",
+      "fields": {
+        "author": "the name of the account that posted it",
+        "headline": "the author's headline line, if shown",
+        "text": "the post text as far as the card shows it",
+        "age": "how long ago it was posted",
+        "reactions": "the reaction and comment counts, if shown"
+      },
+      "where": "a list of posts about '<query>' with their authors is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

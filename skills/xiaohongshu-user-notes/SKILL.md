@@ -26,29 +26,31 @@ Nothing is followed, liked or messaged.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.xingin.xhs",
-  "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<nickname>', and submit. Tap the Users or 用户 tab and tap the account named <nickname> so its profile opens. Then keep scrolling down the profile's notes. Do not follow, like, or open a note.",
-  "steps": [
-    "A profile page for <nickname> is showing",
-    "A grid of notes by <nickname> is showing"
-  ],
-  "typeTexts": [
-    "<nickname>"
-  ],
-  "findTexts": [
-    "<nickname>"
-  ],
-  "maxSteps": 16,
-  "collect": {
-    "record": "a note card on the profile's notes grid",
-    "fields": {
-      "title": "the note title",
-      "likes": "the like count, if shown"
-    },
-    "where": "note cards by <nickname> are showing on the profile page",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.xingin.xhs",
+    "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<nickname>', and submit. Tap the Users or 用户 tab and tap the account named <nickname> so its profile opens. Then keep scrolling down the profile's notes. Do not follow, like, or open a note.",
+    "steps": [
+      "A profile page for <nickname> is showing",
+      "A grid of notes by <nickname> is showing"
+    ],
+    "typeTexts": [
+      "<nickname>"
+    ],
+    "findTexts": [
+      "<nickname>"
+    ],
+    "maxSteps": 16,
+    "collect": {
+      "record": "a note card on the profile's notes grid",
+      "fields": {
+        "title": "the note title",
+        "likes": "the like count, if shown"
+      },
+      "where": "note cards by <nickname> are showing on the profile page",
+      "count": <count>
+    }
+  }]
 })
 ```
 

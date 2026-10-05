@@ -29,23 +29,25 @@ Nothing is sent. No connection requests, no messages, no profile opens.
 ## Run it
 
 ```json
-phone_task({
-  "launch": "com.linkedin.android",
-  "goal": "In the LinkedIn app, tap the search bar at the top, type '<query>', and submit. The results may open on the Jobs tab; tap the People tab so people results are showing. Then keep scrolling the people results. Do not tap any person's name, do not open a profile, do not tap the filter chips, and do not tap Connect, Invite or Message.",
-  "steps": ["LinkedIn is open",
-            "Search results for '<query>' are showing",
-            "A list of people with names and headlines is showing"],
-  "typeTexts": ["<query>"],
-  "maxSteps": 20,
-  "collect": {
-    "record": "a person in the People search results",
-    "fields": { "name": "the person's name",
-                "headline": "their headline, the line under the name",
-                "location": "their location, if shown",
-                "context": "the current role, school or mutual-connections line, if shown" },
-    "where": "a list of people with names and headlines is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.linkedin.android",
+    "goal": "In the LinkedIn app, tap the search bar at the top, type '<query>', and submit. The results may open on the Jobs tab; tap the People tab so people results are showing. Then keep scrolling the people results. Do not tap any person's name, do not open a profile, do not tap the filter chips, and do not tap Connect, Invite or Message.",
+    "steps": ["LinkedIn is open",
+              "Search results for '<query>' are showing",
+              "A list of people with names and headlines is showing"],
+    "typeTexts": ["<query>"],
+    "maxSteps": 20,
+    "collect": {
+      "record": "a person in the People search results",
+      "fields": { "name": "the person's name",
+                  "headline": "their headline, the line under the name",
+                  "location": "their location, if shown",
+                  "context": "the current role, school or mutual-connections line, if shown" },
+      "where": "a list of people with names and headlines is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

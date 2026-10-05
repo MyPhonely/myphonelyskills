@@ -27,28 +27,30 @@ Nothing is liked, replied to or followed.
 One call. Substitute the inputs.
 
 ```json
-phone_task({
-  "launch": "com.zhiliaoapp.musically",
-  "goal": "In the TikTok app, the For You feed may show a 'Something went wrong / Try again later' message with a Retry button; that message is harmless and does not block search, so ignore it and do not tap Retry. Tap the Search icon at the top right, tap the search field, type '<creator> <words>', and submit. Tap the matching video so it plays full screen, then tap the comment bubble icon on the right side so the comment sheet opens. Keep scrolling the comments. Do not like, reply, follow or swipe to another video.",
-  "steps": [
-    "A video by <creator> is playing full screen",
-    "A sheet of comments with authors and comment text is showing"
-  ],
-  "typeTexts": [
-    "<creator> <words>"
-  ],
-  "maxSteps": 18,
-  "collect": {
-    "record": "one comment in the video's comment sheet",
-    "fields": {
-      "author": "the commenter's name or handle",
-      "text": "the comment text",
-      "likes": "the like count, if shown",
-      "age": "how long ago it was posted, if shown"
-    },
-    "where": "comments on the video by <creator> are showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.zhiliaoapp.musically",
+    "goal": "In the TikTok app, the For You feed may show a 'Something went wrong / Try again later' message with a Retry button; that message is harmless and does not block search, so ignore it and do not tap Retry. Tap the Search icon at the top right, tap the search field, type '<creator> <words>', and submit. Tap the matching video so it plays full screen, then tap the comment bubble icon on the right side so the comment sheet opens. Keep scrolling the comments. Do not like, reply, follow or swipe to another video.",
+    "steps": [
+      "A video by <creator> is playing full screen",
+      "A sheet of comments with authors and comment text is showing"
+    ],
+    "typeTexts": [
+      "<creator> <words>"
+    ],
+    "maxSteps": 18,
+    "collect": {
+      "record": "one comment in the video's comment sheet",
+      "fields": {
+        "author": "the commenter's name or handle",
+        "text": "the comment text",
+        "likes": "the like count, if shown",
+        "age": "how long ago it was posted, if shown"
+      },
+      "where": "comments on the video by <creator> are showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

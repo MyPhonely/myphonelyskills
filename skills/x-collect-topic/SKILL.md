@@ -30,23 +30,25 @@ sees, including posts from protected accounts it follows.
 One call. Substitute the inputs into the goal and the collect spec.
 
 ```json
-phone_task({
-  "launch": "com.twitter.android",
-  "goal": "In the X app, tap the Explore or Search tab, tap the search field, type '<topic>', and submit the search. On the results screen tap the Latest tab so the newest posts are showing, then keep scrolling down the results. Do not like, repost, reply, follow or open any post.",
-  "steps": ["The X app is open",
-            "Search results for '<topic>' are showing",
-            "The Latest tab of the results is selected"],
-  "typeTexts": ["<topic>"],
-  "maxSteps": 14,
-  "collect": {
-    "record": "a post in the search results",
-    "fields": { "author": "the display name or @handle of the account that posted it",
-                "text": "the post's text" },
-    "judge":  { "on_topic": "<claim>" },
-    "require": { "on_topic": <bar> },
-    "where": "a list of posts about '<topic>' is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.twitter.android",
+    "goal": "In the X app, tap the Explore or Search tab, tap the search field, type '<topic>', and submit the search. On the results screen tap the Latest tab so the newest posts are showing, then keep scrolling down the results. Do not like, repost, reply, follow or open any post.",
+    "steps": ["The X app is open",
+              "Search results for '<topic>' are showing",
+              "The Latest tab of the results is selected"],
+    "typeTexts": ["<topic>"],
+    "maxSteps": 14,
+    "collect": {
+      "record": "a post in the search results",
+      "fields": { "author": "the display name or @handle of the account that posted it",
+                  "text": "the post's text" },
+      "judge":  { "on_topic": "<claim>" },
+      "require": { "on_topic": <bar> },
+      "where": "a list of posts about '<topic>' is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

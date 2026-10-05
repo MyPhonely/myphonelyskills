@@ -27,22 +27,24 @@ person in that area would actually see.
 ## Run it
 
 ```json
-phone_task({
-  "launch": "com.google.android.apps.maps",
-  "goal": "In Google Maps, tap the search box at the top, type '<what> in <where>', and submit the search. Wait for the list of results to appear, then keep scrolling down the list. Do not open any individual place, do not start navigation, and do not save or rate anything.",
-  "steps": ["Google Maps is open",
-            "Results for '<what> in <where>' are listed"],
-  "typeTexts": ["<what> in <where>"],
-  "maxSteps": 14,
-  "collect": {
-    "record": "a business in the Maps results list",
-    "fields": { "name": "the business name",
-                "rating": "the star rating",
-                "reviews": "the rating line as shown, which carries the number of ratings",
-                "category": "the business category" },
-    "where": "a list of places with names and star ratings is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.google.android.apps.maps",
+    "goal": "In Google Maps, tap the search box at the top, type '<what> in <where>', and submit the search. Wait for the list of results to appear, then keep scrolling down the list. Do not open any individual place, do not start navigation, and do not save or rate anything.",
+    "steps": ["Google Maps is open",
+              "Results for '<what> in <where>' are listed"],
+    "typeTexts": ["<what> in <where>"],
+    "maxSteps": 14,
+    "collect": {
+      "record": "a business in the Maps results list",
+      "fields": { "name": "the business name",
+                  "rating": "the star rating",
+                  "reviews": "the rating line as shown, which carries the number of ratings",
+                  "category": "the business category" },
+      "where": "a list of places with names and star ratings is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 

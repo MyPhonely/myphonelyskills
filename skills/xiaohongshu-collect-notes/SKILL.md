@@ -28,24 +28,26 @@ Nothing is liked, collected, followed or commented on.
 ## Run it
 
 ```json
-phone_task({
-  "launch": "com.xingin.xhs",
-  "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<query>', and submit. On the results screen tap 最新 or Latest if that sort is offered. Then keep scrolling the note results. Do not open a note, and do not like, collect, follow or comment.",
-  "steps": ["Xiaohongshu is open",
-            "Search results for '<query>' are showing"],
-  "typeTexts": ["<query>"],
-  "maxSteps": 16,
-  "collect": {
-    "record": "a note card in the search results",
-    "fields": { "title": "the note title",
-                "author": "the nickname of the account that posted it",
-                "likes": "the like count, if shown",
-                "age": "how long ago it was posted, if shown" },
-    "judge": { "organic": "the card is a normal note, not an advertisement labelled Ads or 广告" },
-    "require": { "organic": 0.7 },
-    "where": "a list of note cards about '<query>' is showing",
-    "count": <count>
-  }
+run_task({
+  "phases": [{
+    "launch": "com.xingin.xhs",
+    "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<query>', and submit. On the results screen tap 最新 or Latest if that sort is offered. Then keep scrolling the note results. Do not open a note, and do not like, collect, follow or comment.",
+    "steps": ["Xiaohongshu is open",
+              "Search results for '<query>' are showing"],
+    "typeTexts": ["<query>"],
+    "maxSteps": 16,
+    "collect": {
+      "record": "a note card in the search results",
+      "fields": { "title": "the note title",
+                  "author": "the nickname of the account that posted it",
+                  "likes": "the like count, if shown",
+                  "age": "how long ago it was posted, if shown" },
+      "judge": { "organic": "the card is a normal note, not an advertisement labelled Ads or 广告" },
+      "require": { "organic": 0.7 },
+      "where": "a list of note cards about '<query>' is showing",
+      "count": <count>
+    }
+  }]
 })
 ```
 
