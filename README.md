@@ -3,7 +3,7 @@
 Skills for AI agents that operate a real Android phone through the
 [MyPhonely](https://myphonely.ai) MCP server. Install them and your agent
 knows both how to drive a phone and the use cases it can do end to end:
-41 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
+42 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
 Facebook, TikTok, WeChat and Google Play.
 
 ## Install
@@ -59,7 +59,7 @@ they are about to do, and continue only on `resume_task`.
 | Reddit | posts from a subreddit · search posts · comments on a post | |
 | YouTube | videos from a search · a channel's videos · comments on a video | |
 | Google Maps | local businesses · a place's details · a place's reviews | |
-| Xiaohongshu | notes from a search · a creator's notes · comments on a note | |
+| Xiaohongshu | notes from a search · a creator's notes · comments on a note | comment on a note |
 | Facebook | posts from a group you belong to · a page's recent posts · search posts about a topic | comment on a post, as yourself or as an anonymous group member |
 | Instagram | find accounts | |
 | TikTok | videos from a search · comments on a video | |
