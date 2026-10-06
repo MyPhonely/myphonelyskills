@@ -23,19 +23,17 @@ Nothing is sent: no connection request, no message, no follow.
 
 ## Run it
 
-One call. Substitute the inputs.
+One call. Substitute the inputs, URL-encoded in the link (spaces as `%20`).
 
 ```json
 run_task({
   "phases": [{
     "launch": "com.linkedin.android",
-    "goal": "In the LinkedIn app, tap the search bar at the top, type '<person> <context>', then press enter. Tap the People tab, then tap the result whose name is <person> to open their profile. On the profile, keep scrolling down through About, Experience and Education. Do not tap Connect, Follow, Message or More.",
+    "openUrl": "https://www.linkedin.com/search/results/people/?keywords=<person>%20<context>",
+    "goal": "The LinkedIn People search results for '<person> <context>' are open. Do not type and do not use the search box. Tap the result whose name is <person> to open their profile. On the profile, keep scrolling down through About, Experience and Education. Do not tap Connect, Follow, Message or More.",
     "steps": [
-      "Search results for '<person>' are showing",
+      "People search results for '<person>' are showing",
       "A profile page with the name <person> in its header is showing"
-    ],
-    "typeTexts": [
-      "<person> <context>"
     ],
     "findTexts": [
       "<person>"
@@ -65,3 +63,10 @@ Poll `get_task_status(task_id, wait_seconds: 30)` until the status is `done`.
 
 - Profiles in creator mode show Follow instead of Connect, and some hide the About text behind a 'see more'. The run reads what is visible; a truncated About comes back truncated.
 - Measured: header, About, three Experience entries and Education came back as seven records in fourteen steps before the run scrolled into 'People also viewed'. `count` is 6 so it stops while still on the profile.
+- **To qualify someone by where they studied,** read only Education and let
+  the read judge each entry: add `"judge": { "outside_us": "this school is
+  located outside the United States", "is_education": "this entry is a school
+  or university, not a job, a post or a skill" }` and `"require": {
+  "is_education": 0.6 }` to `collect`, with `record` set to one Education
+  entry and `count` 3. LinkedIn lists education newest first, so the last
+  entry is usually the first degree; years decide when they are shown.

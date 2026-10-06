@@ -24,53 +24,73 @@ Nothing is sent. No connection requests, no messages, no profile opens.
 |---|---|
 | **query** | the search, e.g. `immigration attorney Seattle`, `PhD molecular biology` |
 | **count** | how many people to collect, default 10 |
-| **degree** | optional, `1st`, `2nd` or `3rd+` to filter by connection degree |
+| **degree** | optional, `2nd` to read only people one tap can invite |
 
 ## Run it
+
+Open the results by link: typing into LinkedIn's search box is the least
+reliable step in the app, and the link lands on the People tab directly.
+URL-encode the query in the link (spaces as `%20`).
 
 ```json
 run_task({
   "phases": [{
     "launch": "com.linkedin.android",
-    "goal": "In the LinkedIn app, tap the search bar at the top, type '<query>', and submit. The results may open on the Jobs tab; tap the People tab so people results are showing. Then keep scrolling the people results. Do not tap any person's name, do not open a profile, do not tap the filter chips, and do not tap Connect, Invite or Message.",
-    "steps": ["LinkedIn is open",
-              "Search results for '<query>' are showing",
-              "A list of people with names and headlines is showing"],
-    "typeTexts": ["<query>"],
-    "maxSteps": 20,
+    "openUrl": "https://www.linkedin.com/search/results/people/?keywords=<query>",
+    "goal": "The LinkedIn People search results for '<query>' are open. Keep scrolling the people results. Do not type, do not use the search box, do not open All filters, do not tap any person's name or open a profile, and do not tap Connect, Invite, Message or Follow.",
+    "maxSteps": 16,
     "collect": {
       "record": "a person in the People search results",
-      "fields": { "name": "the person's name",
+      "fields": { "name": "the person's full name only, without Verified or degree text",
                   "headline": "their headline, the line under the name",
                   "location": "their location, if shown",
-                  "context": "the current role, school or mutual-connections line, if shown" },
-      "where": "a list of people with names and headlines is showing",
+                  "degree": "the connection degree such as 1st, 2nd or 3rd+",
+                  "action": "the label of the button on the right of the card, such as 'Invite <name> to connect', 'Send a message to <name>', 'Pending' or 'Follow'" },
+      "where": "people search results for '<query>' are showing",
       "count": <count>
     }
   }]
 })
 ```
 
-With **degree**, add to the goal: "Before scrolling, tap the `<degree>` filter
-chip once at the top of the results." Tap it once and leave it; the playbook
-warns that toggling degree filters gets the app into a bad state.
+With **degree** `2nd`, put a phase before the read that taps the chip by its
+full label, and drop `launch` and `openUrl` from the read so it stays on the
+filtered page:
+
+```json
+{ "launch": "com.linkedin.android",
+  "openUrl": "https://www.linkedin.com/search/results/people/?keywords=<query>",
+  "goal": "In the row of filter chips near the top, tap the chip whose label is 'Filter by 2nd connections', once, so the results reload. Do nothing else: do not open All filters, do not tap any other chip, do not scroll, do not tap any card.",
+  "require": { "label": "Filter by 2nd connections" },
+  "steps": ["the 'Filter by 2nd connections' chip is selected and the results have reloaded"],
+  "maxSteps": 6 }
+```
 
 ## What comes back
 
 `result.collected` holds one record per person, from the result cards alone.
+`degree` often arrives as the whole name line (`Chu Li Premium • 2nd`): read
+the `• 2nd` / `• 3rd+` token from it. When `name` comes back empty, the
+`action` label still carries it (`Invite <name> to connect`).
 Profile URLs and contact details are not on this screen; getting those means
 opening each profile, which is a separate task per person.
 
 ## Notes
 
-- LinkedIn settles slowly after a search, so the step budget is 20 rather
-  than the usual 14. Ten people takes roughly that.
-- Results open on **Jobs** on current builds. The goal above says to switch
-  tabs, and the step list makes the operator confirm it before reading.
-- Each card has a small Invite or Message button on the right. The goal
-  forbids tapping it, and the write gate refuses it anyway without
-  `allowWrites`.
-- To act on the list afterwards, connect with a note per person, pass one
-  name at a time to a second task with `allowWrites: true` and `repeat: 1`.
-  LinkedIn caps invitations near 100 a week and silently throttles past that,
-  so verify what was actually sent rather than counting taps.
+- **The button on each card says what you can do**, with no judgment needed:
+  `Invite <name> to connect` is a 2nd-degree person one tap can invite;
+  `Send a message to <name>` on a Premium account is InMail to a 3rd+
+  person, **not** an existing connection; `Pending` is already invited;
+  `Follow` is creator mode. `degree` and `action` together classify a card.
+- Name the chip by its full label. "2nd" alone did not clear the operator's
+  choice among 42 options on a measured screen; the full label is one tap.
+  `require` ends the phase in one look if the chip row is not there.
+- Do not open All filters: it is the most common reason a run sends or reads
+  nothing.
+- **Measured on 2026-10-06:** by link, 6 of 6 people in 2 steps and 6
+  credits, every card's button label read; typing into the search box had
+  stalled in five of six earlier attempts.
+- To act on the list, see `linkedin-invite-from-results` (one tap per card)
+  or `linkedin-connect-with-note` (one person, with a note). LinkedIn caps
+  invitations near 100 a week and throttles quietly past that; check
+  `linkedin-sent-invitations` for what really went out.

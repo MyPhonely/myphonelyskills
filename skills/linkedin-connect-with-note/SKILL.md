@@ -28,8 +28,8 @@ The write no scraper can do. Finds a person in the LinkedIn app, opens their pro
 run_task({
   "phases": [{
     "launch": "com.linkedin.android",
-    "goal": "In the LinkedIn app, tap the search bar at the top, type '<person> <context>', then press enter. Tap the People tab, then tap the result whose name is <person> to open their profile. On the profile tap Connect; if Connect is not shown, tap More and then Connect. When a dialog offers 'Add a note', tap it so the note field is open. Do not type and do not tap Send.",
-    "typeTexts": ["<person> <context>"],
+    "openUrl": "https://www.linkedin.com/search/results/people/?keywords=<person>%20<context>",
+    "goal": "The LinkedIn People search results for '<person> <context>' are open. Do not type and do not use the search box. Tap the result whose name is <person> to open their profile. On the profile tap Connect; if Connect is not shown, tap More and then Connect. When a dialog offers 'Add a note', tap it so the note field is open. Do not type and do not tap Send.",
     "findTexts": ["<person>", "Connect", "Add a note"],
     "pauseWhen": "LinkedIn's connection note dialog is open for <person>: a text field for the note and a Send button are showing",
     "maxSteps": 18
@@ -37,7 +37,7 @@ run_task({
 })
 ```
 
-Poll `get_task_status(task_id, wait_seconds: 30)` until `paused`. The pause carries the labels on screen, including the profile name, so you can confirm it is the right person.
+Substitute the inputs, URL-encoded in the link (spaces as `%20`). Poll `get_task_status(task_id, wait_seconds: 30)` until `paused`. The pause carries the labels on screen, including the profile name, so you can confirm it is the right person.
 
 **2. Show the user the person and the note.** Wait for a yes.
 
@@ -66,3 +66,7 @@ Poll until `done`. To walk away, `resume_task({ task_id, abandon: true })` close
 - LinkedIn caps invitations around 100 a week and throttles quietly past that. Keep batches small, and verify with the invitations-sent list rather than counting.
 - Notes are limited to 300 characters on free accounts. A longer note is cut by the app.
 - Some profiles show Follow rather than Connect. The goal covers the More menu route.
+
+For many people at once, `linkedin-invite-from-results` invites from the
+result cards with one tap each and no note, which is far cheaper per
+invitation than opening each profile.

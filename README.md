@@ -3,7 +3,7 @@
 Skills for AI agents that operate a real Android phone through the
 [MyPhonely](https://myphonely.ai) MCP server. Install them and your agent
 knows both how to drive a phone and the use cases it can do end to end:
-32 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
+41 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
 Facebook, TikTok, WeChat and Google Play.
 
 ## Install
@@ -55,12 +55,12 @@ they are about to do, and continue only on `resume_task`.
 | app | read | write, after you approve |
 |---|---|---|
 | X | collect posts about a topic · an account's recent posts · replies to a post | reply to a post · publish a post |
-| LinkedIn | find people · one profile in detail · a person's recent posts · search posts by keyword · a company's employees · job postings | connection request with a note · publish a post |
+| LinkedIn | find people · one profile in detail · a person's recent posts · search posts by keyword · a company's employees · job postings · the people who reacted to a post · connection requests you have sent · who accepted · messages waiting for your reply | connection request with a note · invite from search results · message a connection · withdraw old invitations · publish a post |
 | Reddit | posts from a subreddit · search posts · comments on a post | |
 | YouTube | videos from a search · a channel's videos · comments on a video | |
 | Google Maps | local businesses · a place's details · a place's reviews | |
 | Xiaohongshu | notes from a search · a creator's notes · comments on a note | |
-| Facebook | posts from a group you belong to · a page's recent posts | |
+| Facebook | posts from a group you belong to · a page's recent posts · search posts about a topic | comment on a post, as yourself or as an anonymous group member |
 | Instagram | find accounts | |
 | TikTok | videos from a search · comments on a video | |
 | WeChat | an official account's articles | |

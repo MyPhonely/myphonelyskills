@@ -88,7 +88,11 @@ function checkSkill(dir) {
   if (reviews === false && pauses) fail(where, "reviews is false but the body uses pauseWhen");
   if (reviews === true && !pauses) warn(where, "reviews is true but the body never uses pauseWhen");
   if (writes && !reviews) warn(where, "writes without a pause: the user cannot see it before it acts");
-  if (!/typeTexts|"text"\s*:/.test(code) && /type|search for|comment/i.test(body)) {
+  // A skill that reaches its screen by deep link types nothing on purpose --
+  // typing into an in-app search box is the least reliable step there is, and
+  // openUrl skips it. Only warn when the run has no other way in.
+  const deepLinks = /openUrl/.test(code);
+  if (!deepLinks && !/typeTexts|"text"\s*:/.test(code) && /type|search for|comment/i.test(body)) {
     warn(where, "the body types or searches but never names typeTexts; the operator cannot compose text");
   }
 }
