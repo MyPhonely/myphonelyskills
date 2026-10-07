@@ -12,8 +12,7 @@ reviews: true
 
 Opens Xiaohongshu's text-note editor (the red + at the bottom, then Text)
 and stops with the phone held. On approval it types the note, moves to the
-publish screen, sets who can see it, and taps Post once. (No title for now:
-see Notes.)
+publish screen, adds the title, sets who can see it, and taps Post once.
 A note set to Only me is not shown to anyone else, which makes it the safe
 way to try the route.
 
@@ -22,6 +21,7 @@ way to try the route.
 | | |
 |---|---|
 | **text** | the note's text, typed exactly as written |
+| **title** | the note's title (20 characters at most), typed exactly as written |
 | **visibility** | `public` or `private` (only you can see it), default `public` |
 
 ## Run it
@@ -48,12 +48,12 @@ Poll `get_task_status(task_id, wait_seconds: 30)` until `paused`.
 ```json
 resume_task({
   "task_id": "<id>",
-  "typeTexts": ["<text>"],
+  "typeTexts": ["<text>", "<title>"],
   "allowWrites": true,
   "repeat": 1,
   "countLabel": "^(发布|发布笔记|Publish|Post|POST)$",
-  "goal": "Tap the Share your thoughts field so it is focused and type '<text>'. Tap Next (下一步) until the publish screen shows. Do not type anything on the publish screen: leave the title and the text below it empty. <VISIBILITY> Then tap Post (发布) once. Do not tap it twice.",
-  "maxSteps": 20
+  "goal": "Tap the Share your thoughts field so it is focused and type '<text>'. Tap Next (下一步) until the publish screen shows. Tap the Add a title (添加标题) field and type '<title>' there; leave the text below it empty. Then press Back once to hide the keyboard (only if it is showing; do not leave the publish screen). <VISIBILITY> Then tap Post (发布) once. Do not tap it twice.",
+  "maxSteps": 22
 })
 ```
 
@@ -91,16 +91,19 @@ shows.
 
 ## Notes
 
-- **No title for now.** Typing switches to MyPhonely's invisible keyboard,
-  and on the publish screen Xiaohongshu answers that by moving the focus to
-  the caption: text meant for the title lands in the caption, even after the
-  title is tapped again (measured 2026-10-06; earlier runs showed it as a
-  stray "#"). The note's text, typed in the text-note editor, is unaffected.
-  A title needs typing that does not switch keyboards: the MyPhonely app
-  v1.4 sets the text through accessibility instead (the result of a typing
-  step then reads `"via": "accessibility"`). With 1.4 installed, try
-  `"typeTexts": ["<text>", "<title>"]` and "tap the Add a title field and
-  type '<title>'" in the publish goal.
+- **The title needs MyPhonely app 1.6 or later.** Typing must not switch
+  keyboards: on the publish screen Xiaohongshu answers a keyboard switch by
+  moving the focus to the caption, so with older apps the title landed in
+  the caption (measured 2026-10-06). With 1.6 the text is set through
+  accessibility (the typing step reads `"via": "accessibility"`) and stays
+  in the title field.
+- **Hide the keyboard before tapping Public.** Typing through accessibility
+  leaves the normal keyboard up, and it covers the visibility row: a tap
+  meant for Public typed an "a" into the title instead (2026-10-07). Back
+  once hides it.
+- **Measured 2026-10-07** (app 1.6): title 标题输入测试 typed through
+  accessibility, Back, Public → Private, Post; the note showed the title on
+  the profile, then deleted through the Delete it route.
 - **Measured 2026-10-06:** text note typed (`verified`), Next twice,
   Public → Private, Post verified (25 credits); deleted through the Delete
   it route, two confirmations, "Note deleted successful".
