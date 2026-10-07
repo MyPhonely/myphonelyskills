@@ -24,9 +24,11 @@ Opens X's composer, stops with the phone held so you see the account it will pos
 
 ```json
 run_task({
+  "allow_writes": true,
   "phases": [{
     "launch": "com.twitter.android",
-    "goal": "In the X app, tap the compose button, the plus or feather icon at the bottom right, so the post composer opens with the text field focused. Do not type and do not tap Post.",
+    "goal": "In the X app, tap the round floating button at the bottom right of the home timeline. On current builds it is labelled Post; it only opens the composer, it does not publish anything. The composer opens with a What's happening? field. Do not type, and do not tap the Post button inside the composer.",
+    "allowWrites": true,
     "pauseWhen": "X's post composer is open: a 'What's happening?' field and a Post button are showing",
     "maxSteps": 6
   }]
@@ -57,7 +59,32 @@ Poll until `done`. `resume_task({ task_id, abandon: true })` closes the composer
 
 `result.phases[0].sent` lists the post only when the composer closed and the timeline returned. To attach an image, push it first with `phone_push_file` and add 'tap the image icon and choose the newest photo' to the resume goal.
 
+## Delete it
+
+```json
+run_task({
+  "allow_writes": true,
+  "phases": [{
+    "launch": "com.twitter.android",
+    "goal": "In the X app, open your profile (the navigation drawer, then Profile) and find the post that begins '<first words>'. Tap that post's More (three dots) menu, tap Delete, so the confirmation shows. Delete only that post.",
+    "allowWrites": true,
+    "pauseWhen": "X's confirmation to delete the post that begins '<first words>' is showing",
+    "maxSteps": 12
+  }]
+})
+```
+
+Then `resume_task({ task_id, allowWrites: true, repeat: 1, countLabel: "^Delete$", goal: "Tap Delete to confirm, once." })`.
+
 ## Notes
 
+- **Writes are on in the first call, on purpose.** The compose button is
+  labelled Post on current builds, and with writes off the operator takes
+  every Post-labelled control off its menu, so it scrolled the timeline
+  instead (measured 2026-10-06). Nothing is typed in the first call, so the
+  composer's own Post button stays disabled.
+- **Measured 2026-10-06:** composer, pause (labels showed @quickfiling2us
+  and Everyone), posted and verified in 16 credits; deleted through the
+  Delete it route in 18.
 - X detects repeated identical posts. Vary the text between runs.
 - The composer offers Drafts when it is reopened after an abandon. Nothing is saved to drafts by the abandon path; it presses Back and discards.

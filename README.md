@@ -3,7 +3,7 @@
 Skills for AI agents that operate a real Android phone through the
 [MyPhonely](https://myphonely.ai) MCP server. Install them and your agent
 knows both how to drive a phone and the use cases it can do end to end:
-43 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
+46 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
 Facebook, TikTok, WeChat and Google Play.
 
 ## Install
@@ -56,11 +56,11 @@ they are about to do, and continue only on `resume_task`.
 |---|---|---|
 | X | collect posts about a topic · an account's recent posts · replies to a post | reply to a post · publish a post |
 | LinkedIn | find people · one profile in detail · a person's recent posts · search posts by keyword · a company's employees · job postings · the people who reacted to a post · connection requests you have sent · who accepted · messages waiting for your reply | connection request with a note · invite from search results · message a connection · withdraw old invitations · publish a post |
-| Reddit | posts from a subreddit · search posts · comments on a post | comment on a post |
+| Reddit | posts from a subreddit · search posts · comments on a post | comment on a post · publish a post |
 | YouTube | videos from a search · a channel's videos · comments on a video | |
 | Google Maps | local businesses · a place's details · a place's reviews | |
-| Xiaohongshu | notes from a search · a creator's notes · comments on a note | comment on a note |
-| Facebook | posts from a group you belong to · a page's recent posts · search posts about a topic | comment on a post, as yourself or as an anonymous group member |
+| Xiaohongshu | notes from a search · a creator's notes · comments on a note | comment on a note · publish a note |
+| Facebook | posts from a group you belong to · a page's recent posts · search posts about a topic | comment on a post, as yourself or as an anonymous group member · publish a post |
 | Instagram | find accounts | |
 | TikTok | videos from a search · comments on a video | |
 | WeChat | an official account's articles | |
