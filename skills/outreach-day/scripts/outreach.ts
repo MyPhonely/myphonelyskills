@@ -4,6 +4,10 @@
  *
  *   node outreach.ts <command> --agent <folder> [options]     ($OUTREACH_AGENT saves --agent)
  *
+ * Making an agent
+ *   new  --dir <folder> --id <id> [--label "..."] [--site x.com] [--records ~/.outreach/<id>]
+ *   lint                          CHANGEMEs left, and whether every channel plans and message renders
+ *
  * The agent
  *   show                          the agent: files to read, records, today's rotation
  *   channels                      the channels in run order, with their kind
@@ -19,6 +23,16 @@
  *   release --reservation <id>                           reserved, nothing written
  *   report                                               today, per channel
  *
+ * Review without a chat window (comment channels)
+ *   draft   --channel <c> <post> --comment "..." [--keyword ...]   queue it as Pending Review
+ *   drafts  [--channel <c>] [--status "Pending Review"|Approved]   what is waiting
+ *   mark    --line <n> --status Approved|Skipped [--comment "edited"]   the user's verdict
+ *
+ * Enforcing the rules in a harness
+ *   guard                         Claude Code PreToolUse hook: reads the call on stdin
+ *                                 (see the skill's "Enforce the rules"); OUTREACH_UNATTENDED=1
+ *                                 for runs no one is watching
+ *
  * The records directly
  *   quota                         LinkedIn invite room (week and day)
  *   ledger <command> ...          the ledgers: add-lead, list-people, accept, set-stage, ...
@@ -33,10 +47,12 @@
 
 import { cli, die, emit, loadAgent, parse, setCurrentAgent } from "./lib/common.ts";
 import type { Options } from "./lib/common.ts";
+import { claudeHook } from "./lib/guard.ts";
 import { init, main as ledgerMain } from "./lib/ledger.ts";
+import { lint, newAgent } from "./lib/scaffold.ts";
 import { main as planMain, resolveChannel } from "./lib/plan.ts";
 import { main as quotaMain } from "./lib/quota.ts";
-import { actionFor, budget, check, record, release, report, reserve } from "./lib/session.ts";
+import { actionFor, budget, check, draft, drafts, mark, record, release, report, reserve } from "./lib/session.ts";
 
 const TARGET: Options = {
   name: { type: "string" },
@@ -54,6 +70,12 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v ? v 
 
 function target(v: Record<string, unknown>) {
   return { name: str(v.name), author: str(v.author), title: str(v.title), url: str(v.url) };
+}
+
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const c of process.stdin) chunks.push(c as Buffer);
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 function main(argv: string[]): number | Promise<number> {
@@ -140,9 +162,72 @@ function main(argv: string[]): number | Promise<number> {
       emit(report(agent, str(v.date)), Boolean(v.json));
       return 0;
     }
+    case "new": {
+      const v = parse(rest, {
+        json: { type: "boolean", default: false },
+        dir: { type: "string" },
+        id: { type: "string" },
+        label: { type: "string" },
+        site: { type: "string" },
+        records: { type: "string" },
+      });
+      if (!v.dir || !v.id) die("new needs --dir and --id");
+      const written = newAgent({ dir: v.dir as string, id: v.id as string, label: str(v.label), site: str(v.site), records: str(v.records) });
+      emit({ created: written, next: "fill in every CHANGEME, then: outreach lint --agent <folder>" }, Boolean(v.json));
+      return 0;
+    }
+    case "lint": {
+      const v = parse(rest, COMMON);
+      const r = lint(str(v.agent));
+      if (v.json) emit(r, true);
+      else {
+        for (const p of r.placeholders) console.log(`CHANGEME  ${p.file}: line(s) ${p.lines.join(", ")}`);
+        for (const p of r.problems) console.log(`PROBLEM   ${p}`);
+        for (const c of r.channels) console.log(`channel   ${c}`);
+        console.log(r.ready ? "ready" : "not ready");
+      }
+      return r.ready ? 0 : 1;
+    }
+    case "draft": {
+      const v = parse(rest, { ...COMMON, ...TARGET, channel: { type: "string" }, comment: { type: "string" }, keyword: { type: "string" } });
+      const agent = loadAgent(str(v.agent));
+      setCurrentAgent(agent);
+      if (!v.channel) die("draft needs --channel");
+      const row = draft(agent, v.channel as string, target(v), str(v.comment) ?? "", str(v.keyword));
+      emit({ drafted: row.line, status: row.status, channel: row.platform, author: row.author }, Boolean(v.json));
+      return 0;
+    }
+    case "drafts": {
+      const v = parse(rest, { ...COMMON, channel: { type: "string" }, status: { type: "string" } });
+      const agent = loadAgent(str(v.agent));
+      setCurrentAgent(agent);
+      emit(drafts(agent, str(v.status), str(v.channel)), Boolean(v.json));
+      return 0;
+    }
+    case "mark": {
+      const v = parse(rest, { ...COMMON, line: { type: "string" }, status: { type: "string" }, comment: { type: "string" } });
+      setCurrentAgent(loadAgent(str(v.agent)));
+      if (!v.line || !v.status) die("mark needs --line and --status");
+      const row = mark(Number(v.line), v.status as string, typeof v.comment === "string" ? v.comment : undefined);
+      emit({ line: row.line, status: row.status, comment: row.comment }, Boolean(v.json));
+      return 0;
+    }
+    case "guard": {
+      // A read passes without an agent; a write needs one to find its reservations.
+      try {
+        setCurrentAgent(loadAgent(str(parse(rest, COMMON).agent)));
+      } catch {
+        setCurrentAgent(null);
+      }
+      return readStdin().then((payload) => {
+        const out = claudeHook(payload, process.env.OUTREACH_UNATTENDED === "1");
+        if (out) console.log(out);
+        return 0;
+      });
+    }
     default:
       return die(
-        `expected a command: show, channels, targets, message, init, check, budget, reserve, record, release, report, quota, ledger${cmd ? ` (got ${cmd})` : ""}`,
+        `expected a command: new, lint, show, channels, targets, message, init, check, budget, reserve, record, release, report, draft, drafts, mark, guard, quota, ledger${cmd ? ` (got ${cmd})` : ""}`,
       );
   }
 }

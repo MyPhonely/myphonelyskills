@@ -31,7 +31,7 @@ cannot be undone.
 |---|---|
 | **agent** | the agent folder, e.g. `./outreach-agent`, or `$OUTREACH_AGENT` |
 | **channels** | which channels to run, default all of `agent.yaml` `order` |
-| **mode** | `review` (default): every write pauses for the user. `autopilot`: only when the user has said so for this run or its schedule |
+| **mode** | `review` (default): every write waits for the user, at the pause when they are there, as a draft when they are not. `autopilot`: writes go out within the limits; only when the user has said so for this run or its schedule |
 
 No agent folder yet: use `create-outreach-agent` first.
 
@@ -39,13 +39,20 @@ No agent folder yet: use `create-outreach-agent` first.
 
 ```bash
 npm install --prefix <this skill's folder>/scripts     # Node 22.18+, one dependency (yaml)
-alias outreach="node <this skill's folder>/scripts/outreach.ts"
-export OUTREACH_AGENT=<the agent folder>
-outreach init                                            # creates the records; safe to rerun
 ```
 
-Every command below is `outreach <command>`; add `--json` to read the
-output as JSON. The MyPhonely MCP server must be connected (`phone_status`).
+Every command below is `outreach <command>`, short for
+
+```bash
+node <this skill's folder>/scripts/outreach.ts <command> --agent <the agent folder>
+```
+
+Write it out in full each time, one command per shell call: an alias or a
+variable does not carry from one call to the next. `--agent` may be left off
+when `OUTREACH_AGENT` was set in the environment your AI was started from.
+Add `--json` to read the output as JSON. Start with `outreach init` (it
+creates the records and is safe to rerun). The MyPhonely MCP server must be
+connected (`phone_status`).
 
 ## The rules
 
@@ -60,9 +67,16 @@ Follow these exactly; the scripts refuse what breaks them.
    (and the run's `allow_writes: true`), with a `pauseWhen` on the screen just
    before the write. Never type, tap Send/Post/Reply/Connect/Follow, or swipe
    with the direct `phone_*` tools.
-3. **In review mode, show the user the target and the exact text at the
-   pause, and resume only on their yes.** A no: `resume_task` with
-   `abandon: true`, then `outreach release --reservation <id>`.
+3. **In review mode, the user sees every write first.** When they are
+   there, show the target and the exact text at the pause and resume only on
+   their yes; a no is `resume_task` with `abandon: true`, then `outreach
+   release --reservation <id>`. When no one is there (a schedule, `claude
+   -p`), do not reserve or write: queue each comment with `outreach draft
+   <post> --comment "<text>"` and stop there. They review the drafts with
+   `outreach drafts` and `outreach mark --line <n> --status
+   Approved|Skipped [--comment "<edited>"]` (or by editing the queue file),
+   and the next run posts the approved ones. LinkedIn invites and messages
+   have no drafts: in unattended review mode, skip them.
 4. **Record every reservation.** `outreach record --reservation <id>
    --outcome sent` only when the write was verified on screen (the phase's
    `sent` list, the reply under the post, the name in Sent invitations);
@@ -94,6 +108,11 @@ Always give the URL when there is one: it is the surest duplicate check.
 `outreach targets --channel <c>` gives today's searches: keywords with the
 exclusions already in the query, lists, subreddits, groups, the rotation.
 
+**Approved drafts go first.** `outreach drafts --channel <c> --status
+Approved` lists comments the user approved since the last run. Post each one
+as in step 4 below, with its text exactly as approved (they may have edited
+it), after checking the post is still there.
+
 #### A comment channel (`kind: comment`)
 
 1. **Find.** Read posts with the app's read workflow, never by typing into a
@@ -121,7 +140,8 @@ exclusions already in the query, lists, subreddits, groups, the rotation.
    3. Review mode: show the post and the comment; resume on a yes.
    4. Resume as the workflow says (`typeTexts` with the comment,
       `allowWrites: true`, `repeat: 1`, its `countLabel`). A channel with
-      `follow: true`: follow the author in the same resume.
+      `follow: true`: follow the author in the same resume, in its goal;
+      a separate writing task afterwards would need a reservation of its own.
    5. `outreach record --reservation <id> --outcome sent|failed <target>
       --comment "<text>" --keyword "<search>"`.
 
@@ -169,6 +189,45 @@ In this order, each with its workflow:
 - Before finishing, settle every reservation: `outreach report` lists the
   ones still open under `unsettled`.
 
+## Enforce the rules
+
+The rules above are instructions. To make the harness refuse a call that
+breaks them, turn on the guard: it checks every MyPhonely call against the
+day's reservations and blocks direct writes, writing phases with no pause, a
+write with no open reservation, and asks the user before every commit. Set
+`OUTREACH_UNATTENDED=1` for runs no one is watching (autopilot); without it,
+a commit with no one to approve is refused.
+
+**Claude Code**: a PreToolUse hook, in `.claude/settings.json` of the project
+the run starts from:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "mcp__myphonely__.*",
+      "hooks": [{ "type": "command", "command": "node <this skill's folder>/scripts/outreach.ts guard" }]
+    }]
+  }
+}
+```
+
+**pi**: the extension, which also connects MyPhonely (from
+`MYPHONELY_API_KEY`) with the direct writing tools hidden:
+
+```bash
+pi --no-extensions -e builtin:mcp -e <this skill's folder>/scripts/adapters/pi.ts \
+   --skill <myphonelyskills>/skills "Run outreach-day for $OUTREACH_AGENT"
+```
+
+**Other AIs** (Codex, ...): where the harness has no way to stop a tool
+call before it runs, the rules hold as instructions only. Prefer review mode
+there.
+
+The guard reads `OUTREACH_AGENT` for the agent folder, so set it where the
+AI is started. It protects against mistakes, not against an agent determined
+to get round it: the records are files its shell can reach.
+
 ## What comes back
 
 `outreach report`, per channel and action: sent, failed, still unsettled,
@@ -180,11 +239,9 @@ records.
 ## Notes
 
 - **Unattended runs** (a schedule, `claude -p`, `codex exec`, `pi -p`)
-  have no one to approve. Run them only in autopilot mode, which the user
-  chose for that schedule, and keep the limits in `agent.yaml` modest. A
-  review-mode run with no one there drafts and stops: reserve, find, write
-  the draft, then `outreach record --outcome failed --comment "<draft>"`,
-  so the draft waits in the queue.
+  have no one to approve at the pause. In autopilot (chosen by the user for
+  that schedule) they write within the limits; keep the limits in
+  `agent.yaml` modest. In review mode they only draft (rule 3).
 - **One attempt per target per day.** A failed write is retried on a later
   day, never in a loop.
 - **Records** default to `records/` in the agent folder. They hold people's

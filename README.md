@@ -31,6 +31,7 @@ Then tell me you are ready.
 skills/
   phone-operator/        how to plan, review, verify and recover with the phone tools
   <app>-<use-case>/      one workflow each: its inputs, and the calls that do it
+  create-outreach-agent/ an agent: set up outreach for your brand
   outreach-day/          an agent: a day of outreach across apps for your brand
 CONTRIBUTING.md          how to write a workflow, and the rules that keep one honest
 scripts/validate.mjs     check yours before opening a pull request
@@ -80,6 +81,7 @@ built from these files and refreshes within minutes of a merge.
 
 | agent | what it does |
 |---|---|
+| `create-outreach-agent` | set up an outreach agent for a brand: reads its site, asks you what a site cannot say, writes the folder below and checks it is ready |
 | `outreach-day` | one day of a brand's outreach: answer replies, welcome new connections and invite on LinkedIn, and comment on X, Reddit, Facebook and Xiaohongshu, in the brand's voice, within its daily limits, every write reserved, verified and recorded |
 
 An agent runs from a folder you own, which `create-outreach-agent` writes

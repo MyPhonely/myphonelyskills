@@ -395,7 +395,70 @@ export function addPost(v: Values, json: boolean): number {
   return 0;
 }
 
-const QUEUE_STATUS = ["Pending Review", "Approved", "Commented", "Skipped"];
+export const QUEUE_STATUS = ["Pending Review", "Approved", "Commented", "Skipped"];
+
+/** Queue columns: status | platform | keyword | author | title | post_url | date_found | snippet | suggested_comment | notes */
+export const Q = { status: 0, platform: 1, keyword: 2, author: 3, title: 4, url: 5, date: 6, snippet: 7, comment: 8, notes: 9 } as const;
+
+export interface QueueRow {
+  line: number;
+  status: string;
+  platform: string;
+  keyword: string;
+  author: string;
+  title: string;
+  url: string;
+  date: string;
+  comment: string;
+  notes: string;
+}
+
+export function queueRows(): QueueRow[] {
+  return dataRows(ledgerPath("queue")).map(([line, row]) => {
+    const f = fields(row);
+    while (f.length < 10) f.push("");
+    return {
+      line,
+      status: f[Q.status],
+      platform: f[Q.platform],
+      keyword: f[Q.keyword],
+      author: f[Q.author],
+      title: f[Q.title],
+      url: f[Q.url],
+      date: f[Q.date],
+      comment: f[Q.comment],
+      notes: f[Q.notes],
+    };
+  });
+}
+
+/** Queue rows for this post that are still waiting: a draft to review, or one approved and not yet sent. */
+export function openQueueRows(platform: string, author: string, title: string, url = ""): QueueRow[] {
+  const plat = normPlatform(platform);
+  const want = postUrlKey(url);
+  const who = author.trim().toLocaleLowerCase();
+  return queueRows().filter(
+    (r) =>
+      (r.status === "Pending Review" || r.status === "Approved") &&
+      normPlatform(r.platform) === plat &&
+      ((want !== "" && postUrlKey(r.url) === want) || (r.author.trim().toLocaleLowerCase() === who && keysMatch(titleKey(r.title), titleKey(title)))),
+  );
+}
+
+/** Change a queue row's status, and optionally its comment, in place. */
+export function updateQueueRow(line: number, status: string, comment?: string, note?: string): string {
+  if (!QUEUE_STATUS.includes(status)) return die(`status must be one of: ${QUEUE_STATUS.join(", ")}`);
+  const row = queueRows().find((r) => r.line === line);
+  if (!row) return die(`no queue row at line ${line}`);
+  const f = fields(dataRows(ledgerPath("queue")).find(([n]) => n === line)?.[1] ?? "");
+  while (f.length < 10) f.push("");
+  f[Q.status] = status;
+  if (comment !== undefined) f[Q.comment] = clean(comment);
+  if (note) f[Q.notes] = (f[Q.notes] ? `${f[Q.notes]} - ` : "") + clean(note);
+  const next = f.join(" | ");
+  replaceLine(ledgerPath("queue"), line, next);
+  return next;
+}
 
 export function addQueue(v: Values, json: boolean): number {
   const status = str(v.status);

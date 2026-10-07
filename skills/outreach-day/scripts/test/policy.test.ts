@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { countPosts } from "../lib/ledger.ts";
-import { decide, phoneTool, remaining, Reservations, targetKey } from "../lib/policy.ts";
+import { decide, phoneTool, targetKey } from "../lib/policy.ts";
 
 const attended = { unattended: false, ticketedTasks: new Set<string>() };
 const unattended = { unattended: true, ticketedTasks: new Set<string>() };
@@ -49,23 +49,7 @@ test("the commit is the resume: it needs approval, and a reservation unless the 
   assert.ok(auto.kind === "write" && auto.approve === null);
 });
 
-test("reservations: a write spends them, cannot overspend, and a failed call gets them back", () => {
-  const r = new Reservations();
-  r.add("x-papers", "@a");
-  r.add("x-papers", "@b");
-  assert.equal(r.pending("x-papers"), 2);
-  assert.equal(r.spend(3), false, "not enough: nothing spent");
-  assert.equal(r.open().length, 2);
-  assert.equal(r.spend(2), true);
-  assert.equal(r.open().length, 0);
-  r.refund(1);
-  assert.equal(r.open().length, 1);
-  assert.equal(r.pending("x-papers"), 2, "spent but not recorded still counts against the budget");
-});
-
-test("budget: the limit minus today's ledger rows minus what is reserved", () => {
-  assert.equal(remaining(4, 1, 2), 1);
-  assert.equal(remaining(4, 3, 2), 0, "never negative");
+test("budget: today's ledger rows count per channel", () => {
   const rows: Array<[number, string]> = [
     [1, "2026-10-05 | x-papers | @a | k | t | u"],
     [2, "2026-10-05 | x | @b | k | t | u"],
@@ -76,15 +60,10 @@ test("budget: the limit minus today's ledger rows minus what is reserved", () =>
   assert.equal(countPosts("x", "2026-10-05", rows), 1, "x and x-papers keep separate budgets");
 });
 
-test("one target, one attempt per session: the same post or person cannot be reserved twice", () => {
-  const r = new Reservations();
+test("a target has one spelling: case, spacing and how a URL was copied do not make it new", () => {
   const post = targetKey({ author: "momo", title: "工科PhD在读NIW求建议" });
-  r.add("xiaohongshu", "comment momo", `comment:${post}`);
-  r.spend(1);
-  assert.equal(r.has("xiaohongshu", `comment:${targetKey({ author: "MOMO ", title: "工科PhD在读NIW求建议" })}`), true, "case and spacing do not make it new");
-  assert.equal(r.has("reddit", `comment:${post}`), false, "per channel");
-  assert.equal(r.has("xiaohongshu", `comment:${targetKey({ author: "momo", title: "another post" })}`), false);
-
+  assert.equal(targetKey({ author: "MOMO ", title: "工科PhD在读NIW求建议" }), post);
+  assert.notEqual(targetKey({ author: "momo", title: "another post" }), post);
   assert.equal(
     targetKey({ url: "https://www.reddit.com/r/EB2_NIW/comments/abc/x/?utm=1" }),
     targetKey({ url: "reddit.com/r/EB2_NIW/comments/abc/x" }),

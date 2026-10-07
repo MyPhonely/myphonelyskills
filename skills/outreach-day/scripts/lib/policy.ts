@@ -1,28 +1,25 @@
 /**
- * What the pi outreach agent may do on the phone, decided by code.
+ * What kind of phone call this is, decided by code: a read, a write, or
+ * something never allowed.
  *
- * The agent decides which move to make; this decides whether a move that
- * could write is allowed. Pure — no pi, no phone — so it is tested on its own
- * (test/pi-policy.test.ts) and the extension (outreach.ts) only wires it up.
+ * Pure (no harness, no phone, no files) so it is tested on its own
+ * (test/policy.test.ts). guard.ts applies it against the day's reservations
+ * for the Claude Code hook and the pi extension.
  *
  * The rules:
  *
- *   1. Writes go through run_task, never through Mode 2. Direct calls that
- *      can write (typing, coordinate taps, long presses, swipes, files) are
- *      refused, and so is a label tap on a write-looking control.
+ *   1. Writes go through run_task, never through the direct tools. Direct
+ *      calls that can write (typing, coordinate taps, long presses, swipes,
+ *      files) are refused, and so is a label tap on a write-looking control.
  *   2. A planned run (`request`) may not write: its phases are not known in
  *      advance, so nothing can be checked against them.
  *   3. A writing phase pauses for review (`pauseWhen`) unless the person
  *      chose unattended runs.
- *   4. Every write spends a reservation. A reservation exists only after the
- *      ledger said "not done before" and the channel's budget had room, so
- *      the agent cannot write past a budget or skip the duplicate check.
- *   5. The commit itself — resume_task with writes on — is approved by the
+ *   4. Every write spends a reservation (guard.ts); `outreach reserve` only
+ *      gives one when the records do not have the target, it was not tried
+ *      today, and the channel's budget has room.
+ *   5. The commit itself, resume_task with writes on, is approved by the
  *      person unless runs are unattended.
- *   6. One target, one attempt per session. A second reservation for a
- *      person or post already reserved is refused, whether the first write
- *      was sent, failed or never made: a failed write is retried by a later
- *      run, never in a loop within this one.
  */
 
 /** The MyPhonely MCP server's name as the extension registers it. */
@@ -144,62 +141,4 @@ export function targetKey(t: Target): string {
   if (t.name) return `person:${norm(t.name)}`;
   if (t.url) return `url:${norm(t.url).replace(/^https?:\/\/(www\.|mobile\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "")}`;
   return `post:${norm(t.author ?? "")}|${norm(t.title ?? "").slice(0, 60)}`;
-}
-
-export interface Reservation {
-  id: string;
-  channel: string;
-  /** targetKey(), for refusing a second attempt at the same target. */
-  key: string;
-  target: string;
-  state: "open" | "spent" | "recorded";
-}
-
-/** Reservations held for this session. A write spends the oldest open ones. */
-export class Reservations {
-  private items: Reservation[] = [];
-  private next = 1;
-
-  add(channel: string, target: string, key = target): Reservation {
-    const r: Reservation = { id: `r${this.next++}`, channel, key, target, state: "open" };
-    this.items.push(r);
-    return r;
-  }
-
-  /** Already reserved this session, in any state — sent, failed or untouched. */
-  has(channel: string, key: string): boolean {
-    return this.items.some((r) => r.channel === channel && r.key === key);
-  }
-
-  open(): Reservation[] {
-    return this.items.filter((r) => r.state === "open");
-  }
-
-  /** Reserved for a channel and not yet recorded in the ledger. */
-  pending(channel: string): number {
-    return this.items.filter((r) => r.channel === channel && r.state !== "recorded").length;
-  }
-
-  /** Spend `n` open reservations; false (and nothing spent) when there are fewer. */
-  spend(n: number): boolean {
-    const open = this.open();
-    if (open.length < n) return false;
-    for (const r of open.slice(0, n)) r.state = "spent";
-    return true;
-  }
-
-  /** Give back the reservations a blocked or failed call spent. */
-  refund(n: number): void {
-    const spent = this.items.filter((r) => r.state === "spent").slice(-n);
-    for (const r of spent) r.state = "open";
-  }
-
-  get(id: string): Reservation | undefined {
-    return this.items.find((r) => r.id === id);
-  }
-}
-
-/** Room left: the limit, minus what the ledger has today, minus what is reserved. */
-export function remaining(limit: number, doneToday: number, pending: number): number {
-  return Math.max(0, limit - doneToday - pending);
 }

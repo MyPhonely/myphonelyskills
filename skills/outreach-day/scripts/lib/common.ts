@@ -302,7 +302,20 @@ export function ensureDir(path: string): void {
   mkdirSync(path, { recursive: true });
 }
 
+let quietDepth = 0;
+
+/** Run `fn` with emit() silenced: for a command that calls other commands' writers and prints one result of its own. */
+export function quietly<T>(fn: () => T): T {
+  quietDepth += 1;
+  try {
+    return fn();
+  } finally {
+    quietDepth -= 1;
+  }
+}
+
 export function emit(obj: unknown, asJson: boolean): void {
+  if (quietDepth > 0) return;
   if (asJson) {
     console.log(JSON.stringify(obj, null, 2));
     return;

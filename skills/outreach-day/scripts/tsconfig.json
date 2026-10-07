@@ -14,5 +14,5 @@
     "erasableSyntaxOnly": true,
     "types": ["node"]
   },
-  "include": ["*.ts", "lib/**/*.ts", "test/**/*.ts", "adapters/**/*.ts"]
+  "include": ["*.ts", "lib/**/*.ts", "test/**/*.ts"]
 }

@@ -1,0 +1,145 @@
+# OUTREACH AGENT -- written by `outreach new`, then edited (the
+# create-outreach-agent skill does both). Every CHANGEME is a decision;
+# `outreach lint` lists the ones left.
+#
+# This file is DATA. Targeting, limits, channels, offer and message copy all
+# live here; what may be said is brand.md, how it sounds is voice.md. If you
+# find yourself editing a prompt to change WHO you reach or WHAT you offer,
+# something belongs in this file instead.
+
+id: CHANGEME
+label: One line describing the audience and the offer
+
+# The ledgers and each day's reservations. null: records/ in this folder.
+# They hold people's names: point this outside a public repo, e.g.
+# ~/.outreach/<id>. Give each agent its own.
+records: null
+
+# Run order. The outreach-day skill walks this list, so dropping a channel or
+# adding one needs no prompt edit. Names must appear in `channels:` below.
+order: [linkedin]
+
+audience:
+  # Search terms used on connect-style channels. Alternated across dispatches
+  # so one rotation value's result set is not exhausted by a single query.
+  titles:
+    - CHANGEME job title
+    - CHANGEME other title
+
+  # Headline substrings that disqualify someone at the warmup step, even if
+  # they accepted the connection. Case-insensitive.
+  exclude_headlines:
+    - recruiter
+    - consultant
+
+  # HOW TO ROTATE TARGETING. This is the knob that keeps each day different.
+  # Each connect dispatch searches "<title> <value>", taking today's values
+  # from the list below. The slice is a pure function of the date, so there is
+  # no state file and re-running a day reproduces it exactly.
+  #
+  # The value goes into the SEARCH TEXT, never LinkedIn's Filters panel: the
+  # server's LinkedIn playbook says opening the filters is the most common
+  # reason a connect run sends nothing.
+  #
+  # dimension labels what the values are, for the record and the report:
+  #   school | company | industry | location | none
+  #
+  # Keep len(values) a multiple of per_day so every value gets equal airtime,
+  # and interleave the list so one day is not all one segment.
+  rotate:
+    dimension: none
+    per_day: 6
+    # Optional, YYYY-MM-DD. The day the FIRST block of `values` runs. Set it
+    # whenever the list is deliberately ordered -- nearest region first, say --
+    # because without it today lands wherever a fixed global epoch puts it,
+    # which is usually the middle of the list. With it, day one is values[0]
+    # and the list walks in the order you wrote.
+    # start: "2026-01-01"
+    values: []
+
+channels:
+  # kind: connect -> request + warmup DM + reply handling (LinkedIn-shaped)
+  linkedin:
+    kind: connect
+    connects_per_day: 20
+    warmups_per_day: 10
+    # A Premium or Sales Navigator subscription does NOT raise the weekly
+    # invite cap -- that limit is anti-spam and applies to every tier.
+    # What premium changes: unlimited personalized invite notes (free
+    # accounts get 5 a month) and no blurred search results.
+    premium: false
+    weekly_invite_cap: 100        # LinkedIn's ceiling; it is not a target
+    batch_size: 3                 # per phone dispatch; larger tasks orphan
+    withdraw_after_days: 15
+    withdraw_per_run: 25          # caps the stale sweep after an outage
+    # One sentence the operator can check against the open profile.
+    # Leave empty to invite every scanned lead without opening profiles.
+    # Where candidates come from: "people" searches People by job title,
+    # "post_engagement" searches Posts by topic and reads who reacted or
+    # commented. The second carries intent; it is also noisier, because a
+    # topic post attracts vendors and competitors too.
+    source: people
+    post_keywords: []            # required when source is post_engagement
+    qualify_rule: ""
+    qualify_per_run: 8           # profiles to open per run -- the costly step
+    discover_scrolls: 6          # how far down People results to read when finding leads
+    lead_buffer: 30              # stop discovering once this many Leads are queued
+    harvest_scrolls: 5           # how far down Connections to look for new acceptances
+    warmup_delay_days: 0         # wait this long after acceptance before messaging
+
+  # kind: comment -> find posts, like, comment (social-shaped).
+  # Delete the ones you do not use; add any the product needs.
+  #
+  # reddit:
+  #   kind: comment
+  #   lang: en
+  #   posts_per_keyword: 3
+  #   targets:                    # `targets` scopes a keyword to a sub/forum
+  #     - { sub: r/CHANGEME, keyword: CHANGEME }
+  #
+  # x:
+  #   kind: comment
+  #   lang: en
+  #   posts_per_keyword: 3
+  #   keywords: [CHANGEME]        # bare `keywords` searches globally
+  #   # Everything below is optional.
+  #   comments_per_day: 10        # ceiling across lists + keywords; 10-20 for a young account
+  #   tab: latest                 # Top is mostly accounts with reach, i.e. vendors
+  #   max_post_age_hours: 48      # older posts are not worth a reply
+  #   exclude_terms: [CHANGEME]   # typed as -term into every search: competitors' words
+  #   lists: []                   # X list URLs whose members ARE the audience; read first
+  #   dm:
+  #     only_after_engagement: true   # DM only people who replied, followed or asked
+  #
+  # x-papers:                     # a second X stream: own keywords, own ceiling
+  #   kind: comment
+  #   lang: en
+  #   posts_per_keyword: 2
+  #   keywords: [CHANGEME]        # posts where the audience shows itself
+  #   comments_per_day: 4
+  #   tab: latest
+  #   angle: CHANGEME             # a row of the Angles table in voice.md
+  #   follow: true                # follow each author replied to
+
+# Single source of truth for anything price-shaped. Messages render from here,
+# so a pricing or promo change is one edit in one place. `outreach message`
+# REFUSES to render a promo-referencing template when promo.active is false --
+# that is deliberate, so a stale offer fails loudly instead of going out.
+offer:
+  site: CHANGEME.com
+  products:
+    - { name: CHANGEME, matter: CHANGEME, price: 0 }
+  promo:
+    active: false
+    price: 0
+    label: ""
+    seats_per_week: 0
+
+# Placeholders come from `offer:` above: {{site}}, {{min_price}},
+# {{promo_label}}, {{promo_price}}, {{promo_seats}}, plus any other offer key
+# key under `offer:` ({{site}}, ...). Never hard-code a price here.
+messages:
+  warmup: |
+    Thanks for connecting! CHANGEME one sentence on the problem you solve.
+    {{site}} CHANGEME what it does and who it is for.
+    If you have any questions, just let me know!

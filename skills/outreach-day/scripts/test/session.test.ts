@@ -66,7 +66,8 @@ test("a post is reserved once a day, recorded, and then refused as already done"
     assert.equal(again.code, 3, "a second reservation the same day is refused");
     assert.match(again.err, /already reserved today/);
 
-    assert.equal(cli(agent, ["record", "--reservation", "r1", "--outcome", "sent", ...post.slice(2), "--comment", "Nice."]).code, 0);
+    const rec = json(cli(agent, ["record", "--reservation", "r1", "--outcome", "sent", ...post.slice(2), "--comment", "Nice.", "--json"]));
+    assert.equal(rec.outcome, "sent", "record prints one JSON result");
     assert.equal(cli(agent, ["check", ...post]).code, 0, "the records have it now");
     assert.equal(cli(agent, ["record", "--reservation", "r1", "--outcome", "sent", ...post.slice(2)]).code, 2, "settled once");
 
@@ -155,5 +156,67 @@ test("records: in agent.yaml moves the records, relative to the agent folder", (
   } finally {
     rmSync(join(agent, "..", "elsewhere"), { recursive: true, force: true });
     rmSync(agent, { recursive: true, force: true });
+  }
+});
+
+test("drafts: queued for review, approved or skipped by the user, then settled in place when sent", () => {
+  const agent = freshAgent();
+  try {
+    cli(agent, ["init"]);
+    const post = ["--channel", "x", "--author", "@dev", "--title", "Our review queue is a week long", "--url", "https://x.com/dev/status/7"];
+    const d = json(cli(agent, ["draft", ...post, "--comment", "First draft.", "--json"]));
+    assert.equal(d.status, "Pending Review");
+    assert.equal(cli(agent, ["draft", ...post, "--comment", "again"]).code, 3, "one draft per post");
+
+    const other = ["--channel", "x", "--author", "@two", "--title", "Reviews are slow here too"];
+    const d2 = json(cli(agent, ["draft", ...other, "--comment", "Second.", "--json"]));
+    cli(agent, ["mark", "--line", String(d2.drafted), "--status", "Skipped"]);
+
+    cli(agent, ["mark", "--line", String(d.drafted), "--status", "Approved", "--comment", "Edited by the user."]);
+    const approved = JSON.parse(cli(agent, ["drafts", "--status", "Approved", "--json"]).out) as Array<Record<string, string>>;
+    assert.equal(approved.length, 1);
+    assert.equal(approved[0].comment, "Edited by the user.");
+    assert.equal(JSON.parse(cli(agent, ["drafts", "--json"]).out).length, 1, "a skipped draft is no longer waiting");
+
+    // The next run posts it: reserve, write, record.
+    const r = json(cli(agent, ["reserve", ...post, "--json"]));
+    cli(agent, ["record", "--reservation", String(r.reserved), "--outcome", "sent", ...post.slice(2), "--comment", "Edited by the user."]);
+    assert.equal(JSON.parse(cli(agent, ["drafts", "--json"]).out).length, 0, "nothing waiting");
+    const queue = execFileSync("cat", [join(agent, "records", "social-outreach-queue.md")], { encoding: "utf8" });
+    assert.equal(queue.split("\n").filter((l) => l.startsWith("Commented |")).length, 1, "the draft's own row became Commented; no second row");
+    assert.equal(cli(agent, ["draft", ...post, "--comment", "x"]).code, 3, "a post already commented cannot be drafted");
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
+  }
+});
+
+test("new writes a folder from the templates, never over one, and lint says what is left", () => {
+  const root = mkdtempSync(join(tmpdir(), "new-"));
+  const dir = join(root, "acme");
+  try {
+    const env = { ...process.env };
+    delete env.OUTREACH_AGENT;
+    const run = (args: string[]) => {
+      try {
+        return { code: 0, out: execFileSync(process.execPath, [CLI, ...args], { encoding: "utf8", env, stdio: "pipe" }) };
+      } catch (error) {
+        const e = error as { status?: number; stdout?: string };
+        return { code: e.status ?? 1, out: e.stdout ?? "" };
+      }
+    };
+    assert.equal(run(["new", "--dir", dir, "--id", "acme", "--site", "acme.dev"]).code, 0);
+    assert.ok(existsSync(join(dir, ".gitignore")), "records stay out of git by default");
+    assert.equal(run(["new", "--dir", dir, "--id", "acme"]).code, 2, "never overwrites");
+    const fresh = run(["lint", "--agent", dir]);
+    assert.equal(fresh.code, 1);
+    assert.match(fresh.out, /CHANGEME .*agent\.yaml/);
+    assert.match(fresh.out, /not ready/);
+
+    // The example is a finished agent.
+    const example = run(["lint", "--agent", join(SCRIPTS, "..", "example")]);
+    assert.equal(example.code, 0, example.out);
+    assert.match(example.out, /^ready$/m);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
