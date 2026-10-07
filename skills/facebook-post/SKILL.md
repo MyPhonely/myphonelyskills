@@ -56,8 +56,8 @@ resume_task({
   "text": "<text>",
   "allowWrites": true,
   "repeat": 1,
-  "countLabel": "^(Post|POST)$",
-  "goal": "<AUDIENCE> Tap the text field and type the post. Then tap Post at the top right once; if the button reads Next, tap Next once and then Post once on the next screen. Do not tap Post twice.",
+  "countLabel": "^(Post|POST|Share|SHARE)$",
+  "goal": "<AUDIENCE> Tap the What's on your mind? text field so it is focused, then type the post into it. Then tap Post at the top right once; if the button reads Next, tap Next once and then Post or Share once on the next screen. Do not tap it twice, and do not add music, people, location or a feeling.",
   "maxSteps": 12
 })
 ```
@@ -82,7 +82,7 @@ run_task({
   "allow_writes": true,
   "phases": [{
     "launch": "com.facebook.katana",
-    "goal": "In the Facebook app, open your profile and find the post that begins '<first words>'. Tap the three-dot menu on that post, tap Move to trash (or Delete post), then confirm. Delete only that post.",
+    "goal": "In the Facebook app, tap Go to profile at the top left and find the post that begins '<first words>'. Tap the three-dot menu on that post, tap Move to trash (or Delete post), so the confirmation shows. Delete only that post.",
     "allowWrites": true,
     "pauseWhen": "the confirmation to move the post that begins '<first words>' to trash or delete it is showing",
     "maxSteps": 14
@@ -90,15 +90,22 @@ run_task({
 })
 ```
 
-Then `resume_task({ task_id, allowWrites: true, repeat: 1, countLabel: "^(Move|Delete|Move to trash)$", goal: "Confirm, once." })`.
+Then `resume_task({ task_id, allowWrites: true, repeat: 1, countLabel: "^(Move|MOVE|Delete|DELETE)$", goal: "Confirm, once." })`.
+"Move to your trash?" hides the post from everyone at once; Facebook deletes
+it for good after 30 days, or sooner from the trash.
 
 ## Notes
 
-- **Not reliable yet (measured 2026-10-06, nothing published):** the current
-  build's composer is a "New post" screen (Music, People, Location,
-  Feeling/activity) with a separate "Add text" step and no visible audience
-  selector; the run stalled on "Add text". A pause condition naming the
-  audience selector never matched. Leaving: back until "Discard post".
+- **The current composer** is a "New post" screen (Music, Tag/collaborate,
+  Location, Feeling/activity) that ends in Next, then SHARE in capitals; the
+  count label covers both spellings. It shows the posting identity at the
+  top. On a page there is no Only me audience: page posts are public.
+- **Measured 2026-10-06, as a page:** the first type found no focused field
+  and said so (`verified: false`), the operator tapped the field and typed
+  again (`verified: true`), then Next and SHARE; removed through the Delete
+  it route ("Move to your trash?" → MOVE) and gone from the page's posts.
+  Needs the typing backend from 2026-10-06 on. Leaving a draft: back until
+  "Discard post".
 - **Only me is the safe way to test**: the post reaches no one, and it can be
   deleted right after.
 - The composer's extra controls (AI label, Help me write, Feeling/activity,

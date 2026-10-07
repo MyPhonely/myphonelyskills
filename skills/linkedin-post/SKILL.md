@@ -48,7 +48,7 @@ resume_task({
   "allowWrites": true,
   "repeat": 1,
   "countLabel": "^post$",
-  "goal": "Type the text into the focused composer field, then tap the Post button at the top right to publish it.",
+  "goal": "Tap the Share your thoughts field so it is focused, type the text into it, then tap the Post button at the top right to publish it. Do not change the audience and do not add collaborators.",
   "maxSteps": 6
 })
 ```
@@ -66,7 +66,8 @@ run_task({
   "allow_writes": true,
   "phases": [{
     "launch": "com.linkedin.android",
-    "goal": "In the LinkedIn app, open your profile, then its Activity or Posts, and find the post that begins '<first words>'. Tap that post's three-dot menu, tap Delete post, so the confirmation shows. Delete only that post.",
+    "goal": "In the LinkedIn app, tap the profile picture at the top left so the side panel opens, then tap your name (View profile) to open the profile. Scroll down to the Activity section and tap Show all posts. Find the post that begins '<first words>', tap that post's three-dot menu, then tap Delete post so the confirmation shows. Delete only that post.",
+    "findTexts": ["Show all posts", "<first words>"],
     "allowWrites": true,
     "pauseWhen": "LinkedIn's confirmation to delete the post that begins '<first words>' is showing",
     "maxSteps": 14
@@ -78,12 +79,15 @@ Then `resume_task({ task_id, allowWrites: true, repeat: 1, countLabel: "^Delete$
 
 ## Notes
 
-- **Not working on 2026-10-06: the text never lands in the composer.** The
-  backend types by switching to the MyPhonely keyboard and back; LinkedIn's
-  post composer loses focus on that switch, so the field keeps its
-  placeholder and Post stays disabled (nothing is published). The same
-  switch likely explains LinkedIn's search box stalling. Fixing it is a
-  backend change to typing.
+- **Typing needs the backend from 2026-10-06 on.** The keyboard switch
+  typing uses drops this composer's focus; the backend now taps the field
+  again and reports `verified` (measured: `"verified": true, "refocused":
+  true`). Before that fix the text never landed and Post stayed disabled.
+- **Measured 2026-10-06:** posted and verified ("Post successful", 13
+  credits); deleted through the Delete it route ("Delete post? … permanently
+  remove", 29 credits) and gone from the profile.
+- **Whose name it posts under:** the signed-in member's personal profile,
+  not a company page. A test post is public until deleted; delete at once.
 - **Writes are on in the first call** because the composer opener is
   labelled Post; with writes off the operator will not tap it. Nothing is
   typed there, so the composer's own Post stays disabled.
