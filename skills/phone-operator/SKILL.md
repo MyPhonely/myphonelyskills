@@ -117,6 +117,42 @@ when throttled. After a batch of writes, verify with a read (LinkedIn: My
 Network → Manage all invitations → Sent, then `phone_read` the list) and
 report the verified count.
 
+## Typing, and how to tell it landed
+
+The operator types only the strings in `typeTexts`. Each typing step reports
+whether the text is on screen afterwards: `verified` (true or false),
+`refocused` when the field had lost focus and was tapped again, `via` (how it
+was entered: `accessibility`, setting the field's text directly with no
+keyboard switch, on app v1.4 and later; or `keyboard`), and a `warning` when it
+did not land. Read them in the progress log. A step with `verified: false` did
+not type the text: do not continue as if it had. Tap the field first when the
+warning says no field was focused.
+
+## Pauses that actually pause
+
+- **Name what is on screen.** `pauseWhen` is judged against the screen's
+  labels. "The text-note editor is ready for text" never matched; "the
+  editor showing Next and a 'Share your thoughts' field" did.
+- **No `steps` whose last one is the pause screen.** When every step is
+  done the phase ends `done`, before the pause condition fires, and there is
+  no paused task left to resume. In a pausing phase, leave `steps` out or
+  stop them before the pause screen.
+- **A button that opens a composer can look like a write.** X's compose
+  button and LinkedIn's bottom-bar button are both labelled Post. With writes
+  off the operator will not tap anything labelled like a commit, so the
+  phase that opens such a composer needs writes on; nothing is typed there,
+  so the composer's own Post stays disabled.
+- `countLabel` is matched case-insensitively, but must name every label the
+  final tap can carry: Facebook's last button reads SHARE on some builds.
+
+## Links and the clipboard
+
+To get a post's link, tap its Share or ⋯ menu → Copy link, then call
+`phone_clipboard`. It reads the live clipboard through a transparent
+activity that closes itself, so the app you are in stays where it was. A
+copied link can then open the post directly with `openUrl`, which is surer
+than finding it again in a feed.
+
 ## Collecting while moving (preferred for any "gather N items" task)
 
 Give a `run_task` phase a `collect` spec and it reads the list as it scrolls,
@@ -172,6 +208,9 @@ options the operator saw.
 | `two actions in a row changed nothing` | wrong route | add "press back first" or use `launch` on the next call |
 | `hit the N-step cap` | sub-goal too big | split it |
 | `phone not reachable` | the phone is off, locked, or disconnected | ask the user to reconnect in the MyPhonely app |
+| `stuck: N steps with no new screen, plan step, write or record` / `stuck: made the same screen-to-screen move N times` | the run was wandering and was stopped early | give a more specific route: a deep link with `openUrl`, the exact label to tap, a smaller sub-goal |
+| `stuck: unreachable — <reason>` | a reasoning model looked at the screen and judged the goal cannot be reached from it | act on the reason: a different route, or tell the user |
+| `blocked: <reason>` after an escalation | the screen is a login, CAPTCHA, limit or error | tell the user; do not retry |
 
 Never re-issue the identical call after a failure — the same call will fail
 the same way.

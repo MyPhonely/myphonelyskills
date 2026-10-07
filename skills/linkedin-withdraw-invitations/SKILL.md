@@ -33,7 +33,6 @@ run_task({
     "launch": "com.linkedin.android",
     "goal": "Tap My Network in the bottom navigation, open Manage all invitations, then tap the Sent tab. Note the People count in the header. The list is newest first. Scroll down past the recent rows until rows sent <days> or more days ago are on screen. Do not tap Withdraw yet and do not tap any person.",
     "allowWrites": true,
-    "steps": ["the Sent invitations tab is showing with its People count", "rows sent <days> or more days ago are on screen"],
     "pauseWhen": "the Sent invitations list is showing rows sent <days> or more days ago, each with a Withdraw control",
     "maxSteps": 20
   }]
@@ -67,6 +66,8 @@ withdrawn.
   measured, both the row's Withdraw and the sheet's Withdraw scored about
   0.2 as writes. Size `steps` to the number you want gone.
 - **The People count is the ground truth.** Read it before and after.
+- No `steps` in the first call: a last step matching the pause condition
+  lets the run end `done` before it pauses.
 - LinkedIn does not let you invite the same person again for a while after
   withdrawing, so withdraw requests that are genuinely stale, not ones from
   last week.

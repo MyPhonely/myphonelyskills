@@ -96,7 +96,11 @@ shows.
   the caption: text meant for the title lands in the caption, even after the
   title is tapped again (measured 2026-10-06; earlier runs showed it as a
   stray "#"). The note's text, typed in the text-note editor, is unaffected.
-  A title needs typing that does not switch keyboards.
+  A title needs typing that does not switch keyboards: the MyPhonely app
+  v1.4 sets the text through accessibility instead (the result of a typing
+  step then reads `"via": "accessibility"`). With 1.4 installed, try
+  `"typeTexts": ["<text>", "<title>"]` and "tap the Add a title field and
+  type '<title>'" in the publish goal.
 - **Measured 2026-10-06:** text note typed (`verified`), Next twice,
   Public → Private, Post verified (25 credits); deleted through the Delete
   it route, two confirmations, "Note deleted successful".

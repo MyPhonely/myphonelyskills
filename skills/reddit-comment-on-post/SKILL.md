@@ -83,10 +83,13 @@ conversation" appearing afterwards is normal: the composer closed.
 
 ## Notes
 
-- **With a post link,** skip the subreddit route: add
-  `"openUrl": "<a reddit.com/r/.../comments/... link>"` and start the goal
-  at the post page. If Chrome opens instead of the app, the link is no good;
-  use the subreddit route. Never use reddit.com links for search or a
+- **Prefer the post's link.** When you collect posts, copy each one's link
+  (the post's ⋯ menu → Copy link, then `phone_clipboard`), and open the post
+  for commenting with `"openUrl": "<the link>"` instead of the subreddit
+  route: a share link (`reddit.com/r/<sub>/s/...`) opened the right post in
+  the app (2026-10-06), with no feed taps that can land on a neighbour.
+  Start the goal at the post page ("On the post page, tap the action row…").
+  If Chrome opens instead of the app, use the subreddit route. Never use reddit.com links for search or a
   subreddit's feed: the web version needs a login and goes nowhere.
 - **Already commented?** The goal can be told to look for your username in
   the visible comments before opening the composer, and stop if it is there.
@@ -109,5 +112,6 @@ conversation" appearing afterwards is normal: the composer closed.
   the subreddit route sometimes landed on another feed and scrolled it;
   searching a post's title returned months-old look-alikes, not the new
   post; Enter did not submit Reddit's search. The link route above is the
-  sturdy one once the post's link can be copied (Copy link, then
-  `phone_clipboard`). Every failure stopped before anything was written.
+  sturdy one; it needs the backend whose `phone_clipboard` reads through the
+  app's ClipboardActivity (2026-10-06), since the older read came back
+  empty. Every failure stopped before anything was written.

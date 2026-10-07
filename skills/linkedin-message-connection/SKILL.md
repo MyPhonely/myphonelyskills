@@ -36,7 +36,6 @@ run_task({
     "allowWrites": true,
     "typeTexts": ["<message>"],
     "findTexts": ["<person>"],
-    "steps": ["the conversation with <person> is open", "the message text is in the Write a message input"],
     "pauseWhen": "the message to <person> is typed in the Write a message input and has not been sent",
     "maxSteps": 20
   }]
@@ -77,6 +76,9 @@ bubble with the input empty.
   call that types and sends tended to type the text twice or stop with it
   unsent. Typing first, then a send with no text to type, is the route that
   holds.
+- **No `steps` in the first call, on purpose:** a last step that matches the
+  pause condition lets the run finish as `done` before it pauses, and then
+  there is nothing to resume.
 - **It never writes twice.** The goal stops before typing when the thread
   already has a message from us, so re-running after an interruption is
   safe.
