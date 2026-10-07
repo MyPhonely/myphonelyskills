@@ -102,10 +102,11 @@ conversation" appearing afterwards is normal: the composer closed.
   answer the question.
 - **Sort is fragile.** The New sort and the time filter mis-tap often; the
   goal tries New twice at most and then reads post ages inline.
-- **Opening the composer needs the MyPhonely server from 2026-10-07 on.**
-  Tapping the middle of the action row opens nothing; the comment button
-  is the speech bubble after the votes. If the row is missing after one
-  retry, the run stops before writing.
+- **The composer route is unsolved (2026-10-07).** On the current build the
+  post page shows no comment bar, and tapping the speech bubble after the
+  votes, dead on, left the page unchanged. Until a route is found, expect
+  this workflow to stop before writing. If the row is missing after one
+  retry, the run stops before writing too.
 - **No `steps` on purpose:** with them the run ends `done` when the last
   step is reached, before the pause, leaving nothing to post from.
 - **Not yet reliable.** Measured on 2026-10-06, writes off, five runs and
