@@ -11,7 +11,7 @@ reviews: true
 # Comment on a Reddit post, after you approve
 
 Opens the subreddit, finds the post by its title, opens it, and taps the
-post's own action row so the real comment composer comes up. Then it stops
+comment button in the post's action row so the real comment composer comes up. Then it stops
 holding the phone, so the user can see which post it chose before anything
 is written. On approval it types the comment once, taps Post once, and
 counts the comment as posted only when the post's comment count rises (or
@@ -41,7 +41,7 @@ to them before the second call, never before the first.
 run_task({
   "phases": [{
     "launch": "com.reddit.frontpage",
-    "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything' (never the Ask button), type '<subreddit>', and tap the community result r/<subreddit> so the subreddit opens. If a sort label is visible, set it to New, trying at most twice; otherwise read the feed as it is. Wait for the feed to stop moving, then tap the post card whose title contains '<post>'. The feed can shift while it loads, so check the post page that opens: if its title does not contain '<post>', press back once and tap that card again. On the right post page, read the comment count in the action row that reads 'N votes, N comments, N shares', then tap that action row so the comment composer opens with the keyboard up. If the screen shows 'Reddit Answers', 'Ask a question' or 'Submit question', press back: that is not the composer. Do not type the comment, do not upvote, share, join or follow.",
+    "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything' (never the Ask button), type '<subreddit>', and tap the community result r/<subreddit> so the subreddit opens. If a sort label is visible, set it to New, trying at most twice; otherwise read the feed as it is. Wait for the feed to stop moving, then tap the post card whose title contains '<post>'. The feed can shift while it loads, so check the post page that opens: if its title does not contain '<post>', press back once and tap that card again. On the right post page, read the comment count in the action row that reads 'N votes, N comments, N shares', then tap the comment button in that row, the speech bubble right after the vote pill about a third of the way across (offered as part 3 of 8 of the row; never the row's own label, whose centre is empty), so the comment composer opens with the keyboard up. If the screen shows 'Reddit Answers', 'Ask a question' or 'Submit question', press back: that is not the composer. Do not type the comment, do not upvote, share, join or follow.",
     "typeTexts": ["<subreddit>"],
     "findTexts": ["<post>"],
     "pauseWhen": "the real comment composer for the post titled '<post>' is open: a focused text field with the keyboard up, and no 'Reddit Answers', 'Ask a question' or 'Submit question' on screen",
@@ -88,7 +88,7 @@ conversation" appearing afterwards is normal: the composer closed.
   for commenting with `"openUrl": "<the link>"` instead of the subreddit
   route: a share link (`reddit.com/r/<sub>/s/...`) opened the right post in
   the app (2026-10-06), with no feed taps that can land on a neighbour.
-  Start the goal at the post page ("On the post page, tap the action row…").
+  Start the goal at the post page ("On the post page, tap the comment button in the action row…").
   If Chrome opens instead of the app, use the subreddit route. Never use reddit.com links for search or a
   subreddit's feed: the web version needs a login and goes nowhere.
 - **Already commented?** The goal can be told to look for your username in
@@ -102,8 +102,12 @@ conversation" appearing afterwards is normal: the composer closed.
   answer the question.
 - **Sort is fragile.** The New sort and the time filter mis-tap often; the
   goal tries New twice at most and then reads post ages inline.
-- If the action row is missing from the screen after one retry, the run
-  stops before writing rather than tapping guessed coordinates.
+- **The action row is one node.** Reddit exposes "N votes, N comments, N
+  shares" as a single unclickable element with an empty centre, so tapping
+  it by its label opens nothing. The operator (backend with merged-row
+  parts) offers the row as eight points left to right; the comment bubble is
+  part 3. If the row is missing after one retry, the run stops before
+  writing.
 - **No `steps` on purpose:** with them the run ends `done` when the last
   step is reached, before the pause, leaving nothing to post from.
 - **Not yet reliable.** Measured on 2026-10-06, writes off, five runs and
