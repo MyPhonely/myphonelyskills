@@ -82,8 +82,8 @@ opening each profile, which is a separate task per person.
   `Send a message to <name>` on a Premium account is InMail to a 3rd+
   person, **not** an existing connection; `Pending` is already invited;
   `Follow` is creator mode. `degree` and `action` together classify a card.
-- Name the chip by its full label. "2nd" alone did not clear the operator's
-  choice among 42 options on a measured screen; the full label is one tap.
+- Name the chip by its full label. "2nd" alone was ambiguous on a measured
+  screen; the full label is one tap.
   `require` ends the phase in one look if the chip row is not there.
 - Do not open All filters: it is the most common reason a run sends or reads
   nothing.

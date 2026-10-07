@@ -61,10 +61,9 @@ withdrawn.
 
 ## Notes
 
-- **The step budget is the bound, not `repeat`.** The operator does not
-  score the Withdraw controls as sends, so a `repeat` cap never fires here;
-  measured, both the row's Withdraw and the sheet's Withdraw scored about
-  0.2 as writes. Size `steps` to the number you want gone.
+- **The step budget is the bound, not `repeat`.** A withdrawal is not
+  counted as a send, so a `repeat` cap never fires here. Size `steps` to the
+  number you want gone.
 - **The People count is the ground truth.** Read it before and after.
 - No `steps` in the first call: a last step matching the pause condition
   lets the run end `done` before it pauses.

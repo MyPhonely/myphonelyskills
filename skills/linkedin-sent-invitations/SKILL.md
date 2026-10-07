@@ -80,7 +80,7 @@ is the number to check before sending more.
   slows, which is also a sign the backlog wants withdrawing.
 - **Measured, 2026-09-23.** Ten of ten records in nine steps and 16 credits,
   all three fields filled, nothing written. The route is My Network, then
-  'Manage all invitations', then Sent, each tapped at 0.97 or better. The
-  `where` gate is what keeps the read honest: it scored 0.02 on the home feed
-  and 0.02 on My Network, whose suggested-people cards look like a list of
-  people with buttons, and only opened once the Sent list was showing.
+  'Manage all invitations', then Sent. The `where` gate is what keeps the
+  read honest: it stayed shut on the home feed and on My Network, whose
+  suggested-people cards look like a list of people with buttons, and only
+  opened once the Sent list was showing.

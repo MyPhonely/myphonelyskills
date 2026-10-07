@@ -63,7 +63,7 @@ Poll `get_task_status(task_id, wait_seconds: 30)` until the status is `done`.
 
 - **Names arrive decorated.** A row reads `Jane Doe reacted with Like` and sometimes carries a verified badge or a degree suffix. Ask for the name without the reaction verb, as the goal above does, and strip anything left before matching the person anywhere else.
 - **The sheet renders a few rows at a time**, so collection runs at roughly one person per scroll. It is slower than a People search for the same number of records; budget scrolls accordingly rather than raising `count`.
-- **Give it one decision, not two.** A goal that also asks it to pick the post with the most reactions makes scrolling a competing action, and the tap on the reaction count stops clearing its threshold. Naming the first post keeps it to a single choice.
+- **Give it one decision, not two.** A goal that also asks it to pick the post with the most reactions makes scrolling a competing action, and the tap on the reaction count stops being a clear choice. Naming the first post keeps it to a single choice.
 - **The pool is noisy in a specific way.** A topic post draws vendors, agencies and competitors as well as the audience, because they are monitoring the same subject. Filter on the headline before acting on anyone.
 - **Comments are reachable the same way.** Tapping the comment count instead opens a sheet of commenters with the same fields. It is a much smaller pool, but a comment is a stronger signal than a reaction.
 - If the run reports zero records, check `progress` for whether the reaction-count tap landed. A tap that misses usually opens the post itself, which is the wrong screen and has no Reactions sheet.

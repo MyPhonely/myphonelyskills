@@ -111,8 +111,7 @@ limits.
 
 Per-app playbooks, the screens, routes, verification rules and limits for
 each app, are not here. The server holds them: the operator loads the right
-one for every task, and `phone_app_guide` returns them free to any caller
-driving the phone directly.
+one for every task. They are not published.
 
 ## How MyPhonely works
 
@@ -126,9 +125,8 @@ Two ways to use the server, per goal:
   held, for you to review; `resume_task` continues it or abandons it. Poll
   with `get_task_status(task_id, wait_seconds)`, which returns as soon as
   anything changes.
-- **Mode 2** — drive the phone yourself: `phone_app_guide` for the app's
-  playbook first, `acquire_phone` for a lease so nothing else acts between
-  your look and your tap, then `phone_screen`, `phone_tap_label`,
+- **Mode 2** — drive the phone yourself: `acquire_phone` for a lease so
+  nothing else acts between your look and your tap, then `phone_screen`, `phone_tap_label`,
   `phone_type` and the other `phone_*` tools, and `release_phone` when done.
 
 Every action costs one credit. The phone is the user's own, running their own

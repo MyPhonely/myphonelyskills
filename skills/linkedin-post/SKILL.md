@@ -79,10 +79,8 @@ Then `resume_task({ task_id, allowWrites: true, repeat: 1, countLabel: "^Delete$
 
 ## Notes
 
-- **Typing needs the backend from 2026-10-06 on.** The keyboard switch
-  typing uses drops this composer's focus; the backend now taps the field
-  again and reports `verified` (measured: `"verified": true, "refocused":
-  true`). Before that fix the text never landed and Post stayed disabled.
+- **Typing needs the MyPhonely server from 2026-10-06 on.** Before then the
+  text never landed in this composer and Post stayed disabled.
 - **Measured 2026-10-06:** posted and verified ("Post successful", 13
   credits); deleted through the Delete it route ("Delete post? … permanently
   remove", 29 credits) and gone from the profile.

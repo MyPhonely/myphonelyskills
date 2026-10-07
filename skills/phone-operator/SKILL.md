@@ -50,9 +50,9 @@ sends, from the user's own accounts.
 5. Use `launch` (the app's package) on the first call in an app. The
    operator force-stops and opens it, so the run starts from a known screen.
 6. App playbooks live on the server, not here. The operator loads the
-   right one for every task by itself. If you drive the phone yourself
-   (Mode 2), call `phone_app_guide("linkedin")` first — it is free and
-   returns the app's screens, routes, verification rules and limits.
+   right one for every task by itself, which is why Mode 1 is the better
+   route for the apps it knows (X, LinkedIn, Reddit, Instagram,
+   Xiaohongshu, YouTube, Facebook, Discord, Slack).
 
 Common packages: X `com.twitter.android`, LinkedIn `com.linkedin.android`,
 Reddit `com.reddit.frontpage`, Instagram `com.instagram.android`, Xiaohongshu

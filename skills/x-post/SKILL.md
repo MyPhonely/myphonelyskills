@@ -79,9 +79,9 @@ Then `resume_task({ task_id, allowWrites: true, repeat: 1, countLabel: "^Delete$
 ## Notes
 
 - **Writes are on in the first call, on purpose.** The compose button is
-  labelled Post on current builds, and with writes off the operator takes
-  every Post-labelled control off its menu, so it scrolled the timeline
-  instead (measured 2026-10-06). Nothing is typed in the first call, so the
+  labelled Post on current builds, and with writes off the operator will not
+  tap anything labelled Post, so it scrolled the timeline instead (measured
+  2026-10-06). Nothing is typed in the first call, so the
   composer's own Post button stays disabled.
 - **Measured 2026-10-06:** composer, pause (labels showed @quickfiling2us
   and Everyone), posted and verified in 16 credits; deleted through the
