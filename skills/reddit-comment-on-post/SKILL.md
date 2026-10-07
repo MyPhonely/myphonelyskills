@@ -13,7 +13,7 @@ reviews: true
 Opens the subreddit, finds the post by its title, opens it, and taps the
 comment button in the post's action row so the real comment composer comes up. Then it stops
 holding the phone, so the user can see which post it chose before anything
-is written. On approval it types the comment once, taps Post once, and
+is written. On approval it types the comment once, taps Send once, and
 counts the comment as posted only when the post's comment count rises (or
 Reddit says it is pending review).
 
@@ -41,10 +41,10 @@ to them before the second call, never before the first.
 run_task({
   "phases": [{
     "launch": "com.reddit.frontpage",
-    "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything' (never the Ask button), type '<subreddit>', and tap the community result r/<subreddit> so the subreddit opens. If a sort label is visible, set it to New, trying at most twice; otherwise read the feed as it is. Wait for the feed to stop moving, then tap the post card whose title contains '<post>'. The feed can shift while it loads, so check the post page that opens: if its title does not contain '<post>', press back once and tap that card again. On the right post page, read the comment count in the action row that reads 'N votes, N comments, N shares', then tap the comment button in that row, the speech bubble right after the vote pill about a third of the way across (not the middle of the row), so the comment composer opens with the keyboard up. If the screen shows 'Reddit Answers', 'Ask a question' or 'Submit question', press back: that is not the composer. Do not type the comment, do not upvote, share, join or follow.",
+    "goal": "In the Reddit app, tap the search bar at the top labelled 'Find anything' (never the Ask button), type '<subreddit>', and tap the community result r/<subreddit> so the subreddit opens. If a sort label is visible, set it to New, trying at most twice; otherwise read the feed as it is. Wait for the feed to stop moving, then tap the post card whose title contains '<post>'. The feed can shift while it loads, so check the post page that opens: if its title does not contain '<post>', press back once and tap that card again. On the right post page, read the comment count in the action row that reads 'N votes, N comments, N shares', then tap the comment button in that row, the speech bubble right after the vote pill about a third of the way across (not the middle of the row), so the comment composer opens at the bottom of the post page, reading 'Commenting on' with the post's title above a 'Join the conversation' field. If the screen shows 'Reddit Answers', 'Ask a question' or 'Submit question', press back: that is not the composer. Do not type the comment, do not upvote, share, join or follow.",
     "typeTexts": ["<subreddit>"],
     "findTexts": ["<post>"],
-    "pauseWhen": "the real comment composer for the post titled '<post>' is open: a focused text field with the keyboard up, and no 'Reddit Answers', 'Ask a question' or 'Submit question' on screen",
+    "pauseWhen": "the comment composer is open at the bottom of the post page: it reads 'Commenting on' with the title '<post>' and has a 'Join the conversation' field, and there is no 'Reddit Answers', 'Ask a question' or 'Submit question' on screen",
     "pauseScreenshot": true,
     "maxSteps": 20
   }]
@@ -65,8 +65,8 @@ resume_task({
   "text": "<comment>",
   "allowWrites": true,
   "repeat": 1,
-  "countLabel": "^Post$",
-  "goal": "Type the comment into the focused composer once, then tap Post at the top right once. Do not tap Post twice. Then confirm the post's comment count went up by one, or the comment shows in the thread, or Reddit says it will be reviewed. Do not upvote, share, join or follow.",
+  "countLabel": "^Send comment$",
+  "goal": "Tap the 'Join the conversation' field, type the comment once, then tap Send comment (the round arrow at the bottom right of the composer) once. Do not tap it twice. Then confirm the post's comment count went up by one, or the comment shows in the thread, or Reddit says it will be reviewed. Do not upvote, share, join or follow.",
   "maxSteps": 8
 })
 ```
@@ -76,7 +76,7 @@ composer with nothing posted.
 
 ## What comes back
 
-`result.phases[0].sent` lists `Post` only when the effect was verified: the
+`result.phases[0].sent` lists `Send comment` only when the effect was verified: the
 comment count rose, the comment is in the thread, or "Comment will be
 reviewed" appeared (pending moderation, which counts as posted). "Join the
 conversation" appearing afterwards is normal: the composer closed.
@@ -102,18 +102,26 @@ conversation" appearing afterwards is normal: the composer closed.
   answer the question.
 - **Sort is fragile.** The New sort and the time filter mis-tap often; the
   goal tries New twice at most and then reads post ages inline.
-- **The composer route is unsolved (2026-10-07).** On the current build the
-  post page shows no comment bar, and tapping the speech bubble after the
-  votes, dead on, left the page unchanged. Until a route is found, expect
-  this workflow to stop before writing. If the row is missing after one
-  retry, the run stops before writing too.
+- **Banned from the subreddit, no composer.** If the account is banned
+  there, the speech bubble does nothing and the run ends stuck before
+  writing (measured in r/EB2_NIW, 2026-10-07). Check the account can post
+  in a subreddit before planning comments there.
+- **Where the composer is.** It opens as a sheet at the bottom of the post
+  page ("Commenting on <title>", a "Join the conversation" field), not
+  full screen, and the keyboard is not up until the field is tapped. Send
+  is the round "Send comment" arrow at its bottom right. Needs the
+  MyPhonely server from 2026-10-07 on. Measured 2026-10-07 in r/test,
+  writes off: paused at the composer twice, and a typed draft showed Send
+  comment; nothing was sent.
 - **No `steps` on purpose:** with them the run ends `done` when the last
   step is reached, before the pause, leaving nothing to post from.
-- **Not yet reliable.** Measured on 2026-10-06, writes off, five runs and
-  none reached the composer: a tap on a feed card opened the post above it
+- **Finding the post is the fragile part.** Measured on 2026-10-06, writes
+  off, five runs and none reached the composer (the account turned out to
+  be banned in that subreddit), and on the way: a tap on a feed card opened the post above it
   (the feed shifts while it loads, so check the title on the post page);
   the subreddit route sometimes landed on another feed and scrolled it;
   searching a post's title returned months-old look-alikes, not the new
   post; Enter did not submit Reddit's search. The link route above is the
   sturdy one; it needs the MyPhonely server from 2026-10-06 on, since
-  `phone_clipboard` came back empty before then. Every failure stopped before anything was written.
+  `phone_clipboard` came back empty before then. Every failure stopped
+  before anything was written.
