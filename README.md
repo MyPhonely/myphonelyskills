@@ -4,7 +4,8 @@ Skills for AI agents that operate a real Android phone through the
 [MyPhonely](https://myphonely.ai) MCP server. Install them and your agent
 knows both how to drive a phone and the use cases it can do end to end:
 46 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
-Facebook, TikTok, WeChat and Google Play.
+Facebook, TikTok, WeChat and Google Play, and agents that chain them into a
+recurring job, such as a day of outreach for your brand.
 
 ## Install
 
@@ -33,7 +34,7 @@ skills/
   <app>-<use-case>/      one workflow each: its inputs, and the calls that do it
   create-outreach-agent/ an agent: set up outreach for your brand
   outreach-day/          an agent: a day of outreach across apps for your brand
-CONTRIBUTING.md          how to write a workflow, and the rules that keep one honest
+CONTRIBUTING.md          how to write a workflow or an agent, and the rules that keep one honest
 scripts/validate.mjs     check yours before opening a pull request
 ```
 
