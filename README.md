@@ -100,8 +100,13 @@ Launch it from your own AI, interactively or on a schedule:
 ```bash
 claude -p "Run outreach-day for ./my-brand-agent in autopilot mode"
 codex exec "Run outreach-day for ./my-brand-agent in autopilot mode"
-pi -p "Run outreach-day for ./my-brand-agent in autopilot mode"
+pi -p "Run outreach-day for ./my-brand-agent in autopilot mode" < /dev/null
 ```
+
+A scheduled run has no one to say yes, so allow the AI to run the skill's
+script and the MyPhonely tools, and give it the folders it reads; the
+skill's "Enforce the rules" turns on the guard that keeps it within the
+limits.
 
 Per-app playbooks, the screens, routes, verification rules and limits for
 each app, are not here. The server holds them: the operator loads the right

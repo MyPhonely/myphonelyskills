@@ -242,6 +242,11 @@ records.
   have no one to approve at the pause. In autopilot (chosen by the user for
   that schedule) they write within the limits; keep the limits in
   `agent.yaml` modest. In review mode they only draft (rule 3).
+- **Scheduled launches** need the AI allowed to run `outreach.ts` and the
+  MyPhonely tools without asking, and access to the agent folder, this
+  skill's folder and the records (Claude Code: `--allowedTools` and
+  `--add-dir`). Close stdin (`< /dev/null`): `pi -p` with no terminal
+  otherwise waits for input forever.
 - **One attempt per target per day.** A failed write is retried on a later
   day, never in a loop.
 - **Records** default to `records/` in the agent folder. They hold people's
