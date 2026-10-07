@@ -144,6 +144,8 @@ function expandHome(p: string): string {
 /**
  * The agent's own documents: brand.md and voice.md, plus any other .md in the
  * folder (a link list, notes). An agent reads all of them before it writes.
+ * README.md is for the people who keep the folder, not the agent, so it is
+ * left out.
  */
 export function brandFiles(agent: Agent): { brand: string; voice: string; other: string[] } {
   const dir = agentDir(agent);
@@ -151,7 +153,7 @@ export function brandFiles(agent: Agent): { brand: string; voice: string; other:
   const voice = join(dir, "voice.md");
   for (const f of [brand, voice]) if (!existsSync(f)) die(`the agent has no ${f}; every agent needs brand.md and voice.md`);
   const other = readdirSync(dir)
-    .filter((f) => f.endsWith(".md") && f !== "brand.md" && f !== "voice.md")
+    .filter((f) => f.endsWith(".md") && !["brand.md", "voice.md", "README.md"].includes(f))
     .sort()
     .map((f) => join(dir, f));
   return { brand, voice, other };

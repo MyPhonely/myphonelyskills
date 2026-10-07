@@ -44,6 +44,10 @@ test("records default to records/ inside the agent folder, and show lists the fi
     assert.equal(show.records, join(agent, "records"));
     assert.equal(show.brand, join(agent, "brand.md"));
     assert.equal(show.voice, join(agent, "voice.md"));
+    assert.deepEqual(show.also_read, [], "nothing else in the example");
+    writeFileSync(join(agent, "links.md"), "# links\n");
+    writeFileSync(join(agent, "README.md"), "# for people\n");
+    assert.deepEqual(json(cli(agent, ["show", "--json"])).also_read, [join(agent, "links.md")], "other .md files are read; README.md is not");
   } finally {
     rmSync(agent, { recursive: true, force: true });
   }
