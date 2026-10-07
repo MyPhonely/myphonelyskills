@@ -21,7 +21,7 @@ Set up MyPhonely so you can operate my Android phone.
    pi: a skills path in your package), or run: npx skills add MyPhonely/myphonelyskills
 3. Call the phone_status tool. If device_online is false, tell me to open the MyPhonely app and tap Connect.
 4. Read the server's instructions from the MCP initialize response before the first task.
-   The phone is real and nothing can be undone; use only the phone tools, never adb or a shell.
+   The phone is real and nothing can be undone; operate it only with the phone tools, never adb or a shell.
 Then tell me you are ready.
 ```
 
@@ -31,13 +31,14 @@ Then tell me you are ready.
 skills/
   phone-operator/        how to plan, review, verify and recover with the phone tools
   <app>-<use-case>/      one workflow each: its inputs, and the calls that do it
+  outreach-day/          an agent: a day of outreach across apps for your brand
 CONTRIBUTING.md          how to write a workflow, and the rules that keep one honest
 scripts/validate.mjs     check yours before opening a pull request
 ```
 
 Every folder is a skill: a `SKILL.md` with frontmatter and guidance in the
 body, the layout Claude Code, Cursor, pi and `npx skills` all read. There are
-two kinds.
+three kinds.
 
 - **Teaching skills** shape how an agent uses the tools at all.
   `phone-operator` is the one to install first.
@@ -45,6 +46,11 @@ two kinds.
   Their frontmatter carries what the listing on myphonely.ai shows: the app,
   whether it writes, and whether it stops for your approval first. Their body
   is the procedure, with the exact calls and the inputs to fill in.
+- **Agents** run a recurring job across apps by chaining workflows, marked
+  `kind: agent`. They read a folder you own that describes your brand and
+  keep its records there, and ship small scripts for the bookkeeping (what
+  was done, the day's limits), so any agent that can run a shell command
+  follows the same rules: Claude Code, Codex, pi.
 
 ## Workflows
 
@@ -69,6 +75,31 @@ they are about to do, and continue only on `resume_task`.
 Each listing says what has been run on a real phone and what has not. The
 catalog at [myphonely.ai/workflows](https://www.myphonely.ai/workflows) is
 built from these files and refreshes within minutes of a merge.
+
+## Agents
+
+| agent | what it does |
+|---|---|
+| `outreach-day` | one day of a brand's outreach: answer replies, welcome new connections and invite on LinkedIn, and comment on X, Reddit, Facebook and Xiaohongshu, in the brand's voice, within its daily limits, every write reserved, verified and recorded |
+
+An agent runs from a folder you own, which `create-outreach-agent` writes
+for you from your brand's site:
+
+```
+my-brand-agent/
+  agent.yaml   who to reach, where, daily limits, offer, messages
+  brand.md     what may and may not be said
+  voice.md     how it sounds
+  records/     what was done, and each day's reservations
+```
+
+Launch it from your own AI, interactively or on a schedule:
+
+```bash
+claude -p "Run outreach-day for ./my-brand-agent in autopilot mode"
+codex exec "Run outreach-day for ./my-brand-agent in autopilot mode"
+pi -p "Run outreach-day for ./my-brand-agent in autopilot mode"
+```
 
 Per-app playbooks, the screens, routes, verification rules and limits for
 each app, are not here. The server holds them: the operator loads the right

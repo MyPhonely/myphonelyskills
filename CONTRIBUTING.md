@@ -1,4 +1,4 @@
-# Writing a workflow
+# Writing a workflow or an agent
 
 A workflow is a skill: one folder under `skills/`, one `SKILL.md`, one use
 case. The frontmatter is what the listing on myphonely.ai is built from, and
@@ -70,6 +70,24 @@ Four sections, in this order.
 - **Verify by effect, report the verified count.** A tap on Post is not a
   post; `result.phases[0].sent` only lists writes whose effect showed on screen.
 - **No accounts, keys, handles or private content** anywhere in the file.
+
+## Writing an agent
+
+An agent (`kind: agent`) runs a recurring job across apps: it chains the
+workflows above, reads a folder the user owns for everything specific to
+them, and keeps its records there. It belongs here when the job is general
+(outreach for any brand), never one brand's content.
+
+- **Workflows do the phone work.** An agent calls them by name, and does not
+  repeat their routes.
+- **Rules that must hold go in its scripts**, not in prose: what was done
+  before, the day's limits, one attempt per target, record only what was
+  verified. Scripts live in `scripts/` beside the `SKILL.md`, run with plain
+  Node, and take the user's folder as an argument.
+- **Ship a fictional example folder** and tests that run against it
+  (`npm test` in its `scripts/`).
+- **Any agent must be able to run it**: a skill, MCP tools and shell
+  commands, nothing tied to one harness.
 
 ## Before the pull request
 

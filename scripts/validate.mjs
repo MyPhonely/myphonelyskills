@@ -56,14 +56,17 @@ function checkSkill(dir) {
   if (fields.description && fields.description.length < 40) warn(where, "description is short; it is what an agent reads to decide the skill applies");
   for (const key of Object.keys(fields)) if (key !== "__malformed" && !KNOWN.has(key)) warn(where, `unknown frontmatter field ${key}`);
 
-  if (fields.kind && fields.kind !== "workflow") fail(where, `kind must be "workflow" when present, got ${fields.kind}`);
-  if (fields.kind !== "workflow") {
+  // workflow: one use case in one app. agent: a day of work across apps,
+  // chaining workflows, with its own scripts. Both are catalog listings.
+  const listed = fields.kind === "workflow" || fields.kind === "agent";
+  if (fields.kind && !listed) fail(where, `kind must be "workflow" or "agent" when present, got ${fields.kind}`);
+  if (!listed) {
     for (const key of WORKFLOW_REQUIRED) if (fields[key]) warn(where, `${key} is a catalog field but kind is not workflow`);
     return;
   }
 
   // --- a workflow is also a catalog listing
-  for (const key of WORKFLOW_REQUIRED) if (fields[key] === undefined) fail(where, `a workflow needs ${key} in its frontmatter`);
+  for (const key of WORKFLOW_REQUIRED) if (fields[key] === undefined) fail(where, `a ${fields.kind} needs ${key} in its frontmatter`);
   if (fields.title && fields.title.length > 70) warn(where, `title is long for a card (${fields.title.length} chars)`);
   for (const app of (fields.apps ?? "").split(",").map((a) => a.trim()).filter(Boolean)) {
     if (!/^[a-zA-Z][\w.]*\.[\w.]+$/.test(app)) fail(where, `apps: ${app} is not an Android package name`);
@@ -78,6 +81,9 @@ function checkSkill(dir) {
   for (const heading of ["## Inputs", "## Run it"]) {
     if (!body.includes(heading)) fail(where, `body has no "${heading}" section`);
   }
+  // An agent writes through the workflows it calls; they carry the call checks.
+  if (fields.kind === "agent") return;
+
   // Judge the calls the workflow actually makes, not prose that mentions them:
   // a read workflow may well explain what a follow-up write task would set.
   const code = [...body.matchAll(/```[\s\S]*?```/g)].map((m) => m[0]).join("\n");

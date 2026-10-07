@@ -1,0 +1,91 @@
+# EXAMPLE agent -- fictional. Copy the shape, not the content (the
+# create-outreach-agent skill writes one for a real brand).
+#
+# A code-review tool sold to engineering leaders. Rotates by industry, reaches
+# people on LinkedIn, and joins conversations about code review on X and in
+# two subreddits -- one channel of each kind the workflow knows.
+
+id: example
+label: Engineering leaders, for a code-review tool (fictional example)
+# The ledgers and each day's reservations. Default: records/ in this folder.
+# Point it elsewhere (~/... is fine) to keep people's names out of a repo.
+records: null
+
+order: [linkedin, x, reddit]
+
+audience:
+  titles:
+    - engineering manager
+    - head of engineering
+  exclude_headlines:
+    - recruiter
+    - agency
+    - consultant
+  rotate:
+    dimension: industry
+    per_day: 2
+    values: [fintech, healthtech, logistics, developer tools]
+
+channels:
+  linkedin:
+    kind: connect
+    connects_per_day: 20
+    warmups_per_day: 5
+    # A Premium or Sales Navigator subscription does NOT raise the weekly
+    # invite cap -- that limit is anti-spam and applies to every tier.
+    # What premium changes: unlimited personalized invite notes (free
+    # accounts get 5 a month) and no blurred search results.
+    premium: false
+    weekly_invite_cap: 100        # LinkedIn's ceiling; it is not a target
+    batch_size: 3
+    withdraw_after_days: 21
+    withdraw_per_run: 10
+    # One sentence the operator can check against the open profile.
+    # Leave empty to invite every scanned lead without opening profiles.
+    # Where candidates come from: "people" searches People by job title,
+    # "post_engagement" searches Posts by topic and reads who reacted or
+    # commented. The second carries intent; it is also noisier, because a
+    # topic post attracts vendors and competitors too.
+    source: people
+    post_keywords: []            # required when source is post_engagement
+    qualify_rule: ""
+    qualify_per_run: 8           # profiles to open per run -- the costly step
+    discover_scrolls: 6          # how far down People results to read when finding leads
+    lead_buffer: 30              # stop discovering once this many Leads are queued
+    harvest_scrolls: 5           # how far down Connections to look for new acceptances
+    warmup_delay_days: 0         # wait this long after acceptance before messaging
+
+  x:
+    kind: comment
+    lang: en
+    posts_per_keyword: 3
+    keywords:                     # bare keywords search the whole platform
+      - code review
+      - PR backlog
+
+  reddit:
+    kind: comment
+    lang: en
+    posts_per_keyword: 2
+    targets:                      # targets scope a keyword to one subreddit
+      - { sub: r/ExperiencedDevs, keyword: code review }
+      - { sub: r/engineeringmanagers, keyword: pull request }
+
+offer:
+  site: example.com
+  products:
+    - { name: Team, matter: code review, price: 19 }
+    - { name: Business, matter: code review, price: 49 }
+  per_seat: per seat per month
+  promo:
+    active: false
+    price: 0
+    label: ""
+    seats_per_week: 0
+
+messages:
+  warmup: |
+    Thanks for connecting! Most teams lose more time waiting on reviews than
+    writing code. {{site}} routes each PR to the reviewer most likely to
+    answer fast, from ${{min_price}} {{per_seat}}.
+    If you have any questions, just let me know!

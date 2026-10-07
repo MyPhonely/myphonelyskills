@@ -1,0 +1,21 @@
+{
+  "name": "outreach-day-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bookkeeping for the outreach-day skill: targets, budgets, reservations and the agent's records.",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  }
+}
