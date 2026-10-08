@@ -9,22 +9,19 @@ recurring job, such as a day of outreach for your brand.
 
 ## Install
 
-Paste this into your agent, with your api key from the MyPhonely dashboard:
+Paste this into your agent (Claude Code, Codex, Cursor, pi, or any MCP
+client), with your api key from the [MyPhonely dashboard](https://myphonely.ai/dashboard):
 
 ```
-Set up MyPhonely so you can operate my Android phone.
-
-1. Add an MCP server named "myphonely": streamable HTTP, URL https://api.myphonely.ai/mcp,
-   with the header "Authorization: Bearer YOUR_API_KEY". Put it in this tool's MCP config.
-   (Claude Code: claude mcp add --transport http myphonely https://api.myphonely.ai/mcp --header "Authorization: Bearer YOUR_API_KEY")
-2. Install the skills: clone https://github.com/MyPhonely/myphonelyskills and copy every folder
-   under skills/ into your skills directory (Claude Code: ~/.claude/skills/, Codex: ~/.agents/skills/,
-   Cursor: .cursor/skills/, pi: a skills path in your package), or run: npx skills add MyPhonely/myphonelyskills
-3. Call the phone_status tool. If device_online is false, tell me to open the MyPhonely app and tap Connect.
-4. Read the server's instructions from the MCP initialize response before the first task.
-   The phone is real and nothing can be undone; operate the phone only with the phone tools, never adb.
-Then tell me you are ready.
+Set up MyPhonely by following https://myphonely.ai/setup.md
+My API key: YOUR_API_KEY
 ```
+
+[setup.md](https://myphonely.ai/setup.md) tells it to connect the MCP server,
+install these skills the way it loads skills, read the server's
+instructions, and check the phone is online. An agent that cannot open a
+link can be given the same steps as text from the setup box on
+[myphonely.ai](https://myphonely.ai).
 
 ## What is here
 
