@@ -37,10 +37,12 @@ export function newAgent(o: NewAgent): string[] {
   for (const f of FILES) {
     let text = readFileSync(join(scriptsRoot(), "..", "templates", f), "utf8");
     if (f === "agent.yaml") {
+      // Quoted: a label like "Acme: engineering leads" is not plain YAML.
+      const q = (v: string) => JSON.stringify(v);
       text = text.replace("id: CHANGEME", `id: ${o.id}`);
-      if (o.label) text = text.replace(/^label: .*$/m, `label: ${o.label}`);
-      if (o.site) text = text.replace("site: CHANGEME.com", `site: ${o.site}`);
-      if (o.records) text = text.replace("records: null", `records: ${o.records}`);
+      if (o.label) text = text.replace(/^label: .*$/m, () => `label: ${q(o.label!)}`);
+      if (o.site) text = text.replace("site: CHANGEME.com", () => `site: ${q(o.site!)}`);
+      if (o.records) text = text.replace("records: null", () => `records: ${q(o.records!)}`);
     } else {
       text = text.replace(/^(# \S+ — )CHANGEME/m, `$1${o.id}`);
     }

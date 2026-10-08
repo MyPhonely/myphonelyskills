@@ -45,6 +45,8 @@
  * (budget spent). 2 a usage error.
  */
 
+import { realpathSync } from "node:fs";
+
 import { cli, die, emit, loadAgent, parse, setCurrentAgent } from "./lib/common.ts";
 import type { Options } from "./lib/common.ts";
 import { claudeHook } from "./lib/guard.ts";
@@ -232,4 +234,13 @@ function main(argv: string[]): number | Promise<number> {
   }
 }
 
-if (import.meta.filename === process.argv[1]) cli(main);
+// Compared by real path: skills are often installed as symlinks, and through
+// one argv[1] is the link while import.meta.filename is the file it points to.
+const invoked = (() => {
+  try {
+    return realpathSync(process.argv[1] ?? "") === import.meta.filename;
+  } catch {
+    return false;
+  }
+})();
+if (invoked) cli(main);

@@ -18,11 +18,11 @@ Set up MyPhonely so you can operate my Android phone.
    with the header "Authorization: Bearer YOUR_API_KEY". Put it in this tool's MCP config.
    (Claude Code: claude mcp add --transport http myphonely https://api.myphonely.ai/mcp --header "Authorization: Bearer YOUR_API_KEY")
 2. Install the skills: clone https://github.com/MyPhonely/myphonelyskills and copy every folder
-   under skills/ into your skills directory (Claude Code: ~/.claude/skills/, Cursor: .cursor/skills/,
-   pi: a skills path in your package), or run: npx skills add MyPhonely/myphonelyskills
+   under skills/ into your skills directory (Claude Code: ~/.claude/skills/, Codex: ~/.agents/skills/,
+   Cursor: .cursor/skills/, pi: a skills path in your package), or run: npx skills add MyPhonely/myphonelyskills
 3. Call the phone_status tool. If device_online is false, tell me to open the MyPhonely app and tap Connect.
 4. Read the server's instructions from the MCP initialize response before the first task.
-   The phone is real and nothing can be undone; operate it only with the phone tools, never adb or a shell.
+   The phone is real and nothing can be undone; operate the phone only with the phone tools, never adb.
 Then tell me you are ready.
 ```
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -536,4 +536,21 @@ test("a stream of a platform plans in that app and shares its dedup history", ()
     0,
     "commented from the papers stream counts on x",
   );
+});
+
+test("new writes an agent.yaml that parses, whatever the label says", () => {
+  const dir = join(STATE, "scaffolded");
+  run("outreach.ts", ["new", "--dir", dir, "--id", "acme-eng-leads", "--site", "acme.dev", "--label", "Acme: engineering leads, #1 'quoted'", "--records", "~/.outreach/acme-eng-leads"]);
+  const doc = parseYaml(readFileSync(join(dir, "agent.yaml"), "utf8")) as Record<string, unknown>;
+  assert.equal(doc.id, "acme-eng-leads");
+  assert.equal(doc.label, "Acme: engineering leads, #1 'quoted'");
+  assert.equal(doc.records, "~/.outreach/acme-eng-leads");
+  assert.equal((doc.offer as Record<string, unknown>).site, "acme.dev");
+});
+
+test("the CLI runs when it is called through a symlinked skills folder", () => {
+  const link = join(STATE, "skills-link");
+  symlinkSync(dirname(SCRIPTS), link);
+  const out = execFileSync(process.execPath, [join(link, "scripts", "outreach.ts"), "channels", "--agent", EXAMPLE], { encoding: "utf8" });
+  assert.ok(out.trim().length > 0, "printed nothing: the entry-point check failed through the link");
 });
