@@ -31,6 +31,7 @@ skills/
   <app>-<use-case>/      one workflow each: its inputs, and the calls that do it
   create-outreach-agent/ an agent: set up outreach for your brand
   outreach-day/          an agent: a day of outreach across apps for your brand
+  news-desk/             an agent: a day of news for your site, collected on the phone
 CONTRIBUTING.md          how to write a workflow or an agent, and the rules that keep one honest
 scripts/validate.mjs     check yours before opening a pull request
 ```
@@ -81,6 +82,7 @@ built from these files and refreshes within minutes of a merge.
 |---|---|
 | `create-outreach-agent` | set up an outreach agent for a brand: reads its site, asks you what a site cannot say, writes the folder below and checks it is ready |
 | `outreach-day` | one day of a brand's outreach: answer replies, welcome new connections and invite on LinkedIn, and comment on X, Reddit, Facebook and Xiaohongshu, in the brand's voice, within its daily limits, every write reserved, verified and recorded |
+| `news-desk` | one day of a news site: collect from Reddit, X, LinkedIn and forums on the phone (reading only), keep the real news and the case reports the desk wants, check every fact against a primary source, and write drafts or publish to the site's API, from a desk folder (`desk.yaml`, `style.md`) |
 
 An agent runs from a folder you own, which `create-outreach-agent` writes
 for you from your brand's site:

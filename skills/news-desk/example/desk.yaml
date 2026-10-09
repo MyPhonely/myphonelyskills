@@ -1,0 +1,41 @@
+# A fictional desk: daily cycling-infrastructure news for a city blog.
+# Copy this folder, rename it, and change everything.
+
+id: citycycle-news
+site: citycycle.example
+# The records (what was published, the day's logs, drafts) stay outside a
+# shared repo; default <desk>/records.
+records: ~/.news/citycycle-news
+
+target:
+  articles_per_day: 3
+  # Newsworthiness 1-10 + how many readers it affects 1-10.
+  min_score: 14
+
+sources:
+  - app: reddit
+    lane: news
+    subreddits: [r/bikecommuting, r/urbanplanning]
+    per_task: 3
+  - app: x
+    lane: news
+    searches: ["from:CityDOT", "protected bike lane"]
+    per_task: 3
+  - app: linkedin
+    lane: news
+    pages: [City Department of Transportation]
+    per_task: 3
+
+publish:
+  url: https://citycycle.example/api/posts
+  method: POST
+  # Article field -> the API's field name.
+  fields:
+    title: title
+    content: body
+    description: summary
+    categories: categories
+    tags: tags
+    sourceUrl: source_url
+  categories: [City News, Policy, Projects]
+  tags: [Bike Lanes, Transit, Safety, Budget]
