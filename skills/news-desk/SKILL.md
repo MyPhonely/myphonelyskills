@@ -53,21 +53,29 @@ The records live where `desk.yaml`'s `records` says, default
 
 One source at a time, one phone task at a time, each **small**: at most
 2-3 items per task and a short report. Long tasks are the ones that end
-without their result. Use the workflow for each app:
+without their result.
 
-| app | workflow | notes |
-|---|---|---|
-| Reddit | `reddit-collect-subreddit` (a subreddit, sort New) or `reddit-search-posts` | read title, author, upvotes, any external link's domain, the first lines of the body. Do not copy links in the app: resolve them on the web later |
-| X | `x-collect-topic` | the desk's searches, Latest; `from:<account>` for official accounts |
-| LinkedIn | `linkedin-post-search`, or a company page's Posts tab | official pages first |
-| Forums | a `run_task` that opens the forum page in Chrome (`launch: com.android.chrome`, `openUrl`) and reads the first page of threads | the server's playbook covers 1point3acres |
+**Open every source by link, never by typing into an app's search box.**
+Put the link in the phase's `openUrl` with the app's `launch`, and start
+the goal at the page it opens ("The results are open. Read…"). Typing a
+search failed on X, LinkedIn and Reddit, every time, in both runs of
+2026-10-09; the same searches opened by link all worked. URL-encode the
+query (spaces as `%20`).
 
-**Use the workflow's own call**, copied from its SKILL.md with the inputs
-filled in: its `collect` spec is what tells the operator when it has read
-enough. A goal you write yourself, with no `collect`, scrolls until it runs
-out of steps (measured 2026-10-09). Open by link where the workflow does
-(a subreddit's feed, a LinkedIn search); on X use the workflow's route,
-not a goal that types into the search box, which failed twice in a row.
+| app | `launch` | `openUrl` | workflow for the `collect` spec |
+|---|---|---|---|
+| Reddit, a subreddit | `com.reddit.frontpage` | `https://www.reddit.com/r/<sub>/new/` | `reddit-collect-subreddit` |
+| Reddit, a search | `com.reddit.frontpage` | `https://www.reddit.com/search/?q=<query>&sort=new` | `reddit-search-posts` |
+| X, a search or `from:<account>` | `com.twitter.android` | `https://x.com/search?q=<query>&f=live` | `x-collect-topic` |
+| LinkedIn, posts | `com.linkedin.android` | `https://www.linkedin.com/search/results/content/?keywords=<query>&sortBy=%22date_posted%22` | `linkedin-post-search` |
+| LinkedIn, a company's posts | `com.linkedin.android` | `https://www.linkedin.com/company/<slug>/posts/` (slugs that do not open are dropped from the desk) | `linkedin-post-search` |
+| A forum | `com.android.chrome` | the forum page | the server's playbook (1point3acres) |
+
+**Take the `collect` spec from that workflow's SKILL.md**, with the inputs
+filled in: it is what tells the operator when it has read enough. A goal
+with no `collect` scrolls until it runs out of steps (measured
+2026-10-09). On Reddit read title, author, upvotes, any external link's
+domain and the first lines of the body; never copy links in the app.
 
 Give each a `claim` that says what the lane keeps, so the read filters on
 the phone: for `news`, "the post reports an official announcement, a
