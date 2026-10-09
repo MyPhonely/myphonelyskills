@@ -62,11 +62,22 @@ without their result. Use the workflow for each app:
 | LinkedIn | `linkedin-post-search`, or a company page's Posts tab | official pages first |
 | Forums | a `run_task` that opens the forum page in Chrome (`launch: com.android.chrome`, `openUrl`) and reads the first page of threads | the server's playbook covers 1point3acres |
 
-Give each a `claim` (or a goal sentence) that says what the lane keeps, so
-the read filters on the phone: for `news`, "the post reports an official
-announcement, a policy, rule or fee change, visa-bulletin movement, a
-processing-time change or a court ruling, not a personal case question";
-for `cases`, what `desk.yaml` says a case report is.
+**Use the workflow's own call**, copied from its SKILL.md with the inputs
+filled in: its `collect` spec is what tells the operator when it has read
+enough. A goal you write yourself, with no `collect`, scrolls until it runs
+out of steps (measured 2026-10-09). Open by link where the workflow does
+(a subreddit's feed, a LinkedIn search); on X use the workflow's route,
+not a goal that types into the search box, which failed twice in a row.
+
+Give each a `claim` that says what the lane keeps, so the read filters on
+the phone: for `news`, "the post reports an official announcement, a
+policy, rule or fee change, visa-bulletin movement, a processing-time
+change or a court ruling, not a personal case question"; for `cases`, what
+`desk.yaml` says a case report is.
+
+**Pinned highlights and link posts**: a subreddit's "Community highlights"
+and a link post's title are leads, not stories. Note the title and search
+for it on the web (step 4); the phone need not open them.
 
 A source that fails or returns nothing is logged and skipped. One bad
 source never stops the run.
@@ -97,7 +108,11 @@ go into a roundup, so a weekly cadence has the whole week.
 ### 3. Score and pick
 
 Drop anything already in `published.jsonl` and merge the same story from
-several sources. Score each story on the desk's criteria (default:
+several sources. **Drop old news**: a story is news only if its primary
+source is dated within `target.max_age_days` (default 3) or something new
+happened to it in that window (a court order, an effective date, a new
+FAQ); then the article is about that new thing. Pinned highlights are
+often months old. Score each story on the desk's criteria (default:
 newsworthiness 1-10 and how many readers it affects 1-10) and keep those at
 or above `target.min_score`, official sources first, up to
 `target.articles_per_day`.
@@ -108,7 +123,12 @@ For every story you keep, before writing a word:
 
 1. **Find the primary source on the web**: the agency's page, the Federal
    Register, the court's ruling, the news article a link post points to.
-   That is the `sourceUrl`, not the community post.
+   That is the `sourceUrl`, not the community post. Use your web search
+   tool. With none, a shell still reaches the sources that matter most:
+   the Federal Register's API (`curl
+   'https://www.federalregister.gov/api/v1/documents.json?conditions[term]=<words>&order=newest'`)
+   for any rule, and the agencies' news pages (`desk.yaml` may list them
+   under `primary_sources`). No source found: drop the story.
 2. **Check every fact you will state** (dates, numbers, form and rule
    names, who said it) against that source. A claim you could not check is
    left out, or the story is dropped.
@@ -142,8 +162,11 @@ because its facts could not be checked.
   user has decided to.
 - **pi**: load `outreach-day/scripts/adapters/pi.ts` with `-e`. It connects
   MyPhonely from `MYPHONELY_API_KEY` with the phone's writing tools hidden,
-  which is all a desk needs: `pi --no-extensions -e builtin:mcp -e
-  <skills>/outreach-day/scripts/adapters/pi.ts --skill <skills> "Run
+  which is all a desk needs. pi has no web search of its own: install one
+  (`pi install npm:pi-web-search` uses the current model's native search)
+  and load it with `-e` too, since `--no-extensions` skips installed ones:
+  `pi --no-extensions -e builtin:mcp -e <skills>/outreach-day/scripts/adapters/pi.ts
+  -e ~/.pi/agent/npm/node_modules/pi-web-search --skill <skills> "Run
   news-desk for <desk> in draft mode"`.
 - The phone only reads, so there is nothing to reserve; the records'
   `published.jsonl` is what keeps a story from going out twice.
