@@ -53,6 +53,16 @@ test("reads pass with no agent at all; direct writes and taps on Post never pass
   assert.equal(hook(null, "run_task", { allow_writes: true, request: "reply to a post" }).decision, "deny", "a planned run may not write");
 });
 
+test("with no outreach agent (a news desk sharing), a paused write needs no reservation but the commit is still asked", () => {
+  const share = { allow_writes: true, phases: [{ goal: "open the composer and type the post", allowWrites: true, pauseWhen: "the post is typed" }] };
+  assert.equal(hook(null, "run_task", share).decision, "allow");
+  const noPause = { allow_writes: true, phases: [{ goal: "post it", allowWrites: true }] };
+  assert.equal(hook(null, "run_task", noPause).decision, "deny", "a writing phase must pause when someone is watching");
+  assert.equal(hook(null, "resume_task", { task_id: "t1", allowWrites: true }).decision, "ask");
+  assert.equal(hook(null, "resume_task", { task_id: "t1", allowWrites: true }, true).decision, "allow", "unattended");
+  assert.equal(hook(null, "phone_tap_label", { text: "Post" }).decision, "deny", "direct taps on Post still never pass");
+});
+
 test("a writing phase needs an open reservation and spends it; the commit is asked of the person", () => {
   const agent = freshAgent();
   try {

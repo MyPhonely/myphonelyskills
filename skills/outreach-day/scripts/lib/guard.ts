@@ -17,6 +17,7 @@
  * the records are files the agent's own shell can reach.
  */
 
+import { hasCurrentAgent } from "./common.ts";
 import { decide } from "./policy.ts";
 import { loadDay, saveDay } from "./session.ts";
 
@@ -30,6 +31,16 @@ export function guard(toolName: string, input: Record<string, unknown>, unattend
   const d = decide(toolName, input, { unattended, ticketedTasks: new Set() });
   if (d.kind === "read") return { decision: "allow", reason: "" };
   if (d.kind === "blocked") return { decision: "deny", reason: d.reason };
+
+  const isResumeCall = toolName.endsWith("__resume_task");
+  // Not an outreach run (a news desk sharing its articles, say): no
+  // reservations to keep, but the rest holds. The write goes through
+  // run_task, its phase pauses (decide() refused one that does not, unless
+  // unattended), and the commit is the person's to approve.
+  if (!hasCurrentAgent()) {
+    if (isResumeCall && !unattended) return { decision: "ask", reason: d.approve ?? "continue the paused write" };
+    return { decision: "allow", reason: "" };
+  }
 
   const day = loadDay();
   const open = day.items.filter((r) => r.state === "open");

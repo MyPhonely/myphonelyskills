@@ -117,6 +117,11 @@ export function setCurrentAgent(agent: Agent | null): void {
   currentAgent = agent;
 }
 
+/** Whether an outreach agent is loaded: without one there are no reservations to keep. */
+export function hasCurrentAgent(): boolean {
+  return currentAgent !== null || Boolean(process.env.OUTREACH_STATE);
+}
+
 /** A failure the CLI reports and exits on, rather than a crash. */
 export class KitError extends Error {
   code: number;

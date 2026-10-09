@@ -1,10 +1,10 @@
 ---
 name: news-desk
-description: Run one day of a news site's desk from a desk folder (desk.yaml, style.md) — collect what communities and official accounts posted on the user's real phone (Reddit, X, LinkedIn, forums in Chrome), keep the real news and the case reports the desk wants, check every fact against a primary source, and write the day's articles as drafts or publish them to the site's API. Use when asked to run the news, today's news run, or a news roundup for a site that has a desk folder.
+description: Run one day of a news site's desk from a desk folder (desk.yaml, style.md) — collect what communities and official accounts posted on the user's real phone (Reddit, X, LinkedIn, forums in Chrome), keep the real news and the case reports the desk wants, check every fact against a primary source, write the day's articles as drafts or publish them to the site's API, and share the best of them to the site's own X account and subreddits. Use when asked to run the news, today's news run, or a news roundup for a site that has a desk folder.
 kind: agent
 title: Run a day of news for your site
 apps: com.reddit.frontpage, com.twitter.android, com.linkedin.android, com.android.chrome
-writes: false
+writes: true
 reviews: true
 ---
 
@@ -19,8 +19,10 @@ you decide what is news, check it, and write it.
 Any agent that can read a skill, call MCP tools, search the web and run a
 shell command can run it: Claude Code, Codex, pi.
 
-**Nothing on the phone is written.** Every phone task here only reads. The
-one thing that leaves the machine is an article, and only in publish mode.
+**Collecting only reads the phone.** What leaves the machine: articles, in
+publish mode; and, when the desk has a `share` section, a post about each
+of the day's best articles on the site's own accounts (step 6), which stops
+for the person's approval unless they have said otherwise.
 
 ## Inputs
 
@@ -156,6 +158,31 @@ with the fields as front matter. Nothing is sent.
 says it was created. Append a line to `published.jsonl` for each one that
 was. A failed request is logged; do not retry it blindly.
 
+### 6. Share (only if `desk.yaml` has `share`, and only articles that are live)
+
+Pick the day's strongest published articles, at most `share.max_per_day`,
+and post each to the site's **own** accounts and communities listed under
+`share`. Never anywhere else: other people's communities remove a site's
+links and ban the account.
+
+- **Reddit**, each community in `share.reddit.communities`: the
+  `reddit-post` workflow, a **text post**: the article's headline as the
+  title; as the body, 3-4 sentences with the key facts, then the article's
+  link on its own line. An account that only ever posts links to one
+  domain trips Reddit's spam filter, even in its own subreddits.
+- **X**, `share.x`: the `x-post` workflow; one or two sentences, the fact
+  first, then the link.
+- Write each post fresh from the article, as `style.md` says. Never the
+  same text in two places.
+
+Every share is a write from the brand's account, so it follows the
+workflows' pause: with someone watching (`share.mode: review`, the
+default), stop at each composer and post only on their yes. With no one
+watching, write the posts to `<records>/share/<date>.md` instead and post
+nothing; post unattended only when `share.mode` is `autopilot`. Record each
+post that went out in `<records>/shared.jsonl` (`date`, `slug`, `where`)
+and never share an article twice to the same place.
+
 ## What comes back
 
 Write `<records>/runs/<date>.md` and report: each source `OK | EMPTY |
@@ -176,7 +203,10 @@ because its facts could not be checked.
   and load it with `-e` too, since `--no-extensions` skips installed ones:
   `pi --no-extensions -e builtin:mcp -e <skills>/outreach-day/scripts/adapters/pi.ts
   -e ~/.pi/agent/npm/node_modules/pi-web-search --skill <skills> "Run
-  news-desk for <desk> in draft mode"`.
-- The phone only reads, so there is nothing to reserve; the records'
-  `published.jsonl` is what keeps a story from going out twice.
+  news-desk for <desk> in draft mode"`. Without an outreach agent loaded,
+  the extension keeps no reservations but still makes every share's phase
+  pause and asks the person before the post goes out (unattended:
+  `OUTREACH_UNATTENDED=1`, for `share.mode: autopilot` only).
+- No reservations here: `published.jsonl` keeps a story from going out
+  twice, `shared.jsonl` a share.
 - `example/` is a complete fictional desk to copy.
