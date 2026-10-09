@@ -80,6 +80,28 @@ export function rotationFor(agent: Agent, d: Date): string[] {
   return values.slice(idx, idx + perDay);
 }
 
+/**
+ * A school's distinctive words: "University of Oklahoma" -> "Oklahoma". In a
+ * two-school search the shared word "University" dilutes the match: measured
+ * 2026-10-08, "PhD University of Oklahoma Tsinghua University" returned people
+ * still in China, "PhD Oklahoma Tsinghua" people in Oklahoma.
+ */
+export function shortName(school: string): string {
+  const s = school.replace(/\b(The|University( of)?|College( of)?)\b/gi, " ").replace(/\s+/g, " ").trim();
+  return s || school;
+}
+
+/** Today's paired values (audience.pair), rotating like rotate.values. */
+export function pairFor(agent: Agent, d: Date): string[] {
+  const pair = agent.audience.pair;
+  const values = pair?.values ?? [];
+  const perDay = Number(pair?.per_day ?? 4);
+  if (!values.length || perDay <= 0) return [];
+  const blocks = Math.max(1, Math.ceil(values.length / perDay));
+  const idx = (((daysSince(d, startOf(pair?.start)) % blocks) + blocks) % blocks) * perDay;
+  return values.slice(idx, idx + perDay);
+}
+
 const num = (v: unknown, fallback: number): number => (v === undefined || v === null ? fallback : Number(v));
 
 export interface Dispatch {
@@ -88,6 +110,8 @@ export interface Dispatch {
   connects?: number;
   rotate_by?: string;
   rotation_value?: string;
+  /** The paired value searched with rotation_value (audience.pair). */
+  pair_value?: string;
   source?: string;
   keyword?: string;
   posts?: number;
@@ -135,6 +159,51 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
       source,
       rotate_by: rot.dimension,
       rotation_today: sliceToday,
+      batch_size: batch,
+      connects_target: target,
+      warmups_target: num(ch.warmups_per_day, 10),
+      withdraw_after_days: num(ch.withdraw_after_days, 15),
+      withdraw_per_run: num(ch.withdraw_per_run, 25),
+      weekly_invite_cap: num(ch.weekly_invite_cap, 100),
+      dispatches,
+    };
+  }
+
+  // Two schools per search: a person with both on their profile is, most of
+  // the time, at the first now with a degree from the second. Measured
+  // 2026-10-08: 52 of 59 cards were in the US, against 0 of 10 for the
+  // foreign school alone; the cards then go through card_filter.
+  const pairToday = pairFor(agent, d);
+  if (pairToday.length) {
+    const template = agent.audience.pair?.query ?? "PhD {value} {pair}";
+    const values: Array<string | null> = sliceToday.length ? sliceToday : [null];
+    // Interleave so a short day still spans several US schools.
+    outerPair: for (const paired of pairToday) {
+      for (const value of values) {
+        const query = template
+          .replace("{value_short}", shortName(value ?? ""))
+          .replace("{value}", value ?? "")
+          .replace("{pair}", paired)
+          .replace(/\s+/g, " ")
+          .trim();
+        const entry: Dispatch = { query, search_term: query, connects: batch, pair_value: paired };
+        if (value !== null) {
+          entry.rotate_by = rot.dimension;
+          entry.rotation_value = value;
+        }
+        dispatches.push(entry);
+        if (dispatches.reduce((s, p) => s + (p.connects ?? 0), 0) >= target) break outerPair;
+      }
+    }
+    return {
+      date: iso(d),
+      platform: channel,
+      kind: "connect",
+      source,
+      rotate_by: rot.dimension,
+      rotation_today: sliceToday,
+      pair_today: pairToday,
+      card_filter: agent.audience.card_filter ?? null,
       batch_size: batch,
       connects_target: target,
       warmups_target: num(ch.warmups_per_day, 10),

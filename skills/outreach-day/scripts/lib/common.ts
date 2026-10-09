@@ -40,10 +40,40 @@ export interface Rotation {
   start?: string;
 }
 
+/**
+ * Two schools in one search: each rotation value (a US school, say) is
+ * searched together with each of today's `values` (foreign schools), so the
+ * people found have both on their profile. LinkedIn treats the pair as a
+ * relevance hint, not a filter, so the cards still go through card_filter.
+ */
+export interface Pair {
+  values?: string[];
+  per_day?: number;
+  /** YYYY-MM-DD, as for rotate.start. */
+  start?: string;
+  /**
+   * The search text; {value} is the rotation value, {value_short} the same
+   * without "University (of)", {pair} the paired one. Default "PhD {value} {pair}".
+   */
+  query?: string;
+}
+
+/** Which search-result cards to keep, judged from the card alone (no profile opened). */
+export interface CardFilter {
+  /** "us" for the built-in United States matcher, or substrings of the card's location. */
+  location?: "us" | string[];
+  /** Keep only headlines containing one of these (case-insensitive, "Ph.D." reads as "phd"). */
+  headline_any?: string[];
+  /** Drop headlines containing any of these, after "ex-", "prev", "former" and "intern" parts are set aside. */
+  headline_none?: string[];
+}
+
 export interface Audience {
   titles: string[];
   exclude_headlines?: string[];
   rotate?: Rotation;
+  pair?: Pair;
+  card_filter?: CardFilter;
   /** Legacy shape, kept so configs verified against live data keep working. */
   schools?: string[];
   schools_per_day?: number;
@@ -330,7 +360,7 @@ export function emit(obj: unknown, asJson: boolean): void {
         console.log(`${k}:`);
         for (const item of v) console.log(`  ${typeof item === "object" ? JSON.stringify(item) : String(item)}`);
       } else {
-        console.log(`${k}: ${String(v)}`);
+        console.log(`${k}: ${v && typeof v === "object" ? JSON.stringify(v) : String(v)}`);
       }
     }
     return;

@@ -161,17 +161,26 @@ In this order, each with its workflow:
    and record it.
 3. **Invite**, while `outreach budget --channel linkedin` has room:
    1. `linkedin-search-people` with today's queries from `outreach targets`
-      (titles crossed with the rotation), 2nd degree.
-   2. Skip `audience.exclude_headlines`. When the channel's `qualify_rule`
-      needs what a card cannot show, check with `linkedin-profile-detail`;
-      file people who do not fit as `outreach ledger add-person --stage
-      Disqualified`, so they are never opened again.
+      (titles crossed with the rotation, or two schools per search when the
+      agent has `audience.pair`), 2nd degree.
+   2. **When `outreach targets` shows a `card_filter`**, the cards decide:
+      save the search's `collected` list and run `outreach cards --pair
+      "<the dispatch's pair_value>" --file <it>`. Invite only the people it
+      KEEPs, and open no profile: the two-school search and the filter do the
+      qualifying (about 1 credit a person, against 40-90 for a profile).
+      Otherwise skip `audience.exclude_headlines`, and when the channel's
+      `qualify_rule` needs what a card cannot show, check with
+      `linkedin-profile-detail`; file people who do not fit as `outreach
+      ledger add-person --stage Disqualified`, so they are never opened
+      again.
    3. `outreach reserve` each person you would invite, no more than the
       budget's `left`.
    4. `linkedin-invite-from-results` with `count` = the number reserved
-      (`linkedin-connect-with-note` when the channel sends a note). The card
-      flow invites whoever it reaches, so trust its `sent` list, not your
-      reservations.
+      (`linkedin-connect-with-note` when the channel sends a note). After a
+      card filter, pin it to the kept names: `countLabel` `^Invite (<name
+      1>|<name 2>) to connect$` and a goal that names them, so a card the
+      filter dropped is never counted. The card flow can still reach others,
+      so trust its `sent` list, not your reservations.
    5. Confirm with `linkedin-sent-invitations`. Record `sent` for each name
       listed there (a name you had not reserved: reserve it first, then
       record it); record `failed` for reservations that did not go out.

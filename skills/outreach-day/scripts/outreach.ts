@@ -12,6 +12,7 @@
  *   show                          the agent: files to read, records, today's rotation
  *   channels                      the channels in run order, with their kind
  *   targets --channel <c>         today's searches for a channel
+ *   cards [--pair "<school>"]     which search cards (JSON on stdin) to keep, by audience.card_filter
  *   message --name warmup         a message rendered from agent.yaml's offer
  *   init                          create the records (idempotent)
  *
@@ -45,10 +46,12 @@
  * (budget spent). 2 a usage error.
  */
 
-import { realpathSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 
 import { cli, die, emit, loadAgent, parse, setCurrentAgent } from "./lib/common.ts";
 import type { Options } from "./lib/common.ts";
+import { judgeCards } from "./lib/cards.ts";
+import type { Card } from "./lib/cards.ts";
 import { claudeHook } from "./lib/guard.ts";
 import { init, main as ledgerMain } from "./lib/ledger.ts";
 import { lint, newAgent } from "./lib/scaffold.ts";
@@ -214,6 +217,33 @@ function main(argv: string[]): number | Promise<number> {
       emit({ line: row.line, status: row.status, comment: row.comment }, Boolean(v.json));
       return 0;
     }
+    case "cards": {
+      const v = parse(rest, { ...COMMON, pair: { type: "string" }, file: { type: "string" } });
+      const agent = loadAgent(str(v.agent));
+      const filter = agent.audience.card_filter;
+      if (!filter) die("agent.yaml has no audience.card_filter");
+      const read = v.file ? Promise.resolve(readFileSync(v.file as string, "utf8")) : readStdin();
+      return read.then((text) => {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          return die("cards: expected a JSON list of cards (name, headline, location) on stdin or --file");
+        }
+        // Accept the run's whole result too: { collected: [...] } or a phase list.
+        const list = (Array.isArray(parsed) ? parsed : ((parsed as { collected?: unknown[] }).collected ?? [])) as Card[];
+        const verdicts = judgeCards(list, filter!, str(v.pair));
+        const kept = verdicts.filter((x) => x.keep).map((x) => x.card);
+        const dropped = verdicts.filter((x) => !x.keep).map((x) => ({ name: x.card.name ?? "", reason: x.reason }));
+        if (v.json) emit({ kept, dropped }, true);
+        else {
+          for (const c of kept) console.log(`KEEP  ${c.name || "(no name)"} | ${c.headline ?? ""} | ${c.location ?? ""}`);
+          for (const d of dropped) console.log(`DROP  ${d.name || "(no name)"}: ${d.reason}`);
+          console.log(`${kept.length} kept, ${dropped.length} dropped`);
+        }
+        return 0;
+      });
+    }
     case "guard": {
       // A read passes without an agent; a write needs one to find its reservations.
       try {
@@ -229,7 +259,7 @@ function main(argv: string[]): number | Promise<number> {
     }
     default:
       return die(
-        `expected a command: new, lint, show, channels, targets, message, init, check, budget, reserve, record, release, report, draft, drafts, mark, guard, quota, ledger${cmd ? ` (got ${cmd})` : ""}`,
+        `expected a command: new, lint, show, channels, targets, cards, message, init, check, budget, reserve, record, release, report, draft, drafts, mark, guard, quota, ledger${cmd ? ` (got ${cmd})` : ""}`,
       );
   }
 }

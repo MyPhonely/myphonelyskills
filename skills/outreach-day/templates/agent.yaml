@@ -57,6 +57,22 @@ audience:
     # start: "2026-01-01"
     values: []
 
+  # Optional, for a connect channel: search two values at once, e.g. a US
+  # school with a foreign one, to find people who have both on their profile
+  # ("PhD UCLA Tsinghua University": at UCLA now, a degree from Tsinghua).
+  # Then keep or drop each result card by card_filter, with no profile opened:
+  # `outreach cards`. Measured 2026-10-08: 52 of 59 cards were in the US.
+  # {value_short} is the school without "University (of)", which otherwise
+  # dilutes the match.
+  # pair:
+  #   per_day: 3
+  #   query: "PhD {value_short} {pair}"
+  #   values: [Tsinghua University, IIT Bombay, KAIST]
+  # card_filter:
+  #   location: us                    # or a list of places: [Irvine, Los Angeles]
+  #   headline_any: [phd student, phd candidate, postdoc]
+  #   headline_none: [professor, scientist, engineer]
+
 channels:
   # kind: connect -> request + warmup DM + reply handling (LinkedIn-shaped)
   linkedin:
