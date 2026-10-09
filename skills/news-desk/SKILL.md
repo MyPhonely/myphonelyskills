@@ -172,6 +172,15 @@ links and ban the account.
   domain trips Reddit's spam filter, even in its own subreddits.
 - **X**, `share.x`: the `x-post` workflow; one or two sentences, the fact
   first, then the link.
+- **Discord**, `share.discord` (a server and a channel the phone's account
+  can post in): one `run_task` phase, `launch: com.discord`, goal "tap the
+  <server> server icon in the left sidebar, tap the #<channel> text channel
+  (not a voice channel), tap the 'Message #<channel>' bar", `pauseWhen` "the
+  'Message #<channel>' box of the <server> server is focused and empty";
+  then `resume_task` with `typeTexts: [<message>]`, `allowWrites: true`,
+  `repeat: 1`, `countLabel: "^Send"` and a goal that types the message and
+  taps the send arrow once (never Record Voice Message). The message: the
+  headline in bold, two sentences, the link.
 - Write each post fresh from the article, as `style.md` says. Never the
   same text in two places.
 
