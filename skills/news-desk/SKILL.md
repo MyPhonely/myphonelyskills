@@ -32,7 +32,8 @@ one thing that leaves the machine is an article, and only in publish mode.
 
 ## Read the desk first
 
-`desk.yaml`, `style.md`, and any other `.md` in the folder. `desk.yaml`
+`desk.yaml`, `style.md`, and any other `.md` in the folder except
+`README.md`, which is for people. `desk.yaml`
 holds the sources (app, where, how many), the lanes, the score bar, the
 day's target, and the publish endpoint with its field names. `style.md`
 overrides everything here on how an article reads and what it must never
