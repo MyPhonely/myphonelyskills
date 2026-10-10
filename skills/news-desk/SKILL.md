@@ -180,7 +180,12 @@ links and ban the account.
   then `resume_task` with `typeTexts: [<message>]`, `allowWrites: true`,
   `repeat: 1`, `countLabel: "^Send"` and a goal that types the message and
   taps the send arrow once (never Record Voice Message). The message: the
-  headline in bold, two sentences, the link.
+  headline in bold, two sentences, the link. Measured 2026-10-09: Discord's
+  accessibility tree keeps reporting the channel-list drawer after a
+  channel opens, so the pause can fire on the wrong screen and the operator
+  can stall. Check the pause's screenshot shows the channel's own feed and
+  its "Message #<channel>" box before resuming; an announcement channel is
+  labelled "<channel> (announcement channel)", not "text channel".
 - Write each post fresh from the article, as `style.md` says. Never the
   same text in two places.
 
