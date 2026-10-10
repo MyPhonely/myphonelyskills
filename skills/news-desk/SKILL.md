@@ -172,6 +172,24 @@ links and ban the account.
   domain trips Reddit's spam filter, even in its own subreddits.
 - **X**, `share.x`: the `x-post` workflow; one or two sentences, the fact
   first, then the link.
+- **LinkedIn**, `share.linkedin` (a company page the phone's member admins,
+  and who reposts it): post **as the page**, then repost from the member.
+  1. Open the page in admin view: `openUrl`
+     `https://www.linkedin.com/search/results/companies/?keywords=<page>`, tap
+     the result named in `share.linkedin.result` (another company can share
+     the name), and dismiss a Premium offer if one covers it. Admin view
+     shows Dashboard, Inbox and **Start a post**.
+  2. Tap **Start a post** and stop: check the composer's avatar is the
+     page's logo, not the member's photo, before typing. Type the post
+     (headline, two short paragraphs, the link) and tap Post once; "Post
+     successful" confirms.
+  3. Find the post with a posts search for its headline in quotes, sorted by
+     date. Check "Comment, react, and repost as" (the avatar left of Like)
+     is set to `share.linkedin.repost_as`, then Repost → **Repost
+     instantly**; "Repost successful" confirms. Instantly, so no words go
+     out in the member's name.
+  Measured 2026-10-09: the pause can fire on the wrong screen here too, so
+  confirm each check from a screenshot.
 - **Discord**, `share.discord` (a server and a channel the phone's account
   can post in): one `run_task` phase, `launch: com.discord`, goal "tap the
   <server> server icon in the left sidebar, tap the #<channel> text channel
