@@ -171,13 +171,16 @@ links and ban the account.
   link on its own line. An account that only ever posts links to one
   domain trips Reddit's spam filter, even in its own subreddits.
   **Then approve it** where `share.reddit.moderator` is true: open the new
-  post (the subreddit's New feed, by link) and read its mod status. "Approved"
-  (the badge under the post) is done. If it shows **Approve** instead, or
-  the post is missing from the feed, Reddit's or AutoModerator's filter
-  took it: tap **Approve** on the post, or find it under Mod Tools →
-  Queues → Needs Review and approve it there, then check the badge reads
-  Approved. Measured 2026-10-09: the moderator's own text post in
-  r/quickfiling showed Approved, and the queue was empty.
+  post (the subreddit's New feed, by link, then tap it) and look for the
+  "Approved" badge under it. If it is there, done. If not, tap **Mod mode
+  disabled** at the top of the post page to turn Mod mode on, tap
+  **Approve post** (not Remove post, not Mark post as spam) and check
+  "Post has been approved." and the badge. The post menu (⋯) has only the
+  author's actions. If the post is missing from the feed, a filter took it:
+  approve it from Mod Tools → Queues → Needs Review. Measured 2026-10-09:
+  in r/quickfiling the post showed Approved at once; in r/immigraus it was
+  live but unapproved and not in the queue, and Mod mode → Approve post
+  approved it.
 - **X**, `share.x`: one or two sentences, the fact first, then the link
   (under 280 characters; a link counts as 23). Open the composer already
   filled in, by link: `launch: com.twitter.android`, `openUrl`
