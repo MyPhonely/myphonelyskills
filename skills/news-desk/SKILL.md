@@ -178,8 +178,16 @@ links and ban the account.
   Queues → Needs Review and approve it there, then check the badge reads
   Approved. Measured 2026-10-09: the moderator's own text post in
   r/quickfiling showed Approved, and the queue was empty.
-- **X**, `share.x`: the `x-post` workflow; one or two sentences, the fact
-  first, then the link.
+- **X**, `share.x`: one or two sentences, the fact first, then the link
+  (under 280 characters; a link counts as 23). Open the composer already
+  filled in, by link: `launch: com.twitter.android`, `openUrl`
+  `https://x.com/intent/post?text=<the post, URL-encoded>`, and pause.
+  Check the composer shows `share.x` as the account and the whole text,
+  then tap Post once (two overlapping "Post" labels: either is the same
+  button). Measured 2026-10-09: the `x-post` workflow's route, the floating
+  button on the timeline, did not register and the operator scrolled
+  instead; the intent link opened the composer filled in, and the post
+  went out from @quickfiling2us.
 - **LinkedIn**, `share.linkedin` (a company page the phone's member admins,
   and who reposts it): post **as the page**, then repost from the member.
   1. Open the page in admin view: `openUrl`
