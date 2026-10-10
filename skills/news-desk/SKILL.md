@@ -170,6 +170,14 @@ links and ban the account.
   title; as the body, 3-4 sentences with the key facts, then the article's
   link on its own line. An account that only ever posts links to one
   domain trips Reddit's spam filter, even in its own subreddits.
+  **Then approve it** where `share.reddit.moderator` is true: open the new
+  post (the subreddit's New feed, by link) and read its mod status. "Approved"
+  (the badge under the post) is done. If it shows **Approve** instead, or
+  the post is missing from the feed, Reddit's or AutoModerator's filter
+  took it: tap **Approve** on the post, or find it under Mod Tools →
+  Queues → Needs Review and approve it there, then check the badge reads
+  Approved. Measured 2026-10-09: the moderator's own text post in
+  r/quickfiling showed Approved, and the queue was empty.
 - **X**, `share.x`: the `x-post` workflow; one or two sentences, the fact
   first, then the link.
 - **LinkedIn**, `share.linkedin` (a company page the phone's member admins,
