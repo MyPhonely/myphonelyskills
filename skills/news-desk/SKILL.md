@@ -195,7 +195,13 @@ links and ban the account.
   to): the `facebook-post` workflow, posting to the profile it is on. Check
   the pause's labels name `share.facebook.page` as the poster before the
   post goes out; a person's name means the app switched back, so abandon.
-  The post: the headline, two or three sentences, the link last.
+  The post: the headline, two or three sentences, the link last. The
+  composer goes Next → **SHARE**, then back to the feed with an "Increase
+  your reach" sheet: tap **Not now** (never Boost post, which is paid).
+  Measured 2026-10-11: the post went out ("Quickfiling · Just now ·
+  Public" at the top of the feed) but the run ended `stuck` with `sent: []`.
+  So before any retry, look at the feed for the post: posting twice is
+  worse than not at all.
 - **LinkedIn**, `share.linkedin` (a company page the phone's member admins,
   and who reposts it): post **as the page**, then repost from the member.
   1. Open the page in admin view: `openUrl`
