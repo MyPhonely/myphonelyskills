@@ -191,6 +191,11 @@ links and ban the account.
   button on the timeline, did not register and the operator scrolled
   instead; the intent link opened the composer filled in, and the post
   went out from @quickfiling2us.
+- **Facebook**, `share.facebook` (the page the phone's Facebook is switched
+  to): the `facebook-post` workflow, posting to the profile it is on. Check
+  the pause's labels name `share.facebook.page` as the poster before the
+  post goes out; a person's name means the app switched back, so abandon.
+  The post: the headline, two or three sentences, the link last.
 - **LinkedIn**, `share.linkedin` (a company page the phone's member admins,
   and who reposts it): post **as the page**, then repost from the member.
   1. Open the page in admin view: `openUrl`
