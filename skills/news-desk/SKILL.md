@@ -175,6 +175,11 @@ links and ban the account.
   title; as the body, 3-4 sentences with the key facts, then the article's
   link on its own line. An account that only ever posts links to one
   domain trips Reddit's spam filter, even in its own subreddits.
+  **Read the published body before approving:** the Reddit body editor can
+  type the body twice (measured 2026-10-12, r/immigraus). If the title or
+  body doubled, delete the post and post it again — see `reddit-post` step
+  4. Then check the feed for the post before any retry: posting twice is
+  worse than not at all.
   **Then approve it** where `share.reddit.moderator` is true: open the new
   post (the subreddit's New feed, by link, then tap it) and look for the
   "Approved" badge under it. If it is there, done. If not, tap **Mod mode

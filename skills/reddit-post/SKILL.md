@@ -49,22 +49,45 @@ show the chosen community.
 
 **2. Show the user the title, the body and the community.** Wait for a yes.
 
-**3. Post it.**
+**3. Type the title and the body, each exactly once.** Type them in two
+calls, one field each. Reddit's body editor can report a type as unverified
+after the text has already landed, and a retry inside one call appends the
+whole text again (measured 2026-10-12, r/immigraus). One field per call
+keeps a retry from repeating the other.
 
 ```json
 resume_task({
   "task_id": "<id>",
-  "typeTexts": ["<title>", "<body>"],
+  "text": "<title>",
   "allowWrites": true,
   "repeat": 1,
   "countLabel": "^Post$",
-  "goal": "Tap the Title field and type '<title>'. Then tap the body text field and type '<body>'. Check Post is enabled and no flair or rules prompt is showing, then tap Post at the top right once. Do not tap Post twice. If 'Get updates on your posts' appears afterwards, tap Skip; if a sheet offers to repost into other communities, tap Close sheet.",
+  "goal": "Tap the Title field and type the title exactly once. Do not tap Post.",
+  "maxSteps": 6
+})
+```
+
+Then the body, once, and post:
+
+```json
+resume_task({
+  "task_id": "<id>",
+  "text": "<body>",
+  "allowWrites": true,
+  "repeat": 1,
+  "countLabel": "^Post$",
+  "goal": "Tap the body text field and type the body exactly once. The body editor's typing can read unverified even after the text has landed, so never type it twice: if the field already shows the body, leave it; if the body shows twice, clear the field and type it once. Then check Post is enabled and no flair or rules prompt is showing, and tap Post at the top right once. Do not tap Post twice. If 'Get updates on your posts' appears afterwards, tap Skip; if a sheet offers to repost into other communities, tap Close sheet.",
   "maxSteps": 10
 })
 ```
 
 Poll until `done`. `resume_task({ task_id, abandon: true })` leaves the
 editor with nothing posted.
+
+**4. Check the post is not doubled.** Open the new post (the community's
+New feed, by link, then tap it) and read the body. If the title or the body
+appears twice, the run typed it twice: delete the post (see Delete it) and
+post it again from step 1. A duplicate is worse than none.
 
 ## What comes back
 
@@ -100,8 +123,12 @@ Then `resume_task({ task_id, allowWrites: true, repeat: 1, countLabel: "^Delete$
   instead of retrying.
 - **Test in r/test.** It exists for test posts. The community picker on the
   current build offers no "your profile" option (measured 2026-10-06).
-- **Quote the body in the goal.** With only "type the body", the operator
-  could not pick which supplied text to type and stalled after the title.
+- **One field per `resume_task`, via `text`.** Putting the title and the
+  body in one call (`typeTexts: ["<title>", "<body>"]`) let the operator
+  type the body, read its verification as unverified, and type it again,
+  appending a second copy (2026-10-12, r/immigraus). Pass a single `text`
+  per call so there is nothing to pick between, and never retype a field
+  that already shows the text.
 - **Find your new post in the community's New feed,** not your profile: the
   profile's Posts tab did not list it minutes later. A feed tap can open the
   neighbouring post (the feed shifts as it loads, and the post viewer keeps
