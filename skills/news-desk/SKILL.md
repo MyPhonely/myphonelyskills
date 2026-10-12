@@ -106,6 +106,11 @@ news one by one: collect them and write **one roundup** when `desk.yaml`'s
 `cases.min_reports` is reached, as its `cases.cadence` says (say, weekly).
 In a roundup:
 
+- **title and slug safe for URLs**: write date ranges with an ASCII
+  hyphen and no periods ("Oct 6-12", never "Oct. 6–12"), so the site's
+  slug matches the one you record in `published.jsonl`; after publishing,
+  record the slug the site actually returns (or open the URL to check it);
+
 - **no names, handles or links to the person's post**, and nothing that
   identifies them (employer, lab, exact field when it is rare): report the
   facts, not the person;
@@ -213,27 +218,39 @@ links and ban the account.
      page's logo, not the member's photo, before typing. Type the post
      (headline, two short paragraphs, the link) and tap Post once; "Post
      successful" confirms.
-  3. Find the post with a posts search for its headline in quotes, sorted by
-     date. Check "Comment, react, and repost as" (the avatar left of Like)
-     is set to `share.linkedin.repost_as`, then Repost → **Repost
-     instantly**; "Repost successful" confirms. Instantly, so no words go
-     out in the member's name.
+  3. Find the page's post from the page itself, not a posts search (the
+     search kept reopening the search box, 2026-10-12): on the page, open
+     the Dashboard menu → **View as a member** → the **Posts** tab; the new
+     post is at the top (match its headline). Tap the avatar left of Like
+     and check the "Comment, react, and repost as" sheet has
+     `share.linkedin.repost_as` selected (the member, not the page; the
+     member's photo can look like the logo, so read the name). Then Repost
+     → the plain **Repost** ("Instantly bring <page>'s post to others'
+     feeds"), never "Repost with your thoughts". "Repost successful" and the
+     card's "1 repost" confirm.
   Measured 2026-10-09: the pause can fire on the wrong screen here too, so
   confirm each check from a screenshot.
 - **Discord**, `share.discord` (a server and a channel the phone's account
-  can post in): one `run_task` phase, `launch: com.discord`, goal "tap the
-  <server> server icon in the left sidebar, tap the #<channel> text channel
-  (not a voice channel), tap the 'Message #<channel>' bar", `pauseWhen` "the
-  'Message #<channel>' box of the <server> server is focused and empty";
-  then `resume_task` with `typeTexts: [<message>]`, `allowWrites: true`,
-  `repeat: 1`, `countLabel: "^Send"` and a goal that types the message and
-  taps the send arrow once (never Record Voice Message). The message: the
-  headline in bold, two sentences, the link. Measured 2026-10-09: Discord's
-  accessibility tree keeps reporting the channel-list drawer after a
-  channel opens, so the pause can fire on the wrong screen and the operator
-  can stall. Check the pause's screenshot shows the channel's own feed and
-  its "Message #<channel>" box before resuming; an announcement channel is
-  labelled "<channel> (announcement channel)", not "text channel".
+  can post in). Worked 2026-10-12 with direct phone calls under a lease:
+  1. `phone_open_app com.discord`, tap the <server> server icon, then tap
+     the channel **by its full label** ("<channel> (announcement channel)"
+     or "<channel> (text channel)"). The channel-list drawer stays in the
+     accessibility tree after the channel opens, so the tap on the channel
+     row is what brings the feed forward.
+  2. **Duplicate check**: read the channel's last messages; if the
+     article's link or headline is already there, record it as shared and
+     stop. Never post twice.
+  3. Tap the "Message #<channel>" box, then confirm with `phone_screen`
+     (not a screenshot) that the EditText is `focused`. Screenshots lag one
+     step behind: take a second one before judging.
+  4. Type the message (headline in bold, two sentences, the link) once,
+     confirm the text is in the box, tap the send arrow once (never Record
+     Voice Message), then take fresh screenshots until the feed shows the
+     message under today's date from the brand's account.
+  With `run_task`, use the same order: `pauseWhen` "the 'Message
+  #<channel>' box is focused and empty and the channel feed (not the
+  channel list) is visible", then `resume_task` with `typeTexts`,
+  `allowWrites: true`, `repeat: 1`, `countLabel: "^Send"`.
 - Write each post fresh from the article, as `style.md` says. Never the
   same text in two places.
 
