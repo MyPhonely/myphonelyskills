@@ -91,6 +91,15 @@ export function shortName(school: string): string {
   return s || school;
 }
 
+/** `perDay` of `values` for this date, walking the list one block a day from `start`. */
+function rotateSlice(values: string[], perDay: number, d: Date, start?: string): string[] {
+  if (!values.length || perDay <= 0) return [];
+  if (perDay >= values.length) return [...values];
+  const blocks = Math.ceil(values.length / perDay);
+  const idx = (((daysSince(d, startOf(start)) % blocks) + blocks) % blocks) * perDay;
+  return values.slice(idx, idx + perDay);
+}
+
 /** Today's paired values (audience.pair), rotating like rotate.values. */
 export function pairFor(agent: Agent, d: Date): string[] {
   const pair = agent.audience.pair;
@@ -112,6 +121,8 @@ export interface Dispatch {
   rotation_value?: string;
   /** The paired value searched with rotation_value (audience.pair). */
   pair_value?: string;
+  /** A Facebook group read on its own feed (scope: "group"). */
+  group?: string;
   source?: string;
   keyword?: string;
   posts?: number;
@@ -260,6 +271,17 @@ export function commentTargets(agent: Agent, channel: string, d: Date): Record<s
   const source = String(ch.source ?? (channel === "facebook" ? "groups" : "keywords"));
   if (source === "groups") {
     const groupKeywords = ((ch.group_keywords as string[] | undefined) ?? (ch.keywords as string[] | undefined) ?? []).filter(Boolean);
+    // Facebook's Groups tab has one feed of posts from every joined group:
+    // one read reaches them all. It is ranked, so the groups that matter most
+    // are also read directly, each on its own feed.
+    const feed = ch.groups_feed === true;
+    const named = ((ch.groups as string[] | undefined) ?? []).filter(Boolean);
+    const perDay = ch.groups_per_day === undefined || ch.groups_per_day === "all" ? named.length : num(ch.groups_per_day, named.length);
+    const today = rotateSlice(named, perDay, d, ch.groups_start as string | undefined);
+    const dispatches: Dispatch[] = [];
+    if (feed) dispatches.push({ scope: "groups_feed", posts: num(ch.feed_posts, 10) });
+    for (const group of today) dispatches.push({ scope: "group", group, posts: n });
+    if (!dispatches.length) dispatches.push({ scope: "your_groups", keyword: groupKeywords.join(" | "), posts: n });
     return {
       date: iso(d),
       platform: channel,
@@ -273,7 +295,8 @@ export function commentTargets(agent: Agent, channel: string, d: Date): Record<s
       lang: (ch.lang as string) ?? "en",
       posts_per_group: n,
       group_keywords: groupKeywords,
-      dispatches: [{ scope: "your_groups", keyword: groupKeywords.join(" | "), posts: n }],
+      groups_today: today,
+      dispatches,
     };
   }
   const dispatches: Dispatch[] = [];

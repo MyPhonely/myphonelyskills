@@ -82,3 +82,18 @@ test("{value_short} drops the generic words of a school's name", () => {
   assert.equal(shortName("University of California, Los Angeles"), "California, Los Angeles");
   assert.equal(shortName("Caltech"), "Caltech");
 });
+
+test("facebook: the combined groups feed, then each listed group, all or a rotating few a day", () => {
+  const groups = ["G1", "G2", "G3", "G4", "G5"];
+  const mk = (extra: Record<string, unknown>) =>
+    ({ id: "t", audience: { titles: [] }, channels: { facebook: { kind: "comment", source: "groups", posts_per_keyword: 3, ...extra } } }) as unknown as Agent;
+  const day = new Date(2026, 9, 13);
+  const all = targetsFor(mk({ groups_feed: true, feed_posts: 10, groups }), "facebook", day) as { dispatches: Array<Record<string, unknown>> };
+  assert.deepEqual(all.dispatches[0], { scope: "groups_feed", posts: 10 });
+  assert.deepEqual(all.dispatches.slice(1).map((d) => d.group), groups, "every group, every day by default");
+  const two = (d: Date) => (targetsFor(mk({ groups, groups_per_day: 2, groups_start: "2026-10-13" }), "facebook", d) as { dispatches: Array<Record<string, unknown>> }).dispatches.map((x) => x.group);
+  assert.deepEqual(two(day), ["G1", "G2"]);
+  assert.deepEqual(two(new Date(2026, 9, 14)), ["G3", "G4"]);
+  const legacy = targetsFor(mk({ group_keywords: ["NIW"] }), "facebook", day) as { dispatches: Array<Record<string, unknown>> };
+  assert.equal(legacy.dispatches[0].scope, "your_groups", "no list and no feed: the old search");
+});

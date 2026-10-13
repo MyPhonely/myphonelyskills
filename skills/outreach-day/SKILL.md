@@ -121,8 +121,10 @@ it), after checking the post is still there.
      https://x.com/search?q=<query>&f=live` (check Latest is selected).
    - Reddit: `reddit-search-posts` or `reddit-collect-subreddit`.
    - Xiaohongshu: `xiaohongshu-collect-notes`. Facebook:
-     `facebook-collect-group-posts` (joined groups, Newest; never the home
-     feed).
+     `facebook-collect-group-posts`, one read per dispatch in `outreach
+     targets`: `scope: groups_feed` is the combined feed of every joined
+     group (`group: all`), `scope: group` one named group on its own feed.
+     Never the home feed.
    Collect per post: author, handle, posted time, text, URL. Respect the
    channel's `max_post_age_hours`.
 2. **Choose.** Keep individuals sharing their situation or asking a real
