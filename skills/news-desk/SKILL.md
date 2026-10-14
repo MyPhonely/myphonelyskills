@@ -236,7 +236,17 @@ links and ban the account.
   Measured 2026-10-09: the pause can fire on the wrong screen here too, so
   confirm each check from a screenshot.
 - **Discord**, `share.discord` (a server and a channel the phone's account
-  can post in). Worked 2026-10-12 with direct phone calls under a lease:
+  can post in). **Use `run_task`**: one phase, `launch: com.discord`, goal
+  "tap the <server> server icon, tap '<channel> (announcement channel)'
+  [or (text channel)], check the last messages for the article's link and
+  stop if it is there, tap the 'Message #<channel>' box", `pauseWhen` "the
+  'Message #<channel>' box is focused, empty, with the keyboard up"; then
+  `resume_task` with `typeTexts: [<message>]`, `allowWrites: true`,
+  `repeat: 1`, `countLabel: "^Send$"`. Measured 2026-10-13: with the
+  operator's candidate cap at 300 (backend b5bbaf4; at 80 the drawer's
+  channel buttons pushed the box off the menu, which is why 10-12 and
+  10-13 failed), the box was tapped by label, the message typed and Send
+  verified, 12 credits. The direct-call route below is the fallback:
   1. `phone_open_app com.discord`, tap the <server> server icon, then tap
      the channel **by its full label** ("<channel> (announcement channel)"
      or "<channel> (text channel)"). The channel-list drawer stays in the
