@@ -50,7 +50,7 @@
 import { readFileSync, realpathSync } from "node:fs";
 
 import { parseAge } from "./lib/age.ts";
-import { cli, die, emit, loadAgent, parse, setCurrentAgent } from "./lib/common.ts";
+import { cli, die, emit, loadAgent, parse, setCurrentAgent, splitCommand } from "./lib/common.ts";
 import type { Options } from "./lib/common.ts";
 import { judgeCards } from "./lib/cards.ts";
 import type { Card } from "./lib/cards.ts";
@@ -85,8 +85,33 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+const COMMANDS = [
+  "new",
+  "lint",
+  "show",
+  "channels",
+  "targets",
+  "cards",
+  "message",
+  "init",
+  "check",
+  "budget",
+  "reserve",
+  "record",
+  "release",
+  "report",
+  "draft",
+  "drafts",
+  "mark",
+  "guard",
+  "quota",
+  "ledger",
+  "age",
+] as const;
+
 function main(argv: string[]): number | Promise<number> {
-  const [cmd, ...rest] = argv;
+  // `--agent` is accepted before the command, same as targets and show.
+  const { cmd, rest } = splitCommand(argv, COMMANDS);
   switch (cmd) {
     case "show":
     case "channels":
@@ -158,10 +183,10 @@ function main(argv: string[]): number | Promise<number> {
     }
     case "age": {
       const v = parse(rest, {
+        ...COMMON,
         text: { type: "string" },
         "max-hours": { type: "string" },
         now: { type: "string" },
-        json: { type: "boolean", default: false },
       });
       if (!v.text) die("age needs --text");
       const now = v.now ? new Date(String(v.now)) : new Date();

@@ -221,6 +221,35 @@ test("new writes a folder from the templates, never over one, and lint says what
   }
 });
 
+test("check accepts --agent before the command, as targets does", () => {
+  const agent = freshAgent();
+  try {
+    cli(agent, ["init"]);
+    const env = { ...process.env };
+    delete env.OUTREACH_STATE;
+    delete env.OUTREACH_AGENT;
+    let code = 0;
+    let out = "";
+    let err = "";
+    try {
+      out = execFileSync(process.execPath, [CLI, "--agent", agent, "check", "--channel", "x", "--author", "a", "--title", "a long enough title"], {
+        encoding: "utf8",
+        env,
+        stdio: "pipe",
+      });
+    } catch (error) {
+      const e = error as { status?: number; stdout?: string; stderr?: string };
+      code = e.status ?? 1;
+      out = e.stdout ?? "";
+      err = e.stderr ?? "";
+    }
+    assert.equal(code, 1, err);
+    assert.match(out, /found: false/);
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
+  }
+});
+
 test("an engage channel follows commenters and likes their notes, never comments, and dedups by person and note id", () => {
   const agent = freshAgent((y) =>
     y.replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, xiaohongshu]").replace(

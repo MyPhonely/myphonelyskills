@@ -172,29 +172,30 @@ does not find it again, and it is most of the credit cost.
    note from the author's avatar, and pauses on the comment sheet. Reserve
    nothing before that pause.
 2. **Choose from the pause screen.** Run `outreach age --text "<the age>"
-   --max-hours <max_post_age_hours>`. `within: false` or `hours: null`:
-   abandon and open the next card from the same results. Skip ads and the
-   signed-in account. From the comments, keep up to `commenters_per_post`
-   individuals. Skip the author, anyone `outreach check` already has, and
-   a name `reserve` will refuse. No one left: abandon, stay on the results,
-   next card. Do not search again.
-3. **Reserve, then act, still on that note.** Reserve every follow first
-   (`--action follow --name "<nick>" --title "<source note>" --url
-   "<profile id>"` when you have it), then one like each (`--action like
-   --author "<nick>" --title "<source note>"`). A refusal drops that write
-   only. Resume step 3 of the workflow with only those names. It follows
-   each, opens one latest note of theirs, likes that note, and returns to
-   this comment sheet. Verify on the screen: a follow reads Following,
-   已关注 or 互相关注; a like shows a filled heart, Liked or 已赞, or a
-   count one higher. `sent` often lists the follow and omits the like. If
-   the result never mentions the heart, read the screen once with
-   `phone_screen` before recording; do not tap the heart again. Record the
-   follow with the profile id, and the like with the liked note's own
-   title and id: `outreach record --reservation <id> --outcome sent|failed
-   --channel <c> ... --url "<id>"`.
-4. **Next note, same search.** While budget remains, run step 1 again
-   without `launch`, from the results already on screen. Search the keyword
-   again only when those results are gone.
+   --max-hours <max_post_age_hours>` (`--agent` is accepted, before or
+   after `age`). `within: false` or `hours: null`: abandon and open the
+   next card from the same results. Skip ads and the signed-in account.
+   From the comments, keep up to `commenters_per_post` individuals. Skip
+   the author, anyone `outreach check` already has, and a name `reserve`
+   will refuse. No one left: abandon, stay on the results, next card. Do
+   not search again.
+3. **One commenter at a time.** Reserve the follow (`--action follow
+   --name "<nick>" --title "<source note>"`). Resume step 3 of
+   `xiaohongshu-follow-commenter-and-like-latest` for that one name: open
+   the profile inside the app, tap Follow or 关注 once, stop. Record it
+   before anything else. Sent when the button reads Following, 已关注 or
+   互相关注, or the Following count went up by one. Still Follow or 关注:
+   record failed and do not tap again. Then the like, a separate call from
+   that profile, with no `launch`: open one latest note, and tap the heart
+   once only if it is not already filled or labelled Liked or 已赞. Record
+   the like from that screen (a filled heart, Liked, 已赞, or a count one
+   higher). `sent` often omits the like. Do not tap the heart a second
+   time. Press Back to the same comment sheet. No profile URL and no
+   Chrome. The next name is a new task with no `launch`, not another pass
+   inside the same resume.
+4. **Next note, same search.** While budget remains, press Back to the
+   Latest results and open the next card. Do not set `launch` again.
+   Search the keyword again only when Back cannot reach those results.
 
 Unattended review mode has no drafts for likes or follows: skip the
 channel. Autopilot reads the pause and resumes on its own.

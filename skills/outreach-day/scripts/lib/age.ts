@@ -2,7 +2,8 @@
  * Turn a post age from a phone screen into hours before `now`.
  *
  * Xiaohongshu returns several shapes for one fact: "1 day(s) ago",
- * "Yesterday 12:18", "10-14", "2024-04-11", "3天前", "昨天". Callers compare
+ * "Yesterday 12:18", "10-14", "2024-04-11", "Edited on Apr/10/2024",
+ * "Edited on May 21", "3天前", "昨天", "编辑于2024年4月10日". Callers compare
  * `hours` to `max_post_age_hours`. Unrecognized text is null, not a guess.
  */
 
@@ -52,12 +53,34 @@ function at(year: number, month: number, day: number, hour: number, minute: numb
   return d;
 }
 
+const MONTHS: Record<string, number> = {
+  jan: 1,
+  feb: 2,
+  mar: 3,
+  apr: 4,
+  may: 5,
+  jun: 6,
+  jul: 7,
+  aug: 8,
+  sep: 9,
+  oct: 10,
+  nov: 11,
+  dec: 12,
+};
+
+const MONTH = "jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?";
+
+function monthNumber(name: string): number | null {
+  return MONTHS[name.toLowerCase().slice(0, 3)] ?? null;
+}
+
 function normalize(raw: string): string {
   return raw
     .normalize("NFKC")
     .trim()
     .replace(/\s+/g, " ")
-    .replace(/^(?:编辑于|发布于|posted on|posted|edited on|edited)\s+/i, "")
+    // "编辑于2024年4月10日" has no space; "Edited on Apr/10/2024" does.
+    .replace(/^(?:编辑于|发布于|posted on|posted|edited on|edited)\s*[:：]?\s*/i, "")
     .trim();
 }
 
@@ -96,10 +119,36 @@ export function parseAge(text: string, now = new Date()): ParsedAge {
     return { hours: Math.round(Number(zh[1]) * unit), date: null };
   }
 
+  const dated = calendar(s, now);
+  if (dated) return dated;
+
+  return none;
+}
+
+/** A named or numeric calendar day. Month-day with no year rolls back if it is still ahead of `now`. */
+function calendar(s: string, now: Date): ParsedAge | null {
+  const named = new RegExp(`^(${MONTH})(?:/(\\d{1,2})/(\\d{4})|\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?)$`, "i").exec(s);
+  if (named) {
+    const month = monthNumber(named[1]);
+    const day = Number(named[2] ?? named[4]);
+    const year = named[3] ?? named[5];
+    if (!month) return null;
+    if (year) {
+      const then = at(Number(year), month, day, 12, 0);
+      if (!then) return null;
+      return { hours: hoursBetween(then, now), date: dayStamp(then) };
+    }
+    let then = at(now.getFullYear(), month, day, 12, 0);
+    if (!then) return null;
+    if (then.getTime() > now.getTime()) then = at(now.getFullYear() - 1, month, day, 12, 0);
+    if (!then) return null;
+    return { hours: hoursBetween(then, now), date: dayStamp(then) };
+  }
+
   const full = /^(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?(?:\s+(\d{1,2}):(\d{2}))?$/.exec(s);
   if (full) {
     const then = at(Number(full[1]), Number(full[2]), Number(full[3]), full[4] !== undefined ? Number(full[4]) : 12, full[5] !== undefined ? Number(full[5]) : 0);
-    if (!then) return none;
+    if (!then) return null;
     return { hours: hoursBetween(then, now), date: dayStamp(then) };
   }
 
@@ -110,12 +159,12 @@ export function parseAge(text: string, now = new Date()): ParsedAge {
     const hour = md[3] !== undefined ? Number(md[3]) : 12;
     const minute = md[4] !== undefined ? Number(md[4]) : 0;
     let then = at(now.getFullYear(), month, day, hour, minute);
-    if (!then) return none;
+    if (!then) return null;
     // "12-01" read in October is last December, not a date that has not happened.
     if (then.getTime() > now.getTime()) then = at(now.getFullYear() - 1, month, day, hour, minute);
-    if (!then) return none;
+    if (!then) return null;
     return { hours: hoursBetween(then, now), date: dayStamp(then) };
   }
 
-  return none;
+  return null;
 }
