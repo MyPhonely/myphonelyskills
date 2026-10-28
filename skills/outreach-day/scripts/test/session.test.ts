@@ -250,6 +250,44 @@ test("check accepts --agent before the command, as targets does", () => {
   }
 });
 
+test("asking for a firm is not promo, and a missed follow may be released and retried once", () => {
+  const agent = freshAgent((y) =>
+    y.replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, xiaohongshu]").replace(
+      "\noffer:",
+      `
+  xiaohongshu:
+    kind: engage
+    follows_per_day: 5
+    keywords: [alpha]
+
+offer:`,
+    ),
+  );
+  try {
+    cli(agent, ["init"]);
+    const ask = json(
+      cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小王", "--title", "批了", "--body", "求律所推荐，求律师", "--json"]),
+    );
+    assert.equal(ask.reserved, "r1", "律所 and 律师 in a comment are the audience");
+    assert.equal(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "某律所", "--title", "批了"]).code, 3);
+    assert.equal(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小李", "--title", "批了", "--body", "欢迎咨询"]).code, 3);
+
+    cli(agent, ["release", "--reservation", "r1"]);
+    assert.equal(json(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小王", "--title", "批了", "--json"])).reserved, "r2");
+    cli(agent, ["release", "--reservation", "r2"]);
+    const third = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小王", "--title", "批了"]);
+    assert.equal(third.code, 3);
+    assert.match(third.err, /one retry/);
+
+    const missed = json(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小赵", "--title", "批了", "--json"]));
+    cli(agent, ["record", "--reservation", String(missed.reserved), "--outcome", "failed", "--name", "小赵", "--title", "批了"]);
+    assert.equal(cli(agent, ["release", "--reservation", String(missed.reserved)]).code, 0, "a recorded miss can be given back");
+    assert.equal(json(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小赵", "--title", "批了", "--json"])).action, "follow");
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
+  }
+});
+
 test("an engage channel follows commenters and likes their notes, never comments, and dedups by person and note id", () => {
   const agent = freshAgent((y) =>
     y.replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, xiaohongshu]").replace(
@@ -284,7 +322,7 @@ offer:`,
     assert.equal(plan.likes_per_day, 2, "likes match follows unless set");
     assert.equal(plan.sort, "latest");
     assert.deepEqual(plan.skip_names_containing, ["中介", "移民", "律师", "律所", "咨询", "办理", "代办", "移民公司", "私信"]);
-    assert.deepEqual(plan.skip_text_containing, ["中介", "咨询", "办理", "代办", "律所", "移民公司", "私信"]);
+    assert.deepEqual(plan.skip_text_containing, ["欢迎咨询", "中介", "代办", "移民公司", "私信", "办理"]);
     const dispatches = plan.dispatches as Array<{ keyword: string; posts: number }>;
     assert.deepEqual(
       dispatches.map((d) => [d.keyword, d.posts]),

@@ -372,11 +372,11 @@ export function commentTargets(
 export const AGENCY_MARKERS = ["中介", "移民", "律师", "律所", "咨询", "办理", "代办", "移民公司", "私信"] as const;
 
 /**
- * Wording in a note title, body or comment that marks agency or consultancy
- * promo. A nickname is judged separately: 律师 in a title is the topic, 律师
- * in a name is the firm.
+ * Clear agency signals in a note title or body. 律师 and 律所 are not here:
+ * a comment asking 求律所, and a personal note that mentions its firm, are
+ * the audience. Those words still count in a name.
  */
-export const PROMO_MARKERS = ["中介", "咨询", "办理", "代办", "律所", "移民公司", "私信"] as const;
+export const PROMO_MARKERS = ["欢迎咨询", "中介", "代办", "移民公司", "私信", "办理"] as const;
 
 /** The marker in `name`, or null when the name can be an individual commenter. */
 export function commenterSkip(name: string): string | null {
@@ -385,10 +385,11 @@ export function commenterSkip(name: string): string | null {
   return null;
 }
 
-/** The promo marker in a title, body or comment, or null. */
+/** The promo marker in a title or body, or null. Longer phrases win over 办理. */
 export function promoHit(text: string): string | null {
   const n = text.normalize("NFKC");
-  for (const marker of PROMO_MARKERS) if (n.includes(marker)) return marker;
+  const markers = [...PROMO_MARKERS].sort((a, b) => b.length - a.length);
+  for (const marker of markers) if (n.includes(marker)) return marker;
   return null;
 }
 

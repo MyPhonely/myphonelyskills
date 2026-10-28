@@ -34,7 +34,7 @@ export default function (pi: ExtensionAPI) {
       url: process.env.MYPHONELY_MCP_URL ?? "https://api.myphonely.ai/mcp",
       headers: { Authorization: `Bearer ${key}` },
       description:
-        "The user's real Android phone. Poll get_task_status until the status is paused, done, failed, cancelled or expired, not only done, and stop after about six polls. On paused, resume that same task; do not start another run_task while one is paused. phone_tap is one unlabeled heart tap, and only while a like reservation is held.",
+        "The user's real Android phone. Poll get_task_status until the status is paused, done, failed, cancelled or expired, not only done, and stop after about six polls. On paused, resume or abandon that same task; do not start another run_task while one is paused. Abandon presses Back. phone_tap is one unlabeled heart tap, and only while a like reservation is held.",
       exposure: "direct",
       toolExposure: {
         phone_type: "hidden",

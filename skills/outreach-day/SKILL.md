@@ -162,44 +162,45 @@ latest notes.
 `commenters_per_post` (default 3), `follows_per_day` (default 20, every
 commenter together) and `likes_per_day` (the same number unless the channel
 sets it). It lists `skip_names_containing` and `skip_text_containing`.
-`reserve` refuses a name with 中介, 移民, 律师, 律所, 咨询, 办理, 代办,
-移民公司 or 私信, and a title or `--body` with 中介, 咨询, 办理, 代办,
-律所, 移民公司 or 私信. Skip an official or brand account the same way.
-One search per keyword, then the commenters on that same open note.
+`reserve` refuses a **name** with 中介, 移民, 律师, 律所, 咨询, 办理,
+代办, 移民公司, or 私信. It refuses a title or `--body` only for a clear
+agency signal: 欢迎咨询, 中介, 代办, 办理, 移民公司, or 私信. 律师 and
+律所 in a comment or a personal note are the audience, not a skip. Skip
+an official or brand account, and skip the signed-in account's own card
+without opening it. One search per keyword, then the commenters on that
+note's comment panel.
 
 Poll every phone task until the status is `paused`, `done`, `failed`,
 `cancelled` or `expired`, not only `done`, and stop after six polls. On
-`paused`, `resume_task` that task. Do not start another task while one is
-paused.
+`paused`, `resume_task` that task or abandon it. Do not start another
+task while one is paused. `abandon: true` presses Back once; look before
+you press Back yourself.
 
 1. **Open one note, once.** `xiaohongshu-follow-commenter-and-like-latest`
-   step 1, with the keyword, not a title. It sorts Latest, opens a recent
-   note from the author's avatar, and scrolls to the inline comments.
-   There is no comment sheet on this app. Reserve nothing before that pause.
-2. **Choose from the pause screen.** Run `outreach age --text "<the age>"
+   step 1, with the keyword, not a title. It sorts Latest, skips the
+   signed-in account's card, opens a recent note, and taps 评论 so the
+   comment panel opens. Reserve nothing before that pause.
+2. **Choose from the panel.** Run `outreach age --text "<the age>"
    --max-hours <max_post_age_hours>` (`--agent` is accepted). `within:
-   false` or `hours: null`: abandon and open the next card from the same
-   results. Skip ads, the signed-in account, and a note whose title or
-   body `reserve` will refuse (`--title` and `--body`). From the comments,
-   keep up to `commenters_per_post` individuals. Skip the author, anyone
-   `outreach check` already has, and a comment whose text is promo. No one
-   left: abandon and stay on the results. Do not search again.
-3. **One commenter at a time.** Reserve the follow (`--action follow
-   --name "<nick>" --title "<source note>" --body "<text>"`). Resume step
-   3 for that one name: scroll the name on screen, tap the avatar, tap
-   Follow or 关注 once, stop. Record it before the like. Sent when the
-   button reads Following, 已关注 or 互相关注. The profile's Following
-   count is theirs and does not move. Then the like, from that profile,
-   with no `launch`: open a photo note if there is one, and tap the
-   labelled Like once. A video heart has no label: one `phone_tap` on it
-   while the like reservation is held, and never a second tap. Record from
-   the screen (filled heart, Liked, 已赞, or a count one higher). Return
-   with one Back, look, and at most one more Back. Explore means you went
-   too far: stop, do not search. The next name resumes nothing new until
-   you are back on the source note.
+   false` or `hours: null`: abandon (that Backs once), look, and open the
+   next card from the same results. Skip ads and a note whose title or
+   body `reserve` will refuse. Keep up to `commenters_per_post` people
+   who asked, including 求律所 and 求律师推荐. Skip the author and anyone
+   `outreach check` already has. No one left: abandon, look, stay on the
+   results. Do not search again.
+3. **One commenter at a time.** Resume the panel task, writes off, to open
+   that profile. The follow counts only when the button then reads
+   Following, 已关注, or 互相关注. If it still reads Follow or 关注, tap
+   it once from a new task after the profile task has finished. If the
+   button does not change, `outreach release` and reserve that follow one
+   more time. Do not `record failed` on the first miss. Then the like,
+   from that profile, with no `launch`: a photo note's labelled Like, once.
+   A video heart is one `phone_tap` while the like reservation is held.
+   Record a like from a filled heart, Liked, 已赞, or a count one higher.
+   Return with one Back at a time, and count the Back an abandon already
+   pressed. Explore or the search home means stop. Do not search again.
 4. **Next note, same search.** One Back from the source note to the Latest
-   results, then the next card. Do not set `launch` again. Do not search
-   the keyword again.
+   results, then the next card. Do not set `launch` again.
 
 Unattended review mode has no drafts for likes or follows: skip the
 channel. Autopilot reads the pause and resumes on its own.

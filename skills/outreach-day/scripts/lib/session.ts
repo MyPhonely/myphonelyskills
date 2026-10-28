@@ -185,13 +185,18 @@ export function reserve(agent: Agent, channelArg: string, actionArg: string | un
   }
   const key = `${action}:${targetKey(t)}`;
   const day = loadDay();
-  const prior = day.items.find((r) => r.channel === channel && r.key === key && r.state !== "released");
+  const same = day.items.filter((r) => r.channel === channel && r.key === key);
+  const prior = same.find((r) => r.state !== "released");
   if (prior) {
     die(
       `refused: ${label(t)} was already reserved today (${prior.id}, ${prior.state}). One attempt per target per day; ` +
-        "a failed one is retried on a later day. Move on.",
+        "a failed one is retried on a later day. A miss where nothing was tapped is released, and that target may be reserved once more.",
       3,
     );
+  }
+  const misses = same.filter((r) => r.state === "released").length;
+  if (misses >= 2) {
+    die(`refused: ${label(t)} already had its one retry today after a miss. Move on.`, 3);
   }
   const seen = check(agent, channel, action, t);
   if (seen.blocking) die(`refused: the records already have ${label(t)}; skip it.\n${seen.rows.join("\n")}`, 3);
@@ -312,10 +317,23 @@ export function mark(line: number, status: string, comment?: string): QueueRow {
   return queueRows().find((r) => r.line === line) as QueueRow;
 }
 
-/** Give a reservation back when nothing was written: it no longer holds the budget or the target. */
+/**
+ * Give a reservation back when nothing was written. A follow or like recorded
+ * failed can be released once, so a miss (the button never changed) gets one
+ * retry. A sent write stays settled.
+ */
 export function release(id: string): Reservation {
   const day = loadDay();
-  const r = find(day, id);
+  const r = day.items.find((x) => x.id === id);
+  if (!r) return die(`no reservation ${id} today; reserve before writing`);
+  if (r.state === "released") return die(`${id} is already released`);
+  if (r.state === "sent") return die(`${id} was sent; it cannot be released`);
+  const missed = r.state === "failed" && (r.action === "follow" || r.action === "like");
+  if (!missed && !PENDING.has(r.state)) return die(`${id} is already settled (${r.state})`);
+  if (missed) {
+    const already = day.items.filter((x) => x.channel === r.channel && x.key === r.key && x.state === "released").length;
+    if (already >= 1) return die(`${id} already used its retry. Move on.`, 3);
+  }
   r.state = "released";
   saveDay(day);
   return r;
