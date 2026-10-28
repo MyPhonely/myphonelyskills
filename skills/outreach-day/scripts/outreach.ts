@@ -20,9 +20,10 @@
  *   check   --channel <c> <target>                       done before?
  *   budget  --channel <c> [--action invite|message|comment]
  *   reserve --channel <c> [--action ...] <target>        permission for one write
- *   record  --reservation <id> --outcome sent|failed <target> [--comment ... --keyword ... --note ...]
+ *   record  --reservation <id> --outcome sent|failed <target> [--channel <c>] [--comment ... --keyword ... --note ...]
  *   release --reservation <id>                           reserved, nothing written
  *   report                                               today, per channel
+ *   age     --text "<age on screen>" [--max-hours N] [--now ISO]   hours since a post
  *
  * Review without a chat window (comment channels)
  *   draft   --channel <c> <post> --comment "..." [--keyword ...]   queue it as Pending Review
@@ -48,6 +49,7 @@
 
 import { readFileSync, realpathSync } from "node:fs";
 
+import { parseAge } from "./lib/age.ts";
 import { cli, die, emit, loadAgent, parse, setCurrentAgent } from "./lib/common.ts";
 import type { Options } from "./lib/common.ts";
 import { judgeCards } from "./lib/cards.ts";
@@ -137,6 +139,7 @@ function main(argv: string[]): number | Promise<number> {
         comment: { type: "string" },
         keyword: { type: "string" },
         note: { type: "string" },
+        channel: { type: "string" },
       });
       const agent = loadAgent(str(v.agent));
       setCurrentAgent(agent);
@@ -148,8 +151,25 @@ function main(argv: string[]): number | Promise<number> {
         comment: str(v.comment),
         keyword: str(v.keyword),
         note: str(v.note),
+        channel: str(v.channel),
       });
       emit({ recorded: r.id, outcome: r.state, channel: r.channel, target: r.label }, Boolean(v.json));
+      return 0;
+    }
+    case "age": {
+      const v = parse(rest, {
+        text: { type: "string" },
+        "max-hours": { type: "string" },
+        now: { type: "string" },
+        json: { type: "boolean", default: false },
+      });
+      if (!v.text) die("age needs --text");
+      const now = v.now ? new Date(String(v.now)) : new Date();
+      if (Number.isNaN(now.getTime())) die("--now must be a date");
+      const parsed = parseAge(String(v.text), now);
+      const max = v["max-hours"] !== undefined ? Number(v["max-hours"]) : undefined;
+      const within = parsed.hours === null || max === undefined || Number.isNaN(max) ? null : parsed.hours >= 0 && parsed.hours <= max;
+      emit({ text: v.text, hours: parsed.hours, date: parsed.date, within }, Boolean(v.json));
       return 0;
     }
     case "release": {
@@ -259,7 +279,7 @@ function main(argv: string[]): number | Promise<number> {
     }
     default:
       return die(
-        `expected a command: new, lint, show, channels, targets, cards, message, init, check, budget, reserve, record, release, report, draft, drafts, mark, guard, quota, ledger${cmd ? ` (got ${cmd})` : ""}`,
+        `expected a command: new, lint, show, channels, targets, cards, message, init, check, budget, reserve, record, release, report, draft, drafts, mark, guard, quota, ledger, age${cmd ? ` (got ${cmd})` : ""}`,
       );
   }
 }

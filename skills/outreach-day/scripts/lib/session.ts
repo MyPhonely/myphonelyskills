@@ -23,14 +23,21 @@ import { join } from "node:path";
 
 import { dataRows, die, ensureDir, ledgerPath, quietly, stateDir, today } from "./common.ts";
 import type { Agent } from "./common.ts";
-import { addPerson, addPost, addQueue, countPosts, findPeople, findPosts, invitePerson, openQueueRows, queueRows, setStage, updateQueueRow } from "./ledger.ts";
+import { addEngaged, addPerson, addPost, addQueue, countEngaged, countPosts, findEngaged, findPeople, findPosts, invitePerson, openQueueRows, queueRows, setStage, updateQueueRow } from "./ledger.ts";
 import type { QueueRow } from "./ledger.ts";
-import { commentTargets, resolveChannel } from "./plan.ts";
+import { commentTargets, commenterSkip, engageLimits, resolveChannel } from "./plan.ts";
 import { targetKey } from "./policy.ts";
 import type { Target } from "./policy.ts";
 import { inviteRoom } from "./quota.ts";
 
-export type Action = "invite" | "message" | "comment";
+export type Action = "invite" | "message" | "comment" | "like" | "follow";
+export type Kind = "connect" | "comment" | "engage";
+
+/**
+ * The actions each kind of channel may reserve; the first is the default.
+ * Engage defaults to follow: a bare post reserve must not like the source note.
+ */
+const ACTIONS: Record<Kind, Action[]> = { connect: ["invite", "message"], comment: ["comment"], engage: ["follow", "like"] };
 
 export interface Reservation {
   id: string;
@@ -69,15 +76,19 @@ export function saveDay(day: Day): void {
 /** Reserved and not yet settled: counts against the budget until recorded or released. */
 const PENDING = new Set(["open", "spent"]);
 
-export function kindOf(agent: Agent, channel: string): "connect" | "comment" {
-  return (agent.channels[channel]?.kind ?? "comment") === "connect" ? "connect" : "comment";
+export function kindOf(agent: Agent, channel: string): Kind {
+  const k = agent.channels[channel]?.kind ?? "comment";
+  return k === "connect" || k === "engage" ? k : "comment";
 }
 
 export function actionFor(agent: Agent, channel: string, action?: string): Action {
   const kind = kindOf(agent, channel);
-  const a = (action || (kind === "connect" ? "invite" : "comment")) as Action;
-  const allowed: Action[] = kind === "connect" ? ["invite", "message"] : ["comment"];
-  if (!allowed.includes(a)) die(`${channel} is a ${kind} channel: --action must be ${allowed.join(" or ")}`);
+  const allowed = ACTIONS[kind];
+  const a = (action || allowed[0]) as Action;
+  if (!allowed.includes(a)) {
+    const article = kind === "engage" ? "an" : "a";
+    die(`${channel} is ${article} ${kind} channel: --action must be ${allowed.join(" or ")}`);
+  }
   return a;
 }
 
@@ -107,6 +118,12 @@ export function budget(agent: Agent, channel: string, action: Action, day = load
     limit = Number(ch.warmups_per_day ?? 10);
     done = day.items.filter((r) => r.channel === channel && r.action === "message" && r.state === "sent").length;
     note = `warmups_per_day ${limit}, ${done} sent today`;
+  } else if (action === "follow" || action === "like") {
+    // One pool of commenters. Likes match follows unless likes_per_day is set.
+    const limits = engageLimits(ch);
+    limit = action === "follow" ? limits.follows : limits.likes;
+    done = countEngaged(channel, action, today());
+    note = `${action === "follow" ? "follows_per_day" : "likes_per_day"} ${limit}, ${done} recorded today`;
   } else {
     const plan = commentTargets(agent, channel, new Date());
     const dispatches = (plan.dispatches as Array<{ posts?: number }> | undefined) ?? [];
@@ -120,6 +137,17 @@ export function budget(agent: Agent, channel: string, action: Action, day = load
 
 /** Whether the records already have this person or post, and the rows that say so. */
 export function check(agent: Agent, channel: string, action: Action, t: Target): { found: boolean; blocking: boolean; rows: string[] } {
+  if (action === "follow") {
+    // Followed once, ever: the commenter, whichever note they were found on.
+    if (!t.name) die("a follow is --name (the commenter's nickname), with --title of the note they were found on and --url of their profile id when you have it");
+    const rows = findEngaged(channel, "follow", t.name, t.title ?? "", t.url ?? "");
+    return { found: rows.length > 0, blocking: rows.length > 0, rows };
+  }
+  if (action === "like") {
+    if (!t.author || !t.title) die("a like is --author and --title of the commenter's note, with --url of its id when you have it");
+    const rows = findEngaged(channel, "like", t.author, t.title, t.url ?? "");
+    return { found: rows.length > 0, blocking: rows.length > 0, rows };
+  }
   if (t.name) {
     const rows = findPeople(t.name).map(([n, f]) => `L${n}: ${f.join(" | ")}`);
     // A Lead was found but never contacted, so it may still be invited. Any
@@ -143,6 +171,16 @@ function label(t: Target): string {
 export function reserve(agent: Agent, channelArg: string, actionArg: string | undefined, t: Target): { reservation: Reservation; left: number } {
   const channel = resolveChannel(agent, channelArg);
   const action = actionFor(agent, channel, actionArg);
+  if (action === "follow" || action === "like") {
+    const person = action === "follow" ? t.name ?? "" : t.author ?? "";
+    const marker = person ? commenterSkip(person) : null;
+    if (marker) {
+      die(
+        `refused: ${person} looks like a firm, agency, attorney or consultant (${marker}). Engage only individual commenters.`,
+        3,
+      );
+    }
+  }
   const key = `${action}:${targetKey(t)}`;
   const day = loadDay();
   const prior = day.items.find((r) => r.channel === channel && r.key === key && r.state !== "released");
@@ -177,6 +215,8 @@ export interface RecordInput {
   comment?: string;
   keyword?: string;
   note?: string;
+  /** Accepted so a record call can name the channel the way reserve does. */
+  channel?: string;
 }
 
 /**
@@ -192,9 +232,17 @@ function recordQuietly(agent: Agent, input: RecordInput): Reservation {
   if (input.outcome !== "sent" && input.outcome !== "failed") die("--outcome must be sent or failed");
   const day = loadDay();
   const r = find(day, input.reservation);
+  if (input.channel && resolveChannel(agent, input.channel) !== r.channel) {
+    die(`--channel ${resolveChannel(agent, input.channel)} does not match reservation ${r.id} (${r.channel})`);
+  }
   const t = input.target;
   const json = true;
-  if (r.action === "invite" || r.action === "message") {
+  if (r.action === "like" || r.action === "follow") {
+    const who = r.action === "follow" ? t.name : t.author;
+    if (r.action === "follow" && !who) die("a follow needs --name");
+    if (r.action === "like" && (!who || !t.title)) die("a like needs --author and --title");
+    if (input.outcome === "sent") addEngaged({ platform: r.channel, action: r.action, who, title: t.title, url: t.url }, json);
+  } else if (r.action === "invite" || r.action === "message") {
     if (!t.name) die("a person needs --name");
     if (input.outcome === "sent" && r.action === "invite") {
       // A Lead becomes Invited; someone found without a Lead row is added as Invited.
@@ -277,7 +325,7 @@ export function report(agent: Agent, date = today()): Array<Record<string, unkno
   const channels = agent.order ?? Object.keys(agent.channels);
   const out: Array<Record<string, unknown>> = [];
   for (const channel of channels) {
-    const actions: Action[] = kindOf(agent, channel) === "connect" ? ["invite", "message"] : ["comment"];
+    const actions = ACTIONS[kindOf(agent, channel)];
     for (const action of actions) {
       const mine = day.items.filter((r) => r.channel === channel && r.action === action);
       const count = (s: string) => mine.filter((r) => r.state === s).length;

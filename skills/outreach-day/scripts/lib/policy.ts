@@ -22,6 +22,9 @@
  *      person unless runs are unattended.
  */
 
+import { personKey } from "./common.ts";
+import { postUrlKey } from "./ledger.ts";
+
 /** The MyPhonely MCP server's name as the extension registers it. */
 export const SERVER = "myphonely";
 
@@ -134,11 +137,12 @@ export interface Target {
 /**
  * One spelling per target, so the same person or post reserved twice is
  * recognised: a person by name, a post by URL when there is one, else by
- * author and its first words. Case and spacing do not matter.
+ * author and its first words. Case, spacing and a leading @ do not matter,
+ * and two Xiaohongshu URL shapes of one note are one target.
  */
 export function targetKey(t: Target): string {
-  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
-  if (t.name) return `person:${norm(t.name)}`;
-  if (t.url) return `url:${norm(t.url).replace(/^https?:\/\/(www\.|mobile\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "")}`;
+  if (t.name) return `person:${personKey(t.name)}`;
+  if (t.url) return `url:${postUrlKey(t.url)}`;
+  const norm = (s: string) => personKey(s);
   return `post:${norm(t.author ?? "")}|${norm(t.title ?? "").slice(0, 60)}`;
 }

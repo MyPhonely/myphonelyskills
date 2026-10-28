@@ -11,7 +11,7 @@
  */
 
 import { brandFiles, die, emit, loadAgent, parse, splitCommand, stateDir } from "./common.ts";
-import type { Agent, Rotation } from "./common.ts";
+import type { Agent, Channel, Rotation } from "./common.ts";
 
 // Fixed epoch for the targeting rotation. Arbitrary but must never change:
 // moving it reshuffles which values a given date maps to.
@@ -263,7 +263,13 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
 }
 
 /** Dispatch plan for a `kind: comment` channel (social-shaped). */
-export function commentTargets(agent: Agent, channel: string, d: Date): Record<string, unknown> {
+export function commentTargets(
+  agent: Agent,
+  channel: string,
+  d: Date,
+  capKey = "comments_per_day",
+  capOverride?: number,
+): Record<string, unknown> {
   const ch = agent.channels[channel];
   const n = num(ch.posts_per_keyword, 3);
   // Facebook (and any channel with `source: groups`) is not a keyword search.
@@ -324,8 +330,9 @@ export function commentTargets(agent: Agent, channel: string, d: Date): Record<s
     dsp.query = [dsp.keyword, ...exclude.map((t) => (/\s/.test(t) ? `-"${t}"` : `-${t}`))].join(" ");
   }
   // `comments_per_day` is a ceiling across every dispatch: trim from the end,
-  // so lists and the first keywords keep their share.
-  const cap = ch.comments_per_day === undefined ? Infinity : num(ch.comments_per_day, 0);
+  // so lists and the first keywords keep their share. An engage channel passes
+  // its own ceiling: how many source notes the follow budget can use.
+  const cap = capOverride !== undefined ? capOverride : ch[capKey] === undefined ? Infinity : num(ch[capKey], 0);
   let left = cap;
   const capped: Dispatch[] = [];
   for (const dsp of dispatches) {
@@ -349,12 +356,62 @@ export function commentTargets(agent: Agent, channel: string, d: Date): Record<s
   // Passed through for the goal text; the kit does not interpret them.
   if (ch.tab) plan.tab = ch.tab;
   if (ch.max_post_age_hours !== undefined) plan.max_post_age_hours = num(ch.max_post_age_hours, 0);
-  if (cap !== Infinity) plan.comments_per_day = cap;
+  if (capOverride === undefined && cap !== Infinity) plan[capKey] = cap;
   if (ch.dm) plan.dm = ch.dm;
   // `follow: true` follows each author whose post is replied to. `angle`
   // names the brand-voice angle every reply in this stream takes.
   if (ch.follow) plan.follow = true;
   if (ch.angle) plan.angle = ch.angle;
+  return plan;
+}
+
+/**
+ * Name fragments that mark an agency, law firm, attorney or consultant.
+ * An official or brand account is a judgment about the profile, not a name.
+ */
+export const AGENCY_MARKERS = ["中介", "移民", "律师", "律所", "咨询"] as const;
+
+/** The marker in `name`, or null when the name can be an individual commenter. */
+export function commenterSkip(name: string): string | null {
+  const n = name.normalize("NFKC");
+  for (const marker of AGENCY_MARKERS) if (n.includes(marker)) return marker;
+  return null;
+}
+
+/** Daily ceilings for an engage channel. Likes match follows unless set. */
+export function engageLimits(ch: Channel): { follows: number; likes: number; perNote: number; notes: number } {
+  const follows = num(ch.follows_per_day, 20);
+  const likes = ch.likes_per_day === undefined ? follows : num(ch.likes_per_day, follows);
+  const perNote = num(ch.commenters_per_post, 3);
+  const notes = ch.follow_commenters === false || perNote <= 0 ? 0 : Math.ceil(Math.min(follows, likes) / perNote);
+  return { follows, likes, perNote, notes };
+}
+
+/**
+ * An engage channel finds notes as a comment channel does, then follows
+ * people who commented on them and likes one latest note of each. It does
+ * not follow the author, like the source note, comment, reply or DM.
+ * `follows_per_day` is the ceiling for every commenter together; likes match it.
+ */
+export function engageTargets(agent: Agent, channel: string, d: Date): Record<string, unknown> {
+  const ch = agent.channels[channel];
+  const limits = engageLimits(ch);
+  const plan = commentTargets(agent, channel, d, "comments_per_day", limits.notes);
+  delete plan.follow;
+  plan.kind = "engage";
+  plan.audience = "commenters";
+  plan.like_source = false;
+  plan.follow_author = false;
+  plan.follow_commenters = ch.follow_commenters !== false;
+  plan.commenters_per_post = limits.perNote;
+  plan.follows_per_day = limits.follows;
+  plan.likes_per_day = limits.likes;
+  plan.comment = false;
+  plan.dm = false;
+  // Without Latest the search is weeks old and the age filter drops it.
+  plan.tab = "latest";
+  plan.sort = "latest";
+  plan.skip_names_containing = [...AGENCY_MARKERS];
   return plan;
 }
 
@@ -387,7 +444,8 @@ export function channelOrder(agent: Agent): Array<{ name: string; kind: string }
 export function targetsFor(agent: Agent, channel: string, d: Date): Record<string, unknown> {
   const name = resolveChannel(agent, channel);
   const kind = agent.channels[name]?.kind ?? "comment";
-  return kind === "connect" ? connectTargets(agent, name, d) : commentTargets(agent, name, d);
+  if (kind === "connect") return connectTargets(agent, name, d);
+  return kind === "engage" ? engageTargets(agent, name, d) : commentTargets(agent, name, d);
 }
 
 export function renderMessage(agent: Agent, name: string): string {

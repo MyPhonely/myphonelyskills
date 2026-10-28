@@ -75,7 +75,7 @@ test("a post is reserved once a day, recorded, and then refused as already done"
     const same = ["--channel", "x", "--author", "@dev", "--title", "other words", "--url", "https://twitter.com/dev/status/1?s=20"];
     const refused = cli(agent, ["reserve", ...same]);
     assert.equal(refused.code, 3);
-    assert.match(refused.err, /records already have/);
+    assert.match(refused.err, /already reserved today/, "the two URL shapes are one reservation");
   } finally {
     rmSync(agent, { recursive: true, force: true });
   }
@@ -218,5 +218,145 @@ test("new writes a folder from the templates, never over one, and lint says what
     assert.match(example.out, /^ready$/m);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an engage channel follows commenters and likes their notes, never comments, and dedups by person and note id", () => {
+  const agent = freshAgent((y) =>
+    y.replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, xiaohongshu]").replace(
+      "\noffer:",
+      `
+  xiaohongshu:
+    kind: engage
+    lang: zh
+    posts_per_keyword: 2
+    follows_per_day: 2
+    keywords: [alpha topic, beta topic]
+
+offer:`,
+    ),
+  );
+  const noteA = "64f1aabbccddeeff00112233";
+  const noteB = "64f1aabbccddeeff00112244";
+  const noteC = "64f1aabbccddeeff00112255";
+  try {
+    cli(agent, ["init"]);
+    assert.ok(existsSync(join(agent, "records", "engaged.md")));
+    const plan = json(cli(agent, ["targets", "--channel", "xhs", "--json"]));
+    assert.equal(plan.kind, "engage");
+    assert.equal(plan.audience, "commenters");
+    assert.equal(plan.comment, false);
+    assert.equal(plan.dm, false);
+    assert.equal(plan.follow_author, false);
+    assert.equal(plan.like_source, false);
+    assert.equal(plan.follow_commenters, true);
+    assert.equal(plan.commenters_per_post, 3);
+    assert.equal(plan.follows_per_day, 2);
+    assert.equal(plan.likes_per_day, 2, "likes match follows unless set");
+    assert.equal(plan.sort, "latest");
+    assert.deepEqual(plan.skip_names_containing, ["中介", "移民", "律师", "律所", "咨询"]);
+    const dispatches = plan.dispatches as Array<{ keyword: string; posts: number }>;
+    assert.deepEqual(
+      dispatches.map((d) => [d.keyword, d.posts]),
+      [["alpha topic", 1]],
+      "one source note covers commenters_per_post follows, so the follow budget opens one note",
+    );
+
+    const commented = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "comment", "--author", "a", "--title", "t"]);
+    assert.equal(commented.code, 2, "an engage channel never comments");
+    assert.match(commented.err, /follow or like/);
+    assert.equal(cli(agent, ["draft", "--channel", "xiaohongshu", "--author", "a", "--title", "t", "--comment", "hi"]).code, 2);
+
+    const firm = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "示例咨询", "--title", "source note"]);
+    assert.equal(firm.code, 3, "a firm-like name is not a commenter");
+    assert.match(firm.err, /咨询/);
+    assert.equal(
+      cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "like", "--author", "某律师", "--title", "their latest note", "--url", noteB]).code,
+      3,
+    );
+    assert.equal(json(cli(agent, ["budget", "--channel", "xiaohongshu", "--action", "follow", "--json"])).left, 2, "a refusal takes no budget");
+
+    const followAlice = json(cli(agent, ["reserve", "--channel", "xiaohongshu", "--name", "Alice", "--title", "source note", "--json"]));
+    assert.equal(followAlice.action, "follow", "follow is the default; a bare reserve does not like the source note");
+    assert.equal(
+      cli(agent, ["record", "--reservation", "r1", "--outcome", "sent", "--channel", "xhs", "--name", "Alice", "--url", "user:10000000001"]).code,
+      0,
+      "--channel is accepted and matched to the reservation",
+    );
+    assert.equal(cli(agent, ["check", "--channel", "xiaohongshu", "--action", "follow", "--name", "@ALICE"]).code, 0, "@ and case are one person");
+    assert.equal(
+      cli(agent, ["check", "--channel", "xiaohongshu", "--action", "follow", "--name", "Someone Else", "--url", "user:10000000001"]).code,
+      0,
+      "the same profile id is the same person",
+    );
+
+    const followWang = json(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小王", "--title", "source note", "--json"]));
+    const wrong = cli(agent, ["record", "--reservation", String(followWang.reserved), "--outcome", "sent", "--channel", "linkedin", "--name", "小王"]);
+    assert.equal(wrong.code, 2);
+    assert.match(wrong.err, /does not match/);
+    assert.equal(cli(agent, ["record", "--reservation", String(followWang.reserved), "--outcome", "sent", "--channel", "xiaohongshu", "--name", "小王"]).code, 0);
+    const over = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小赵", "--title", "source note"]);
+    assert.equal(over.code, 4, "follows_per_day is one pool for every commenter");
+    assert.match(over.err, /no follow budget/);
+
+    const title = "their latest note about the move";
+    const likeA = json(
+      cli(agent, [
+        "reserve",
+        "--channel",
+        "xiaohongshu",
+        "--action",
+        "like",
+        "--author",
+        "小王",
+        "--title",
+        "怎么选律师的经历分享",
+        "--url",
+        `https://www.xiaohongshu.com/explore/${noteA}`,
+        "--json",
+      ]),
+    );
+    assert.equal(likeA.action, "like", "律师 in the note title is not a firm name");
+    assert.equal(
+      cli(agent, [
+        "record",
+        "--reservation",
+        String(likeA.reserved),
+        "--outcome",
+        "sent",
+        "--channel",
+        "xiaohongshu",
+        "--author",
+        "小王",
+        "--title",
+        title,
+        "--url",
+        `https://www.xiaohongshu.com/discovery/item/${noteA}?xsec_token=abc`,
+      ]).code,
+      0,
+    );
+    assert.equal(
+      cli(agent, ["check", "--channel", "xiaohongshu", "--action", "like", "--author", "别的读法", "--title", "completely different words", "--url", noteA]).code,
+      0,
+      "explore, discovery/item and a bare id are one note",
+    );
+    const likeB = json(
+      cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "like", "--author", "小王", "--title", title, "--url", noteB, "--json"]),
+    );
+    assert.equal(cli(agent, ["record", "--reservation", String(likeB.reserved), "--outcome", "sent", "--author", "小王", "--title", title, "--url", noteB]).code, 0);
+    assert.equal(
+      cli(agent, ["check", "--channel", "xiaohongshu", "--action", "like", "--author", "小王", "--title", title, "--url", noteC]).code,
+      1,
+      "a different note id is not the same like, even with the same title",
+    );
+    const likeOver = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "like", "--author", "小李", "--title", "another note entirely", "--url", noteC]);
+    assert.equal(likeOver.code, 4);
+    assert.match(likeOver.err, /no like budget/);
+
+    const rows = json(cli(agent, ["report", "--json"])) as unknown as Array<Record<string, unknown>>;
+    const xhs = rows.filter((r) => r.channel === "xiaohongshu").map((r) => `${r.action}:${r.sent}`);
+    assert.deepEqual(xhs, ["follow:2", "like:2"]);
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
   }
 });

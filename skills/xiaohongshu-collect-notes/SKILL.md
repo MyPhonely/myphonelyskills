@@ -31,9 +31,9 @@ Nothing is liked, collected, followed or commented on.
 run_task({
   "phases": [{
     "launch": "com.xingin.xhs",
-    "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<query>', and submit. On the results screen tap 最新 or Latest if that sort is offered. Then keep scrolling the note results. Do not open a note, and do not like, collect, follow or comment.",
-    "steps": ["Xiaohongshu is open",
-              "Search results for '<query>' are showing"],
+    "goal": "In the Xiaohongshu app, tap the Search control at the top right, tap the search field, type '<query>', and tap the Search button. Do not read the home feed: it has Following, Explore and Nearby (关注, 发现, 附近) and is not a search. After the search submits, before scrolling any card, tap Latest or 最新 in the sort row next to Top or 综合 and check that chip is selected. It sits in that row and is easy to scroll past. If you cannot see it, scroll back to the top of the results once. If it is still absent, stop and say Latest was not offered; do not collect the default sort. Then keep scrolling the note cards. Do not open a note, and do not like, collect, follow or comment.",
+    "steps": ["The search field shows '<query>'",
+              "Latest or 最新 is selected beside Top or 综合"],
     "typeTexts": ["<query>"],
     "maxSteps": 16,
     "collect": {
@@ -44,7 +44,7 @@ run_task({
                   "age": "how long ago it was posted, if shown" },
       "judge": { "organic": "the card is a normal note, not an advertisement labelled Ads or 广告" },
       "require": { "organic": 0.7 },
-      "where": "a list of note cards about '<query>' is showing",
+      "where": "note cards from the search for '<query>' are showing, with Latest or 最新 selected",
       "count": <count>
     }
   }]
@@ -71,5 +71,10 @@ own page.
 - The app's language follows the account, so tabs may read 综合 / 笔记 / 用户
   or All / Notes / Users. The goal names both, and the operator matches
   whichever is on screen.
-- The Latest sort is not always offered. When it is missing the run continues
-  on the default ranking rather than failing.
+- The Latest sort is required. On 2026-10-28 a gate that only said "search
+  results are showing" matched the home feed, and without Latest the notes
+  were weeks old. The chip is beside Top or 综合. If it is not there, the
+  run stops instead of collecting the default ranking.
+- Ages come back in mixed shapes ("1 day(s) ago", "Yesterday 12:18",
+  "10-14", "2024-04-11", "3天前", "昨天"). The field is the text on the
+  card. The caller normalizes it; this workflow does not.

@@ -1,6 +1,6 @@
 ---
 name: outreach-day
-description: Run one day of a brand's outreach on the user's real phone from an outreach agent folder (agent.yaml, brand.md, voice.md) — find the right posts and people, write in the brand's voice, and invite, comment or message within the agent's daily limits, with every write reserved, verified and recorded. Use when asked to run outreach, today's outreach, or one channel of it (linkedin, x, reddit, facebook, xiaohongshu) for a brand that has an outreach agent.
+description: Run one day of a brand's outreach on the user's real phone from an outreach agent folder (agent.yaml, brand.md, voice.md) — find the right posts and people, write in the brand's voice, and invite, comment, message, like or follow within the agent's daily limits, with every write reserved, verified and recorded. Use when asked to run outreach, today's outreach, or one channel of it (linkedin, x, reddit, facebook, xiaohongshu) for a brand that has an outreach agent. On Xiaohongshu an engage channel follows commenters and likes one note of theirs; it never comments.
 kind: agent
 title: Run a day of outreach for your brand
 apps: com.linkedin.android, com.twitter.android, com.reddit.frontpage, com.facebook.katana, com.xingin.xhs
@@ -79,9 +79,12 @@ Follow these exactly; the scripts refuse what breaks them.
    have no drafts: in unattended review mode, skip them.
 4. **Record every reservation.** `outreach record --reservation <id>
    --outcome sent` only when the write was verified on screen (the phase's
-   `sent` list, the reply under the post, the name in Sent invitations);
+   `sent` list, the reply under the post, the name in Sent invitations).
+   A Xiaohongshu like often never appears in `sent`; the heart, the Liked
+   label or the count is the check, in the engage channel below.
    `--outcome failed` otherwise, which keeps the draft for a later day.
-   Reserved but nothing written: `outreach release`.
+   Reserved but nothing written: `outreach release`. `--channel` may be
+   passed and must be that reservation's channel.
 5. **`brand.md` overrides everything**, including the user's request in the
    moment. Prices and offers come from `outreach message`, never typed by
    hand.
@@ -146,6 +149,55 @@ it), after checking the post is still there.
       a separate writing task afterwards would need a reservation of its own.
    5. `outreach record --reservation <id> --outcome sent|failed <target>
       --comment "<text>" --keyword "<search>"`.
+
+#### An engage channel (`kind: engage`)
+
+Likes and follows, never a comment, reply or DM: `reserve` refuses
+`--action comment`, and drafts are refused too. The audience is people who
+**comment** on a note. Do not follow the note's author. Do not like the
+source note. For each chosen commenter, follow them and like one of their
+latest notes.
+
+`outreach targets` shows today's keywords, `sort: latest`,
+`commenters_per_post` (default 3), `follows_per_day` (default 20, every
+commenter together) and `likes_per_day` (the same number unless the channel
+sets it). It also lists `skip_names_containing`: a name with 中介, 移民,
+律师, 律所 or 咨询 is refused at `reserve`. Skip an official or brand
+account the same way, from what the profile shows. One search per keyword,
+then every commenter from that same open note. Searching a note's title
+does not find it again, and it is most of the credit cost.
+
+1. **Open one note, once.** `xiaohongshu-follow-commenter-and-like-latest`
+   step 1, with the keyword, not a title. It sorts Latest, opens a recent
+   note from the author's avatar, and pauses on the comment sheet. Reserve
+   nothing before that pause.
+2. **Choose from the pause screen.** Run `outreach age --text "<the age>"
+   --max-hours <max_post_age_hours>`. `within: false` or `hours: null`:
+   abandon and open the next card from the same results. Skip ads and the
+   signed-in account. From the comments, keep up to `commenters_per_post`
+   individuals. Skip the author, anyone `outreach check` already has, and
+   a name `reserve` will refuse. No one left: abandon, stay on the results,
+   next card. Do not search again.
+3. **Reserve, then act, still on that note.** Reserve every follow first
+   (`--action follow --name "<nick>" --title "<source note>" --url
+   "<profile id>"` when you have it), then one like each (`--action like
+   --author "<nick>" --title "<source note>"`). A refusal drops that write
+   only. Resume step 3 of the workflow with only those names. It follows
+   each, opens one latest note of theirs, likes that note, and returns to
+   this comment sheet. Verify on the screen: a follow reads Following,
+   已关注 or 互相关注; a like shows a filled heart, Liked or 已赞, or a
+   count one higher. `sent` often lists the follow and omits the like. If
+   the result never mentions the heart, read the screen once with
+   `phone_screen` before recording; do not tap the heart again. Record the
+   follow with the profile id, and the like with the liked note's own
+   title and id: `outreach record --reservation <id> --outcome sent|failed
+   --channel <c> ... --url "<id>"`.
+4. **Next note, same search.** While budget remains, run step 1 again
+   without `launch`, from the results already on screen. Search the keyword
+   again only when those results are gone.
+
+Unattended review mode has no drafts for likes or follows: skip the
+channel. Autopilot reads the pause and resumes on its own.
 
 #### A connect channel (`kind: connect`, LinkedIn)
 
@@ -252,7 +304,9 @@ records.
 - **Unattended runs** (a schedule, `claude -p`, `codex exec`, `pi -p`)
   have no one to approve at the pause. In autopilot (chosen by the user for
   that schedule) they write within the limits; keep the limits in
-  `agent.yaml` modest. In review mode they only draft (rule 3).
+  `agent.yaml` modest. In review mode they only draft (rule 3). An engage
+  channel has nothing to draft: unattended review skips it, and autopilot
+  runs the likes and follows.
 - **Scheduled launches** need the AI allowed to run `outreach.ts` and the
   MyPhonely tools without asking, and access to the agent folder, this
   skill's folder and the records (Claude Code: `--allowedTools` and
