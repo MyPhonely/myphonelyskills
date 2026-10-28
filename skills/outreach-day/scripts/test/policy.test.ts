@@ -19,9 +19,10 @@ test("only MyPhonely tools are judged; reading and navigating are free", () => {
 });
 
 test("Mode 2 never writes: typing, coordinate taps and write-looking labels are refused", () => {
-  for (const name of ["phone_type", "phone_tap", "phone_long_press", "phone_swipe", "phone_clear_text", "phone_push_file"]) {
+  for (const name of ["phone_type", "phone_long_press", "phone_swipe", "phone_clear_text", "phone_push_file"]) {
     assert.equal(decide(t(name), {}, attended).kind, "blocked", name);
   }
+  assert.equal(decide(t("phone_tap"), { x: 10, y: 20 }, attended).kind, "heart", "the guard, not this check, holds the like reservation");
   for (const label of ["Post", "Reply", "Send", "Invite Jane Doe to connect", "Follow", "Like", "Withdraw", "Message"]) {
     assert.equal(decide(t("phone_tap_label"), { text: label }, unattended).kind, "blocked", label);
   }

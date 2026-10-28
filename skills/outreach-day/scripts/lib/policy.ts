@@ -9,8 +9,10 @@
  * The rules:
  *
  *   1. Writes go through run_task, never through the direct tools. Direct
- *      calls that can write (typing, coordinate taps, long presses, swipes,
- *      files) are refused, and so is a label tap on a write-looking control.
+ *      calls that can write (typing, long presses, swipes, files) are
+ *      refused, and so is a label tap on a write-looking control. One
+ *      exception: a single coordinate tap, for an unlabeled heart, which
+ *      the guard allows only while a like reservation is held.
  *   2. A planned run (`request`) may not write: its phases are not known in
  *      advance, so nothing can be checked against them.
  *   3. A writing phase pauses for review (`pauseWhen`) unless the person
@@ -32,7 +34,6 @@ export const SERVER = "myphonely";
 export const WRITING_DIRECT = new Set([
   "phone_type",
   "phone_clear_text",
-  "phone_tap",
   "phone_long_press",
   "phone_swipe",
   "phone_push_file",
@@ -60,6 +61,8 @@ export interface Phase {
 export type Decision =
   | { kind: "read" }
   | { kind: "blocked"; reason: string }
+  /** One coordinate tap. The guard allows it once, against a held like reservation. */
+  | { kind: "heart" }
   /** `count` writes, each spending a reservation; `approve` when the person must see it now. */
   | { kind: "write"; count: number; approve: string | null; taskId?: string };
 
@@ -74,6 +77,10 @@ export function decide(toolName: string, input: Record<string, unknown>, ctx: Co
   const tool = phoneTool(toolName);
   if (!tool) return { kind: "read" };
 
+  // A video heart has no label, so the like cannot be a run_task countLabel.
+  // The guard, not this function, checks that a like reservation is held and
+  // that this is the only coordinate tap spent on it.
+  if (tool === "phone_tap") return { kind: "heart" };
   if (WRITING_DIRECT.has(tool)) {
     return { kind: "blocked", reason: `${tool} can write on the phone; writes go through run_task with a review pause` };
   }
@@ -132,6 +139,8 @@ export interface Target {
   author?: string;
   title?: string;
   url?: string;
+  /** Visible note body or comment text, scanned for agency promo. */
+  body?: string;
 }
 
 /**

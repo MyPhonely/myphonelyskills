@@ -283,7 +283,8 @@ offer:`,
     assert.equal(plan.follows_per_day, 2);
     assert.equal(plan.likes_per_day, 2, "likes match follows unless set");
     assert.equal(plan.sort, "latest");
-    assert.deepEqual(plan.skip_names_containing, ["中介", "移民", "律师", "律所", "咨询"]);
+    assert.deepEqual(plan.skip_names_containing, ["中介", "移民", "律师", "律所", "咨询", "办理", "代办", "移民公司", "私信"]);
+    assert.deepEqual(plan.skip_text_containing, ["中介", "咨询", "办理", "代办", "律所", "移民公司", "私信"]);
     const dispatches = plan.dispatches as Array<{ keyword: string; posts: number }>;
     assert.deepEqual(
       dispatches.map((d) => [d.keyword, d.posts]),
@@ -299,6 +300,11 @@ offer:`,
     const firm = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "示例咨询", "--title", "source note"]);
     assert.equal(firm.code, 3, "a firm-like name is not a commenter");
     assert.match(firm.err, /咨询/);
+    const promoNote = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小王", "--title", "欢迎咨询办理"]);
+    assert.equal(promoNote.code, 3, "a promo title is not a note to engage");
+    const promoBody = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小王", "--title", "a normal note", "--body", "私信我，代办"]);
+    assert.equal(promoBody.code, 3, "promo wording in the body is refused");
+    assert.equal(json(cli(agent, ["budget", "--channel", "xiaohongshu", "--action", "follow", "--json"])).left, 2, "a promo refusal takes no budget");
     assert.equal(
       cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "like", "--author", "某律师", "--title", "their latest note", "--url", noteB]).code,
       3,

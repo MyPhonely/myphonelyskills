@@ -25,7 +25,7 @@ import { dataRows, die, ensureDir, ledgerPath, quietly, stateDir, today } from "
 import type { Agent } from "./common.ts";
 import { addEngaged, addPerson, addPost, addQueue, countEngaged, countPosts, findEngaged, findPeople, findPosts, invitePerson, openQueueRows, queueRows, setStage, updateQueueRow } from "./ledger.ts";
 import type { QueueRow } from "./ledger.ts";
-import { commentTargets, commenterSkip, engageLimits, resolveChannel } from "./plan.ts";
+import { commentTargets, commenterSkip, engageLimits, promoHit, resolveChannel } from "./plan.ts";
 import { targetKey } from "./policy.ts";
 import type { Target } from "./policy.ts";
 import { inviteRoom } from "./quota.ts";
@@ -49,6 +49,8 @@ export interface Reservation {
   /** open: reserved, not yet written. spent: a guarded write has used it. */
   state: "open" | "spent" | "sent" | "failed" | "released";
   at: string;
+  /** The one coordinate tap allowed for an unlabeled heart. */
+  heartTap?: boolean;
 }
 
 interface Day {
@@ -173,10 +175,10 @@ export function reserve(agent: Agent, channelArg: string, actionArg: string | un
   const action = actionFor(agent, channel, actionArg);
   if (action === "follow" || action === "like") {
     const person = action === "follow" ? t.name ?? "" : t.author ?? "";
-    const marker = person ? commenterSkip(person) : null;
+    const marker = (person ? commenterSkip(person) : null) ?? promoHit(`${t.title ?? ""} ${t.body ?? ""}`);
     if (marker) {
       die(
-        `refused: ${person} looks like a firm, agency, attorney or consultant (${marker}). Engage only individual commenters.`,
+        `refused: promo wording (${marker}) in the name, title or body. Skip agency and consultancy notes and commenters.`,
         3,
       );
     }

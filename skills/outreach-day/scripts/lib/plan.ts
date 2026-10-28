@@ -369,12 +369,26 @@ export function commentTargets(
  * Name fragments that mark an agency, law firm, attorney or consultant.
  * An official or brand account is a judgment about the profile, not a name.
  */
-export const AGENCY_MARKERS = ["中介", "移民", "律师", "律所", "咨询"] as const;
+export const AGENCY_MARKERS = ["中介", "移民", "律师", "律所", "咨询", "办理", "代办", "移民公司", "私信"] as const;
+
+/**
+ * Wording in a note title, body or comment that marks agency or consultancy
+ * promo. A nickname is judged separately: 律师 in a title is the topic, 律师
+ * in a name is the firm.
+ */
+export const PROMO_MARKERS = ["中介", "咨询", "办理", "代办", "律所", "移民公司", "私信"] as const;
 
 /** The marker in `name`, or null when the name can be an individual commenter. */
 export function commenterSkip(name: string): string | null {
   const n = name.normalize("NFKC");
   for (const marker of AGENCY_MARKERS) if (n.includes(marker)) return marker;
+  return null;
+}
+
+/** The promo marker in a title, body or comment, or null. */
+export function promoHit(text: string): string | null {
+  const n = text.normalize("NFKC");
+  for (const marker of PROMO_MARKERS) if (n.includes(marker)) return marker;
   return null;
 }
 
@@ -412,6 +426,7 @@ export function engageTargets(agent: Agent, channel: string, d: Date): Record<st
   plan.tab = "latest";
   plan.sort = "latest";
   plan.skip_names_containing = [...AGENCY_MARKERS];
+  plan.skip_text_containing = [...PROMO_MARKERS];
   return plan;
 }
 
