@@ -98,7 +98,12 @@ Always give the URL when there is one: it is the surest duplicate check.
 ### Start
 
 1. `phone_status`. Offline: stop and ask the user to open the MyPhonely app
-   and tap Connect.
+   and tap Connect. If `leased` is true, that hold is not yours: do not pass
+   its `lease_id` to any tool, and do not release it. Poll `phone_status`
+   until `leased` is false, at most six times, then stop this run. When you
+   do `acquire_phone`, keep that id and `release_phone` it before the next
+   `run_task`. A lease you still hold while a task is queued blocks the task.
+   Do not leave your own lease to expire.
 2. `outreach show`. Read every file it lists: `brand.md`, `voice.md` and the
    others. Then `outreach channels` for the run order.
 3. Before the first write in an app, confirm the signed-in account is the
@@ -185,20 +190,28 @@ you press Back yourself.
    false` or `hours: null`: abandon (that Backs once), look, and open the
    next card from the same results. Skip ads and a note whose title or
    body `reserve` will refuse. Keep up to `commenters_per_post` people
-   who asked, including 求律所 and 求律师推荐. Skip the author and anyone
-   `outreach check` already has. No one left: abandon, look, stay on the
-   results. Do not search again.
+   who asked, including 求律所 and 求律师推荐. Read each chosen comment
+   before you open that profile, and keep the words. Skip the author and
+   anyone `outreach check` already has. No one left: abandon, look, stay on
+   the results. Do not search again.
 3. **One commenter at a time.** Resume the panel task, writes off, to open
    that profile. The follow counts only when the button then reads
-   Following, 已关注, or 互相关注. If it still reads Follow or 关注, tap
-   it once from a new task after the profile task has finished. If the
-   button does not change, `outreach release` and reserve that follow one
-   more time. Do not `record failed` on the first miss. Then the like,
-   from that profile, with no `launch`: a photo note's labelled Like, once.
-   A video heart is one `phone_tap` while the like reservation is held.
-   Record a like from a filled heart, Liked, 已赞, or a count one higher.
-   Return with one Back at a time, and count the Back an abandon already
-   pressed. Explore or the search home means stop. Do not search again.
+   Following, Friends, 已关注, or 互相关注. The task's own status does not:
+   a Back task often ends `failed` after a Back that landed, and a like
+   task's `sent` list is often empty after a like that took. `phone_screen`
+   decides `outreach record`. If the button still reads Follow or 关注,
+   tap it once from a new task after the profile task has finished. If it
+   does not change, `outreach release` and reserve that follow one more
+   time. Do not `record failed` on the first miss. Record a sent follow
+   with `--note "<the comment you read>"`. Then the like, from that
+   profile, with no `launch`. If the notes grid is below the fold,
+   `phone_scroll` it into view (`phone_swipe` is refused), release that
+   lease, then open a photo note and tap its labelled Like once. A video
+   heart is one `phone_tap` while the like reservation is held. Record a
+   like from a filled heart, Liked, 已赞, or a count one higher, not from
+   `sent`. Return with one Back at a time, and count the Back an abandon
+   already pressed. Explore or the search home means stop. Do not search
+   again.
 4. **Next note, same search.** One Back from the source note to the Latest
    results, then the next card. Do not set `launch` again.
 

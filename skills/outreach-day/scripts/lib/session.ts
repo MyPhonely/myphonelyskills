@@ -248,7 +248,9 @@ function recordQuietly(agent: Agent, input: RecordInput): Reservation {
     const who = r.action === "follow" ? t.name : t.author;
     if (r.action === "follow" && !who) die("a follow needs --name");
     if (r.action === "like" && (!who || !t.title)) die("a like needs --author and --title");
-    if (input.outcome === "sent") addEngaged({ platform: r.channel, action: r.action, who, title: t.title, url: t.url }, json);
+    if (input.outcome === "sent") {
+      addEngaged({ platform: r.channel, action: r.action, who, title: t.title, url: t.url, note: input.note || input.comment }, json);
+    }
   } else if (r.action === "invite" || r.action === "message") {
     if (!t.name) die("a person needs --name");
     if (input.outcome === "sent" && r.action === "invite") {

@@ -23,6 +23,17 @@ Stay inside the app. Do not open a profile URL. `resume_task` with
 `abandon: true` presses Back once as it leaves. After an abandon, look at
 the screen before you press Back yourself.
 
+## Leases
+
+`phone_status` before the first call. If `leased` is true, that hold belongs
+to someone else. Do not pass their `lease_id` to `phone_screen`,
+`phone_screenshot`, or any other tool, and do not `release_phone` it. Poll
+`phone_status` until `leased` is false. Cap the wait at six polls, then stop
+this run. `acquire_phone` only for a short read, never while a `run_task` is
+queued or running, and `release_phone` that id as soon as the read returns.
+A lease you still hold blocks the task. Do not leave it to expire. The only
+`lease_id` you may pass is one `acquire_phone` just returned to you.
+
 ## Polling
 
 After every `run_task` and `resume_task`, poll
@@ -58,7 +69,7 @@ the fold, and taps there miss.
 run_task({
   "phases": [{
     "launch": "com.xingin.xhs",
-    "goal": "In the Xiaohongshu app, tap the Search control at the top right, tap the search field, type '<query>', and tap the Search button. This is a keyword search, not a note title. Do not read the home feed (Following, Explore, Nearby, or 关注, 发现, 附近). Do not open a link or Chrome. On the results, before scrolling cards, tap Latest or 最新 beside Top or 综合. Skip cards labelled Ads or 广告. Skip any card whose author is <signed-in name> without opening it. Open one recent note by tapping the author's avatar on the card (liveAvatar). If that opens a profile, press Back once and tap the card's picture. Do not tap the title or the cover first. On the note, tap the comment control that shows the count, labelled 评论 or Comment (for example 评论 35), so the comment panel opens. Do not scroll to the inline comments and do not treat them as the list. Do not tap Follow, 关注, or any heart. Do not like, collect, follow, comment, reply or message.",
+    "goal": "In the Xiaohongshu app, tap the Search control at the top right, tap the search field, type '<query>', and tap the Search button. This is a keyword search, not a note title. Do not read the home feed (Following, Explore, Nearby, or 关注, 发现, 附近). Do not open a link or Chrome. On the results, before scrolling cards, tap Latest or 最新 beside Top or 综合. Skip cards labelled Ads or 广告. Skip any card whose author is <signed-in name> without opening it. Open one recent note by tapping the picture on its card, the cover image, and nothing else on that card. Do not tap the title text, the author name, or any other text. If the picture does not open the note, stop. On the note, tap the comment control that shows the count, labelled 评论 or Comment (for example 评论 35), so the comment panel opens. Do not scroll to the inline comments and do not treat them as the list. Do not tap Follow, 关注, or any heart. Do not like, collect, follow, comment, reply or message.",
     "typeTexts": ["<query>"],
     "pauseWhen": "the comment panel is open on the note from '<query>': commenter names and their avatars are on screen, with a comment input at the bottom of the panel",
     "pauseScreenshot": true,
@@ -67,8 +78,9 @@ run_task({
 })
 ```
 
-Stop polling when status is `paused`. Read the age, the note text, and the
-names in the panel. Reserve nothing before that.
+Stop polling when status is `paused`. Read the age, the note text, and each
+commenter's name and the comment next to it. Keep that comment text. You
+will need it before you open their profile. Reserve nothing before that.
 
 **2. Choose one name.** Skip a note whose title or body has a clear agency
 signal: 欢迎咨询, 中介, 代办, 办理, 移民公司, or 私信. A personal note that
@@ -76,9 +88,11 @@ mentions 律所 or 律师 is still a source. Skip a commenter whose **name**
 contains 中介, 移民, 律师, 律所, 咨询, 办理, 代办, 移民公司, or 私信. Do
 not skip a comment that asks 求律所 or 求律师推荐; that person is the
 audience. Skip the author, the signed-in account, and an official or brand
-account. `outreach check`, then reserve the follow, before the tap in step 3.
-Pass the note title as `--title`. Pass `--body` only for the note text, not
-for a comment that merely says 律所 or 律师.
+account. Read the chosen commenter's comment from the panel and keep those
+words before any tap on their avatar. `outreach check`, then reserve the
+follow, before the tap in step 3. Pass the note title as `--title`. Pass
+`--body` only for the note text, not for a comment that merely says 律所 or
+律师. The comment itself goes on the follow record as `--note`.
 
 **3. Open the profile, then follow, and do not call it done early.** The
 panel task is paused. Resume it to open the profile, with writes off, so
@@ -87,18 +101,21 @@ Follow is not tapped yet. Do not start a second task while this one is paused.
 ```json
 resume_task({
   "task_id": "<id>",
-  "goal": "In the comment panel, scroll until the row named <name> is fully on screen, avatar included. Do not tap a row that is off screen. Tap that avatar. Stop when their profile is open and the button beside the nickname reads Follow, Following, 关注, 已关注, or 互相关注. Do not tap that button. Do not press Back. Do not search.",
+  "goal": "In the comment panel, scroll until the row named <name> is fully on screen, avatar and their comment text included. Read that comment. Do not tap a row that is off screen. Tap that avatar. Stop when their profile is open and the button beside the nickname reads Follow, Following, Friends, 关注, 已关注, or 互相关注. Do not tap that button. Do not press Back. Do not search.",
   "maxSteps": 10
 })
 ```
 
 Stop polling on `done` or `failed`. `phone_screen`. The follow is done
-only when that button reads Following, 已关注, or 互相关注. The profile's
-own Following number is how many people they follow; it does not change
-when you follow them.
+only when that button reads Following, Friends, 已关注, or 互相关注. The
+task status does not decide this: `done` with the button still on Follow
+is not a follow, and `failed` can still be a success if the button changed.
+The profile's own Following number is how many people they follow; it does
+not change when you follow them. `phone_screen` is the check.
 
-If it already reads Following, 已关注, or 互相关注, do not tap. Record the
-reserved follow as sent.
+If it already reads Following, Friends, 已关注, or 互相关注, do not tap.
+Record the reserved follow as sent, with `--note` set to the comment you
+read in the panel.
 
 If it reads Follow or 关注, the previous task has finished, so a new task
 may start. No `launch`. This task is not a success until the button changes:
@@ -110,8 +127,8 @@ run_task({
     "allowWrites": true,
     "repeat": 1,
     "countLabel": "^(关注|Follow)$",
-    "goal": "The profile of <name> is open. If the button reads Following, 已关注, or 互相关注, do not tap it; stop. If it reads Follow or 关注, tap it exactly once. Then read the button. Stop when it reads Following, 已关注, or 互相关注. If it still reads Follow or 关注, stop without tapping again; this follow is not done. Do not press Back and do not open a note.",
-    "pauseWhen": "the profile of <name> is open and the button beside the name reads Follow, Following, 关注, or 已关注",
+    "goal": "The profile of <name> is open. If the button reads Following, Friends, 已关注, or 互相关注, do not tap it; stop. If it reads Follow or 关注, tap it exactly once. Then read the button. Stop when it reads Following, Friends, 已关注, or 互相关注. If it still reads Follow or 关注, stop without tapping again; this follow is not done. Do not press Back and do not open a note.",
+    "pauseWhen": "the profile of <name> is open and the button beside the name reads Follow, Following, Friends, 关注, or 已关注",
     "maxSteps": 6
   }]
 })
@@ -121,20 +138,24 @@ run_task({
 resume of this task: `resume_task` with `allowWrites: true`, `repeat: 1`,
 `countLabel` `^(关注|Follow)$`, and the same goal. Then look again.
 
-Sent only when the button reads Following, 已关注, or 互相关注. If it still
-reads Follow or 关注, or the profile never opened, the follow is not done.
+Sent only when a screen read shows Following, Friends, 已关注, or 互相关注.
+Pass `--note "<the comment>"` on that record. If the button still reads
+Follow or 关注, or the profile never opened, the follow is not done.
 `outreach release` that reservation and `reserve` it once more, then repeat
 this tap once. Do not `record failed` on the first miss. The second miss is
 `record failed`, and there is no third try.
 
 **4. Like one photo note, as its own step.** No `launch`. Prefer a photo
 or carousel: its Like control has a label. A video heart is an unlabeled
-icon and a label tap cannot hit it.
+icon and a label tap cannot hit it. If the notes grid is below the fold,
+bring it on screen with `phone_scroll` before this task. Do not
+`phone_swipe`: the guard refuses it. `release_phone` before you start the
+task. Do not hold that lease while the task is queued.
 
 ```json
 run_task({
   "phases": [{
-    "goal": "You are on <name>'s profile inside the Xiaohongshu app. Do not search and do not open a link or Chrome. In the notes grid, from the top, skip a video (a play icon or a duration). Open the first photo or carousel by tapping its picture once. If every visible note is a video, open the first video and stop without tapping anything on it. Stop when the note is open. Do not tap Like, 赞, or the heart.",
+    "goal": "You are on <name>'s profile inside the Xiaohongshu app, and the notes grid is on screen. Do not search and do not open a link or Chrome. In the grid, from the top, skip a video (a play icon or a duration). Open the first photo or carousel by tapping its picture once, not its title text. If every visible note is a video, open the first video by its picture and stop without tapping anything on it. Stop when the note is open. Do not tap Like, 赞, or the heart.",
     "pauseWhen": "a note by <name> is open, either with a labelled Like, Liked, 赞 or 已赞, or a video whose heart icon is on screen",
     "pauseScreenshot": true,
     "maxSteps": 8
@@ -168,8 +189,11 @@ the like reservation is held and refuses a second tap, a tap with no like
 reservation, and a tap after this one. Then `phone_screen` once. Do not
 tap again whatever it shows.
 
-Record from that screen. A filled heart, Liked, 已赞, or a count one higher
-means sent. Otherwise failed. `sent` often omits the like.
+Record from a screen read, not from the task status and not from `sent`.
+A like task often returns `sent: []` after a like that took. A filled
+heart, Liked, 已赞, or a count one higher means sent. Otherwise release
+once if nothing was tapped, or record failed if the second look still
+shows an empty heart.
 
 **5. Back one screen at a time.** No `launch`, no search, no "until".
 
@@ -182,7 +206,8 @@ run_task({
 })
 ```
 
-Stop polling on `done`. Then `phone_screen`. If you abandoned a paused
+A Back task often ends `failed` or `stuck` after a Back that landed. That
+status is not the outcome. `phone_screen` is. If you abandoned a paused
 task to get here, that abandon already pressed Back once, so this may
 already be the profile or the note. Do not press Back again until you have
 looked.
@@ -200,12 +225,15 @@ results, then the next avatar, still with no new search.
 
 ## What comes back
 
-A follow is sent only when the profile button reads Following, 已关注, or
-互相关注. A task that ended on the profile with the button still reading
-Follow is not a follow: release it and retry once. A like is sent when the
-heart is filled, the label reads Liked or 已赞, or the count is one higher.
-One tap only. Record the 小红书号 on the follow as `user:<id>` and the
-liked note's title when they are on screen.
+The task status and `sent` do not decide the record. `phone_screen` does.
+A follow is sent only when the button reads Following, Friends, 已关注, or
+互相关注, and the record's `--note` is the comment you read before opening
+the profile. A task that ended with the button still reading Follow is not
+a follow: release it and retry once. A like is sent when the heart is
+filled, the label reads Liked or 已赞, or the count is one higher, even
+when `sent` is empty and even when a Back task reported failed. One tap
+only. Record the 小红书号 on the follow as `user:<id>` and the liked note's
+title when they are on screen.
 
 ## Notes
 
@@ -231,7 +259,12 @@ liked note's title when they are on screen.
 - **The profile Following count is theirs.** It does not move when you
   follow them. The button does.
 - **Rate limits.** "操作太频繁" or "请稍后再试" means stop for the day.
-- **Still needs a live check.** A labelled Like on a photo note, and two
-  single Backs, have been seen on a phone. The comment-panel pause, a
-  follow that is recorded only when the button reads Following, and the
-  one retry after a miss have not.
+- **The picture opens the card.** Tapping the title text stalls. The cover
+  image is the only tap.
+- **`phone_scroll` brings the profile grid up.** `phone_swipe` is refused.
+  Release the lease before the next task.
+- **Seen on a phone, 2026-10-28.** Three follows and three photo likes,
+  one tap each, from the comment panel, with Back returning to the note.
+  A follow that reports Friends counts. What this revision still needs on
+  a phone: skipping another holder's lease, opening the card only by its
+  picture, and the comment text landing on the follow record.

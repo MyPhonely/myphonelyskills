@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -282,7 +282,13 @@ offer:`,
     const missed = json(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小赵", "--title", "批了", "--json"]));
     cli(agent, ["record", "--reservation", String(missed.reserved), "--outcome", "failed", "--name", "小赵", "--title", "批了"]);
     assert.equal(cli(agent, ["release", "--reservation", String(missed.reserved)]).code, 0, "a recorded miss can be given back");
-    assert.equal(json(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小赵", "--title", "批了", "--json"])).action, "follow");
+    const again = json(cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小赵", "--title", "批了", "--json"]));
+    assert.equal(again.action, "follow");
+    assert.equal(
+      cli(agent, ["record", "--reservation", String(again.reserved), "--outcome", "sent", "--name", "小赵", "--title", "批了", "--note", "求律所推荐"]).code,
+      0,
+    );
+    assert.match(readFileSync(join(agent, "records", "engaged.md"), "utf8"), /求律所推荐/);
   } finally {
     rmSync(agent, { recursive: true, force: true });
   }

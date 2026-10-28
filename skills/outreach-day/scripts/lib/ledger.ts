@@ -463,7 +463,7 @@ export function addEngaged(v: Values, json: boolean): number {
   // Records made before engage channels existed have no such file yet.
   if (!existsSync(p)) writeFileSync(p, HEADERS.engaged, "utf8");
   const title = clean(str(v.title));
-  const row = [today(), clean(str(v.platform)), str(v.action), clean(str(v.who)), title ? titleKey(title) : "", title, clean(str(v.url))].join(" | ");
+  const row = [today(), clean(str(v.platform)), str(v.action), clean(str(v.who)), title ? titleKey(title) : "", title, clean(str(v.url)), clean(str(v.note))].join(" | ");
   const n = appendRow(p, row);
   emit({ added: true, line: n, row }, json);
   return 0;
@@ -595,13 +595,14 @@ neither does a second nickname with the same profile id). A like is never made
 twice to the same note id.
 
 \`\`\`
-date | platform | action | who | title-key | full-title | post-url
+date | platform | action | who | title-key | full-title | post-url | comment
 \`\`\`
 
 action is follow (who is the commenter; title is the note they were found on;
-post-url is their profile id or url when known) or like (who is that
-commenter; title and post-url are the note of theirs that was liked). The
-source note's author is not followed, and the source note is not liked.
+post-url is their profile id or url when known; comment is the words they
+wrote, read before their profile was opened) or like (who is that commenter;
+title and post-url are the note of theirs that was liked; comment is empty).
+The source note's author is not followed, and the source note is not liked.
 
 ## Rows
 `,
