@@ -1,6 +1,6 @@
 ---
 name: outreach-day
-description: Run one day of a brand's outreach on the user's real phone from an outreach agent folder (agent.yaml, brand.md, voice.md) — find the right posts and people, write in the brand's voice, and invite, comment or message within the agent's daily limits, with every write reserved, verified and recorded. Use when asked to run outreach, today's outreach, or one channel of it (linkedin, x, reddit, facebook, xiaohongshu) for a brand that has an outreach agent.
+description: Run one day of a brand's outreach on the user's real phone from an outreach agent folder (agent.yaml, brand.md, voice.md) — find the right posts and people, write in the brand's voice, and invite, comment, message, like or follow within the agent's daily limits, with every write reserved, verified and recorded. Use when asked to run outreach, today's outreach, or one channel of it (linkedin, x, reddit, facebook, xiaohongshu) for a brand that has an outreach agent. On Xiaohongshu an engage channel follows commenters and likes one note of theirs; it never comments.
 kind: agent
 title: Run a day of outreach for your brand
 apps: com.linkedin.android, com.twitter.android, com.reddit.frontpage, com.facebook.katana, com.xingin.xhs
@@ -79,9 +79,12 @@ Follow these exactly; the scripts refuse what breaks them.
    have no drafts: in unattended review mode, skip them.
 4. **Record every reservation.** `outreach record --reservation <id>
    --outcome sent` only when the write was verified on screen (the phase's
-   `sent` list, the reply under the post, the name in Sent invitations);
+   `sent` list, the reply under the post, the name in Sent invitations).
+   A Xiaohongshu like often never appears in `sent`; the heart, the Liked
+   label or the count is the check, in the engage channel below.
    `--outcome failed` otherwise, which keeps the draft for a later day.
-   Reserved but nothing written: `outreach release`.
+   Reserved but nothing written: `outreach release`. `--channel` may be
+   passed and must be that reservation's channel.
 5. **`brand.md` overrides everything**, including the user's request in the
    moment. Prices and offers come from `outreach message`, never typed by
    hand.
@@ -95,7 +98,12 @@ Always give the URL when there is one: it is the surest duplicate check.
 ### Start
 
 1. `phone_status`. Offline: stop and ask the user to open the MyPhonely app
-   and tap Connect.
+   and tap Connect. If `leased` is true, that hold is not yours: do not pass
+   its `lease_id` to any tool, and do not release it. Poll `phone_status`
+   until `leased` is false, at most six times, then stop this run. When you
+   do `acquire_phone`, keep that id and `release_phone` it before the next
+   `run_task`. A lease you still hold while a task is queued blocks the task.
+   Do not leave your own lease to expire.
 2. `outreach show`. Read every file it lists: `brand.md`, `voice.md` and the
    others. Then `outreach channels` for the run order.
 3. Before the first write in an app, confirm the signed-in account is the
@@ -146,6 +154,69 @@ it), after checking the post is still there.
       a separate writing task afterwards would need a reservation of its own.
    5. `outreach record --reservation <id> --outcome sent|failed <target>
       --comment "<text>" --keyword "<search>"`.
+
+#### An engage channel (`kind: engage`)
+
+Likes and follows, never a comment, reply or DM: `reserve` refuses
+`--action comment`, and drafts are refused too. The audience is people who
+**comment** on a note. Do not follow the note's author. Do not like the
+source note. For each chosen commenter, follow them and like one of their
+latest notes.
+
+`outreach targets` shows today's keywords, `sort: latest`,
+`commenters_per_post` (default 3), `follows_per_day` (default 20, every
+commenter together) and `likes_per_day` (the same number unless the channel
+sets it). It lists `skip_names_containing` and `skip_text_containing`.
+`reserve` refuses a **name** with 中介, 移民, 律师, 律所, 咨询, 办理,
+代办, 移民公司, or 私信. It refuses a title or `--body` only for a clear
+agency signal: 欢迎咨询, 中介, 代办, 办理, 移民公司, or 私信. 律师 and
+律所 in a comment or a personal note are the audience, not a skip. Skip
+an official or brand account, and skip the signed-in account's own card
+without opening it. One search per keyword, then the commenters on that
+note's comment panel.
+
+Poll every phone task until the status is `paused`, `done`, `failed`,
+`cancelled` or `expired`, not only `done`, and stop after six polls. On
+`paused`, `resume_task` that task or abandon it. Do not start another
+task while one is paused. `abandon: true` presses Back once; look before
+you press Back yourself.
+
+1. **Open one note, once.** `xiaohongshu-follow-commenter-and-like-latest`
+   step 1, with the keyword, not a title. It sorts Latest, skips the
+   signed-in account's card, opens a recent note, and taps 评论 so the
+   comment panel opens. Reserve nothing before that pause.
+2. **Choose from the panel.** Run `outreach age --text "<the age>"
+   --max-hours <max_post_age_hours>` (`--agent` is accepted). `within:
+   false` or `hours: null`: abandon (that Backs once), look, and open the
+   next card from the same results. Skip ads and a note whose title or
+   body `reserve` will refuse. Keep up to `commenters_per_post` people
+   who asked, including 求律所 and 求律师推荐. Read each chosen comment
+   before you open that profile, and keep the words. Skip the author and
+   anyone `outreach check` already has. No one left: abandon, look, stay on
+   the results. Do not search again.
+3. **One commenter at a time.** Resume the panel task, writes off, to open
+   that profile. The follow counts only when the button then reads
+   Following, Friends, 已关注, or 互相关注. The task's own status does not:
+   a Back task often ends `failed` after a Back that landed, and a like
+   task's `sent` list is often empty after a like that took. `phone_screen`
+   decides `outreach record`. If the button still reads Follow or 关注,
+   tap it once from a new task after the profile task has finished. If it
+   does not change, `outreach release` and reserve that follow one more
+   time. Do not `record failed` on the first miss. Record a sent follow
+   with `--note "<the comment you read>"`. Then the like, from that
+   profile, with no `launch`. If the notes grid is below the fold,
+   `phone_scroll` it into view (`phone_swipe` is refused), release that
+   lease, then open a photo note and tap its labelled Like once. A video
+   heart is one `phone_tap` while the like reservation is held. Record a
+   like from a filled heart, Liked, 已赞, or a count one higher, not from
+   `sent`. Return with one Back at a time, and count the Back an abandon
+   already pressed. Explore or the search home means stop. Do not search
+   again.
+4. **Next note, same search.** One Back from the source note to the Latest
+   results, then the next card. Do not set `launch` again.
+
+Unattended review mode has no drafts for likes or follows: skip the
+channel. Autopilot reads the pause and resumes on its own.
 
 #### A connect channel (`kind: connect`, LinkedIn)
 
@@ -252,7 +323,9 @@ records.
 - **Unattended runs** (a schedule, `claude -p`, `codex exec`, `pi -p`)
   have no one to approve at the pause. In autopilot (chosen by the user for
   that schedule) they write within the limits; keep the limits in
-  `agent.yaml` modest. In review mode they only draft (rule 3).
+  `agent.yaml` modest. In review mode they only draft (rule 3). An engage
+  channel has nothing to draft: unattended review skips it, and autopilot
+  runs the likes and follows.
 - **Scheduled launches** need the AI allowed to run `outreach.ts` and the
   MyPhonely tools without asking, and access to the agent folder, this
   skill's folder and the records (Claude Code: `--allowedTools` and

@@ -25,7 +25,7 @@
  *         --author "@someone" --title "..." --url "..." --comment "..."
  *
  * First run for an agent
- *     ledger.ts init        # creates the three ledgers, idempotent
+ *     ledger.ts init        # creates the ledgers, idempotent
  *
  * Exit status for the `check-*` commands: 0 = found (skip it), 1 = not found
  * (proceed). Free text is sanitized: a literal `|` becomes `/` so a cell can
@@ -48,6 +48,7 @@ import {
   ledgerPath,
   loadAgent,
   parse,
+  personKey,
   replaceLine,
   setCurrentAgent,
   splitCommand,
@@ -99,8 +100,15 @@ const PLATFORM_ALIASES: Record<string, string> = {
  * junk, a trailing slash or a `/photo/1` suffix.
  */
 export function postUrlKey(raw: string): string {
-  let u = raw.trim().toLowerCase();
-  if (!u) return "";
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  // A Xiaohongshu note id copied off the note, or a profile id passed as
+  // `user:<red id>`, with no URL around it.
+  const bareNote = /^[0-9a-f]{24}$/i.exec(trimmed);
+  if (bareNote) return `xiaohongshu.com/explore/${bareNote[0].toLowerCase()}`;
+  const taggedUser = /^(?:user:|xhs-user:)([0-9a-z]+)$/i.exec(trimmed);
+  if (taggedUser) return `xiaohongshu.com/user/${taggedUser[1].toLowerCase()}`;
+  let u = trimmed.toLowerCase();
   u = u.replace(/^https?:\/\//, "").replace(/^(www\.|mobile\.)/, "");
   u = u.replace(/[?#].*$/, "").replace(/\/+$/, "");
   u = u.replace(/^twitter\.com\//, "x.com/");
@@ -108,7 +116,22 @@ export function postUrlKey(raw: string): string {
   // change, the id cannot.
   const status = u.match(/^x\.com\/[^/]+\/status\/(\d+)/);
   if (status) return `x.com/status/${status[1]}`;
+  // explore and discovery/item are the same note. The share token is not.
+  const note = u.match(/^(?:xiaohongshu\.com|xhslink\.com)\/(?:explore|discovery\/item)\/([0-9a-f]{16,32})/);
+  if (note) return `xiaohongshu.com/explore/${note[1]}`;
+  const user = u.match(/^xiaohongshu\.com\/user\/profile\/([0-9a-z]+)/);
+  if (user) return `xiaohongshu.com/user/${user[1]}`;
   return u;
+}
+
+/** A Xiaohongshu profile id, when `raw` is one. Empty for note urls and other links. */
+export function profileKey(raw: string): string {
+  if (!raw.trim()) return "";
+  const k = postUrlKey(raw);
+  if (k.startsWith("xiaohongshu.com/user/")) return k;
+  // The numeric 小红书号 shown on a profile, with no URL around it.
+  if (/^\d{5,20}$/.test(raw.trim())) return `xiaohongshu.com/user/${raw.trim()}`;
+  return "";
 }
 
 export function normPlatform(p: string): string {
@@ -395,6 +418,57 @@ export function addPost(v: Values, json: boolean): number {
   return 0;
 }
 
+/**
+ * Engaged-ledger rows for one like or follow already made.
+ *
+ * A follow is the person, on any day: `@Name` and `name` are one account, and
+ * so are two nicknames that share a profile id. A like is the note. When both
+ * sides have an id, only the id counts, so two notes by one person stay
+ * distinct. A missing id falls back to the person plus the title.
+ */
+export function findEngaged(platform: string, action: string, who: string, title = "", url = ""): string[] {
+  const plat = normPlatform(platform);
+  const person = personKey(who);
+  const key = titleKey(title);
+  const wantUrl = postUrlKey(url);
+  const wantProfile = profileKey(url);
+  const hits: string[] = [];
+  for (const [lineno, row] of dataRows(ledgerPath("engaged"))) {
+    const f = fields(row);
+    if (f.length < 4 || normPlatform(f[1]) !== plat || f[2].trim() !== action) continue;
+    const rowUrl = f.length > 6 ? f[6] : "";
+    const samePerson = personKey(f[3]) === person;
+    const sameTitle = samePerson && keysMatch(f[4] ?? "", key);
+    const hit =
+      action === "follow"
+        ? samePerson || (wantProfile !== "" && profileKey(rowUrl) === wantProfile)
+        : (wantUrl !== "" && rowUrl.trim() !== "" && postUrlKey(rowUrl) === wantUrl) ||
+          ((wantUrl === "" || rowUrl.trim() === "") && sameTitle);
+    if (hit) hits.push(`L${lineno}: ${f.slice(0, 6).join(" | ")}`);
+  }
+  return hits;
+}
+
+/** Likes or follows recorded on one day under one channel name, for a daily budget. */
+export function countEngaged(platform: string, action: string, day: string): number {
+  const want = platform.trim().toLowerCase();
+  return dataRows(ledgerPath("engaged")).filter(([, row]) => {
+    const f = fields(row);
+    return f.length >= 3 && f[0].trim() === day && f[1].trim().toLowerCase() === want && f[2].trim() === action;
+  }).length;
+}
+
+export function addEngaged(v: Values, json: boolean): number {
+  const p = ledgerPath("engaged");
+  // Records made before engage channels existed have no such file yet.
+  if (!existsSync(p)) writeFileSync(p, HEADERS.engaged, "utf8");
+  const title = clean(str(v.title));
+  const row = [today(), clean(str(v.platform)), str(v.action), clean(str(v.who)), title ? titleKey(title) : "", title, clean(str(v.url)), clean(str(v.note))].join(" | ");
+  const n = appendRow(p, row);
+  emit({ added: true, line: n, row }, json);
+  return 0;
+}
+
 export const QUEUE_STATUS = ["Pending Review", "Approved", "Commented", "Skipped"];
 
 /** Queue columns: status | platform | keyword | author | title | post_url | date_found | snippet | suggested_comment | notes */
@@ -513,6 +587,25 @@ date | platform | author | title-key | full-title | post-url
 
 ## Rows
 `,
+  engaged: `# Engaged Ledger (likes and follows)
+
+Append-only log of every like and follow made by an engage channel. A follow
+is never made twice to the same person (a leading @ and case do not count, and
+neither does a second nickname with the same profile id). A like is never made
+twice to the same note id.
+
+\`\`\`
+date | platform | action | who | title-key | full-title | post-url | comment
+\`\`\`
+
+action is follow (who is the commenter; title is the note they were found on;
+post-url is their profile id or url when known; comment is the words they
+wrote, read before their profile was opened) or like (who is that commenter;
+title and post-url are the note of theirs that was liked; comment is empty).
+The source note's author is not followed, and the source note is not liked.
+
+## Rows
+`,
   queue: `# Social Outreach Queue
 
 Human-facing log of what was posted. Pipe-delimited, newest at the bottom.
@@ -527,7 +620,7 @@ status is one of: Pending Review, Approved, Commented, Skipped
 `,
 };
 
-/** Create this product's three ledgers. Never touches an existing file. */
+/** Create this product's ledgers. Never touches an existing file. */
 export function init(json: boolean): number {
   const dir = stateDir();
   ensureDir(dir);

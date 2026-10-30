@@ -18,8 +18,18 @@ sends, from the user's own accounts.
 ## Before the first call
 
 1. `phone_status` — free. If `device_online` is false, stop and ask the user
-   to open the MyPhonely app and tap Connect. If `leased` is true, another
-   caller holds the phone; wait or ask.
+   to open the MyPhonely app and tap Connect. If `leased` is true, someone
+   else holds the phone.
+   - Never pass, reuse, or release a `lease_id` you did not just receive
+     from your own `acquire_phone` in this run. A screenshot with their id
+     is still using their hold.
+   - Poll `phone_status` until `leased` is false. It is free. Cap the wait
+     at six polls (about three minutes), then stop. Do not start a task
+     on a phone someone else holds.
+   - `acquire_phone` only for a direct read (`phone_screen`, `phone_scroll`),
+     and never while a `run_task` is queued or running. Your lease blocks
+     that task. `release_phone` that id as soon as the read is done. Do not
+     leave it to expire.
 2. Break the request into sub-goals, one `run_task` phase each — usually one
    phase per call, so you see each result before the next. The right
    size is **one route through one app — up to about ten taps**. Launching,
@@ -62,12 +72,13 @@ Reddit `com.reddit.frontpage`, Instagram `com.instagram.android`, Xiaohongshu
 ## Tasks run in the background
 
 `run_task` and `phone_read` return a `task_id` at once.
-Follow it with `get_task_status(task_id, wait_seconds: 30)` in a loop: the
-call returns as soon as anything changes, so one call per change, not
-polling. Status is `queued | running | paused | done | failed | cancelled |
-expired`. When it is `done` or `failed`, `result` holds the outcome and
-`progress` the operator's last log lines — read them before deciding what to
-do next.
+Follow it with `get_task_status(task_id, wait_seconds: 30)` and stop on the
+first status of `paused`, `done`, `failed`, `cancelled` or `expired`. Do not
+wait only for `done`, and do not poll a paused task. Cap the wait at six
+polls. On `paused`, `resume_task` that id or abandon it. Do not start another
+task while one is paused, and do not hold a lease of your own while a task
+is queued. A task status of `failed` is not the outcome of a write: read the
+screen. `result.phases[0].sent` can be empty when the write took.
 
 ## Writing goals
 

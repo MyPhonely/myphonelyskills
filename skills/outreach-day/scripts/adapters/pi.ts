@@ -8,7 +8,9 @@
  * It does two things the skill's instructions alone cannot:
  *
  *   - connects MyPhonely with the direct tools that can write hidden, so the
- *     model never sees a way to write outside run_task;
+ *     model never sees a way to type or swipe a write. phone_tap stays
+ *     visible: a video heart has no label, and the guard allows that one
+ *     coordinate tap while a like reservation is held, then refuses another.
  *   - checks every MyPhonely call with the same guard as the Claude Code hook
  *     (lib/guard.ts): no write without an open reservation from
  *     `outreach reserve`, a review pause on every writing phase, and the
@@ -31,12 +33,12 @@ export default function (pi: ExtensionAPI) {
     pi.registerMcpServer(SERVER, {
       url: process.env.MYPHONELY_MCP_URL ?? "https://api.myphonely.ai/mcp",
       headers: { Authorization: `Bearer ${key}` },
-      description: "The user's real Android phone: run_task for routes in apps, the phone_* tools to look and navigate",
+      description:
+        "The user's real Android phone. Poll get_task_status until the status is paused, done, failed, cancelled or expired, not only done, and stop after about six polls. On paused, resume or abandon that same task; do not start another run_task while one is paused. Abandon presses Back. phone_tap is one unlabeled heart tap, and only while a like reservation is held.",
       exposure: "direct",
       toolExposure: {
         phone_type: "hidden",
         phone_clear_text: "hidden",
-        phone_tap: "hidden",
         phone_long_press: "hidden",
         phone_swipe: "hidden",
         phone_push_file: "hidden",
