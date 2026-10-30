@@ -87,7 +87,8 @@ change or a court ruling, not a personal case question"; for `cases`, what
 `desk.yaml` says a case report is; for `insights`, "the author's headline
 shows they work in the field (`insights.who`) and the post analyses an
 issue, not a sales pitch, consultation offer or job post". Keep each
-post's author, author headline, age and text: the attribution needs them.
+post's author, author headline, age and text: finding the post's URL and
+the report need them.
 
 **Pinned highlights and link posts**: a subreddit's "Community highlights"
 and a link post's title are leads, not stories. Note the title and search
@@ -128,12 +129,16 @@ go into a roundup, so a weekly cadence has the whole week.
 field (`insights.who`), say attorneys analysing a rule, a ruling or an RFE
 trend. Not news on their own. Drop what `insights.skip` names (sales
 posts, competitors) and posts older than `insights.max_age_days` (default
-7). Keep the rest in `<records>/insights/<date>.jsonl` (author, headline,
-age, a one-line summary of the argument, the claims it makes, the post's
-URL if found) so a later day's story can still use one within its age
-window. They are used two ways (step 4): as attributed context in a news
-article on the same issue, and, at most `insights.uses.explainer_per_day`
-a day, as an explainer built around one professional's analysis.
+7). Keep the rest in `<records>/insights/<date>.jsonl`, one line each:
+`author` (only to look the post up, never printed), `headline` (their role
+as LinkedIn shows it), `search` (the query that found it), `age`,
+`summary` (the argument in 1-2 sentences), `claims`, `url` (or null),
+`has_url`, and `used` (`context:<slug>`, `explainer:<slug>`, `reported`,
+or `none`), so a later day's story can still use one within its age
+window. They are used two ways (step 4), **only when `has_url` is true**
+if the desk sets `insights.require_url`: as context in a news article on
+the same issue, and, at most `insights.uses.explainer_per_day` a day, as
+an explainer built around one professional's analysis.
 
 ### 3. Score and pick
 
@@ -174,13 +179,19 @@ For every story you keep, before writing a word:
    own, a short description, the article, the categories and tags from
    `desk.yaml`. Translate sources in other languages; never copy a post's
    text.
-4. **Insights**: find the post's URL on the web if you can (author name +
-   a phrase from it); check each factual or policy claim it makes against
-   a primary source and drop the ones you could not check. Write their
-   view as theirs, attributed by name, title and firm, paraphrased (one
-   short quote at most), never as advice to a reader. An explainer's
-   `sourceUrl` is the primary source of the issue; the post is linked in
-   the text. `style.md` has the rest.
+4. **Insights**: find the post's URL on the web (author name + a phrase
+   from it; a `linkedin.com/posts/...` or `/feed/update/...` link that
+   opens to that post). With `insights.require_url`, **no URL means the
+   post is not used anywhere**: set `used: reported` and list it in the
+   report (below). Check each factual or policy claim it makes against a
+   primary source and drop the ones you could not check. Write their view
+   as theirs, paraphrased (one short quote at most), never as advice to a
+   reader. When `insights.attribution.credit_by_name` is false, **never
+   name the person, their title or their firm**: credit them neutrally
+   (`insights.attribution.wording`, e.g. "one immigration attorney
+   notes") and link that phrase to the post. An explainer's `sourceUrl`
+   is the primary source of the issue; the post is linked in the text.
+   `style.md` has the rest.
 
 ### 5. Publish or draft
 
@@ -306,6 +317,27 @@ nothing; post unattended only when `share.mode` is `autopilot`. Record each
 post that went out in `<records>/shared.jsonl` (`date`, `slug`, `where`)
 and never share an article twice to the same place.
 
+### 7. Pick the day's video (only if `desk.yaml` has `video`)
+
+After publishing (and sharing), look at the articles that went live today
+and pick **at most `video.pick_per_day` (one)** for a short explainer
+video, or none. Score each 1-5 on `video.criteria` (default: broad appeal
+to the desk's readers; a clear visual or step story, such as a timeline,
+before/after or steps; a date or deadline; facts checked in the article,
+which must be 5). Pick the best at or above `video.min_score`; "none" with
+the reason is a correct answer on a thin day.
+
+Write `<records>/video/<date>.md`: the article's title and URL, the
+scores, one line on why (or why nothing qualified), and a script outline of
+`video.length_seconds` (default 30-60 s): a hook line, 3-5 beats with one
+fact each, and a close ("details in the article"). Facts come **only from
+the published article**; no legal advice, nothing on what a viewer should
+file or whether they qualify, no fees, processing times or approval rates
+the article does not state.
+
+**Picking only** unless `video.generate` is true: render nothing, push
+nothing to the phone, post nothing.
+
 ## What comes back
 
 Write `<records>/runs/<date>.md` and report: each source `OK | EMPTY |
@@ -313,8 +345,12 @@ FAILED` with how many items it gave; how many stories after dedupe; how
 many met the bar; each article's title, source and URL (or draft path);
 the cases collected and whether a roundup went out; the insights kept
 and where each was used (context in which article, or the explainer);
-anything skipped
-because its facts could not be checked.
+**each insight with no link found**, listed for the person to look up:
+the professional's headline/role as shown, the gist in 1-2 sentences, the
+search that found it, and "no link found" (no name, when the desk does not
+credit by name); the day's **video pick** (title, URL, one line why, the
+path to `video/<date>.md`) or "none" and why; anything skipped because its
+facts could not be checked.
 
 ## Notes
 
