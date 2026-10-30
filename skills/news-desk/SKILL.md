@@ -30,7 +30,7 @@ for the person's approval unless they have said otherwise.
 |---|---|
 | **desk** | the desk folder, e.g. `./news/my-site` |
 | **mode** | `draft` (default): articles are written to `<records>/drafts/<date>/` for the user to read. `publish`: articles go to `desk.yaml`'s `publish` endpoint; only when the user has said so for this run or its schedule |
-| **lanes** | which lanes to run, default all in `desk.yaml` (`news`, and `cases` if the desk has it) |
+| **lanes** | which lanes to run, default all in `desk.yaml` (`news`, and `cases` and `insights` if the desk has them) |
 
 ## Read the desk first
 
@@ -84,7 +84,10 @@ Give each a `claim` that says what the lane keeps, so the read filters on
 the phone: for `news`, "the post reports an official announcement, a
 policy, rule or fee change, visa-bulletin movement, a processing-time
 change or a court ruling, not a personal case question"; for `cases`, what
-`desk.yaml` says a case report is.
+`desk.yaml` says a case report is; for `insights`, "the author's headline
+shows they work in the field (`insights.who`) and the post analyses an
+issue, not a sales pitch, consultation offer or job post". Keep each
+post's author, author headline, age and text: the attribution needs them.
 
 **Pinned highlights and link posts**: a subreddit's "Community highlights"
 and a link post's title are leads, not stories. Note the title and search
@@ -121,6 +124,17 @@ In a roundup:
 Keep the cases you collected in `<records>/cases/<date>.jsonl` until they
 go into a roundup, so a weekly cadence has the whole week.
 
+**insights** (only if the desk has it). Posts by professionals in the
+field (`insights.who`), say attorneys analysing a rule, a ruling or an RFE
+trend. Not news on their own. Drop what `insights.skip` names (sales
+posts, competitors) and posts older than `insights.max_age_days` (default
+7). Keep the rest in `<records>/insights/<date>.jsonl` (author, headline,
+age, a one-line summary of the argument, the claims it makes, the post's
+URL if found) so a later day's story can still use one within its age
+window. They are used two ways (step 4): as attributed context in a news
+article on the same issue, and, at most `insights.uses.explainer_per_day`
+a day, as an explainer built around one professional's analysis.
+
 ### 3. Score and pick
 
 Drop anything already in `published.jsonl` and merge the same story from
@@ -132,6 +146,14 @@ often months old. Score each story on the desk's criteria (default:
 newsworthiness 1-10 and how many readers it affects 1-10) and keep those at
 or above `target.min_score`, official sources first, up to
 `target.articles_per_day`.
+
+Insights are scored on the desk's `insights` criteria (default: relevance
+to a current issue 1-10 and depth of the analysis 1-10). A post at or above
+`insights.min_score_context` on the same issue as a picked news story goes
+into that story as context. The best post at or above `insights.min_score`
+may become one explainer, counted inside `articles_per_day`, only when the
+issue it discusses is current (its primary source or latest development
+within 30 days) and not already published.
 
 ### 4. Check, then write
 
@@ -152,6 +174,13 @@ For every story you keep, before writing a word:
    own, a short description, the article, the categories and tags from
    `desk.yaml`. Translate sources in other languages; never copy a post's
    text.
+4. **Insights**: find the post's URL on the web if you can (author name +
+   a phrase from it); check each factual or policy claim it makes against
+   a primary source and drop the ones you could not check. Write their
+   view as theirs, attributed by name, title and firm, paraphrased (one
+   short quote at most), never as advice to a reader. An explainer's
+   `sourceUrl` is the primary source of the issue; the post is linked in
+   the text. `style.md` has the rest.
 
 ### 5. Publish or draft
 
@@ -282,7 +311,9 @@ and never share an article twice to the same place.
 Write `<records>/runs/<date>.md` and report: each source `OK | EMPTY |
 FAILED` with how many items it gave; how many stories after dedupe; how
 many met the bar; each article's title, source and URL (or draft path);
-the cases collected and whether a roundup went out; anything skipped
+the cases collected and whether a roundup went out; the insights kept
+and where each was used (context in which article, or the explainer);
+anything skipped
 because its facts could not be checked.
 
 ## Notes
