@@ -29,7 +29,7 @@ One call. Substitute the inputs.
 run_task({
   "phases": [{
     "launch": "com.xingin.xhs",
-    "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<words>', and submit. Tap the note whose title matches so it opens. On the note, tap the comment bubble icon at the bottom so the comment sheet opens, then keep scrolling the comments. Do not like, collect, follow, or type anything.",
+    "goal": "In the Xiaohongshu app, tap the Search control at the top right, type '<words>', and submit. Open the note whose title matches by tapping the author's avatar on that card (the round image by their name, often liveAvatar). If the avatar opens a profile instead, press back and tap the card's picture beside the title once. Do not tap the title text, and do not tap the cover image first. On the note, tap the comment bubble icon at the bottom so the comment sheet opens, then keep scrolling the comments. Do not like, collect, follow, or type anything.",
     "steps": [
       "A note whose title contains '<words>' is open",
       "A sheet of comments with author nicknames and comment text is showing"

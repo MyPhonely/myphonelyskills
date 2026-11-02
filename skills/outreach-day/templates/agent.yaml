@@ -136,6 +136,16 @@ channels:
   #   tab: latest
   #   angle: CHANGEME             # a row of the Angles table in voice.md
   #   follow: true                # follow each author replied to
+  #
+  # xiaohongshu:                  # kind engage: follow commenters, like one note of theirs
+  #   kind: engage                # never a comment, reply or DM; the author is not followed
+  #   lang: zh
+  #   posts_per_keyword: 2
+  #   keywords: [CHANGEME]
+  #   max_post_age_hours: 168
+  #   commenters_per_post: 3      # individual commenters per note
+  #   follows_per_day: 20         # one ceiling for every commenter
+  #   likes_per_day: 20           # defaults to follows_per_day
 
 # Single source of truth for anything price-shaped. Messages render from here,
 # so a pricing or promo change is one edit in one place. `outreach message`

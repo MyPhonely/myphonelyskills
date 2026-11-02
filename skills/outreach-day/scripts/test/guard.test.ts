@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,6 +49,7 @@ test("reads pass with no agent at all; direct writes and taps on Post never pass
   assert.equal(hook(null, "phone_screen", {}).decision, "allow");
   assert.equal(hook(null, "run_task", { phases: [{ goal: "read the feed" }] }).decision, "allow");
   assert.equal(hook(null, "phone_type", { text: "hi" }).decision, "deny");
+  assert.equal(hook(null, "phone_tap", { x: 1, y: 2 }).decision, "deny", "no like reservation, no coordinate tap");
   assert.equal(hook(null, "phone_tap_label", { text: "Post" }).decision, "deny");
   assert.equal(hook(null, "run_task", { allow_writes: true, request: "reply to a post" }).decision, "deny", "a planned run may not write");
 });
@@ -83,6 +84,37 @@ test("a writing phase needs an open reservation and spends it; the commit is ask
     assert.equal(hook(agent, "run_task", unpaused).decision, "deny", "a write with no review pause");
   } finally {
     rmSync(agent, { recursive: true, force: true });
+  }
+});
+
+test("one coordinate tap is allowed while a like reservation is held, and a second is refused", () => {
+  const dir = freshAgent();
+  const yaml = join(dir, "agent.yaml");
+  writeFileSync(
+    yaml,
+    readFileSync(yaml, "utf8").replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, xiaohongshu]").replace(
+      "\noffer:",
+      "\n  xiaohongshu:\n    kind: engage\n    keywords: [alpha]\n\noffer:",
+    ),
+  );
+  try {
+    run(dir, ["init"]);
+    run(dir, ["reserve", "--channel", "xiaohongshu", "--action", "follow", "--name", "小王", "--title", "a source note"]);
+    assert.equal(hook(dir, "phone_tap", { x: 10, y: 20 }).decision, "deny", "a follow is not a heart");
+    run(dir, ["reserve", "--channel", "xiaohongshu", "--action", "like", "--author", "小王", "--title", "their photo note"]);
+    const once = hook(dir, "phone_tap", { x: 519, y: 2100 });
+    assert.equal(once.decision, "allow");
+    const day = JSON.parse(readFileSync(join(dir, "records", "reservations", `${new Date().toISOString().slice(0, 10)}.json`), "utf8")) as {
+      items: Array<{ action: string; state: string; heartTap?: boolean }>;
+    };
+    const like = day.items.find((r) => r.action === "like");
+    assert.equal(like?.heartTap, true);
+    assert.equal(like?.state, "spent");
+    const twice = hook(dir, "phone_tap", { x: 519, y: 2100 });
+    assert.equal(twice.decision, "deny");
+    assert.match(twice.reason, /once/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 

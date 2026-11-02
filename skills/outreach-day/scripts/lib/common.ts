@@ -28,6 +28,7 @@ export const LEDGERS = {
   people: "linkedin-outreach.md",
   queue: "social-outreach-queue.md",
   dedup: "commented-posts.md",
+  engaged: "engaged.md",
 } as const;
 
 export type LedgerName = keyof typeof LEDGERS;
@@ -80,7 +81,7 @@ export interface Audience {
 }
 
 export interface Channel {
-  kind?: "connect" | "comment";
+  kind?: "connect" | "comment" | "engage";
   [key: string]: unknown;
 }
 
@@ -273,6 +274,11 @@ export function fields(row: string): string[] {
 /** Sanitize free text for a pipe-delimited cell. */
 export function clean(text: string): string {
   return text.replace(/\|/g, "/").replace(/\s+/g, " ").trim();
+}
+
+/** One spelling per account: a leading @, case and extra spaces are not a second person. */
+export function personKey(raw: string): string {
+  return raw.trim().replace(/^@+/, "").replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
 /**

@@ -27,10 +27,34 @@ export interface Verdict {
   reason: string;
 }
 
+/**
+ * One coordinate tap, and only for a like that is still reserved.
+ * A video heart has no label, so run_task cannot count it. A second tap,
+ * or a tap with no like reservation, is refused: the heart toggles.
+ */
+function heartTap(): Verdict {
+  if (!hasCurrentAgent()) {
+    return { decision: "deny", reason: "a coordinate tap needs an open like reservation; writes otherwise go through run_task" };
+  }
+  const day = loadDay();
+  const like = [...day.items].reverse().find((r) => r.action === "like" && (r.state === "open" || r.state === "spent") && !r.heartTap);
+  if (!like) {
+    return {
+      decision: "deny",
+      reason: "a coordinate tap is allowed once, for an unlabeled heart, while a like reservation is held. This tap is refused.",
+    };
+  }
+  like.heartTap = true;
+  if (like.state === "open") like.state = "spent";
+  saveDay(day);
+  return { decision: "allow", reason: `one heart tap spent ${like.id}` };
+}
+
 export function guard(toolName: string, input: Record<string, unknown>, unattended: boolean): Verdict {
   const d = decide(toolName, input, { unattended, ticketedTasks: new Set() });
   if (d.kind === "read") return { decision: "allow", reason: "" };
   if (d.kind === "blocked") return { decision: "deny", reason: d.reason };
+  if (d.kind === "heart") return heartTap();
 
   const isResumeCall = toolName.endsWith("__resume_task");
   // Not an outreach run (a news desk sharing its articles, say): no

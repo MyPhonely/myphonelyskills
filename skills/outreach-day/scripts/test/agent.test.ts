@@ -494,6 +494,12 @@ test("one X post has one URL key however it was copied", () => {
   assert.equal(postUrlKey("https://x.com/Jane_Renamed/status/1840000000000000000/photo/1"), k);
   assert.equal(postUrlKey("https://mobile.x.com/jane/status/1840000000000000000/"), k);
   assert.equal(postUrlKey("https://www.reddit.com/r/PhD/comments/abc/x/?utm=1"), "reddit.com/r/phd/comments/abc/x");
+  const note = "xiaohongshu.com/explore/64f1aabbccddeeff00112233";
+  assert.equal(postUrlKey("https://www.xiaohongshu.com/explore/64f1aabbccddeeff00112233?xsec_token=abc"), note);
+  assert.equal(postUrlKey("https://www.xiaohongshu.com/discovery/item/64F1AABBCCDDEEFF00112233"), note);
+  assert.equal(postUrlKey("64f1aabbccddeeff00112233"), note);
+  assert.equal(postUrlKey("https://www.xiaohongshu.com/user/profile/abc123"), "xiaohongshu.com/user/abc123");
+  assert.equal(postUrlKey("user:10000000001"), "xiaohongshu.com/user/10000000001");
 });
 
 test("check-post finds an X post by URL even when the snippet was read differently", () => {
