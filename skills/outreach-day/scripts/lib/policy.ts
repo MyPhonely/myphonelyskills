@@ -56,6 +56,55 @@ export interface Phase {
   pauseWhen?: string;
   repeat?: number;
   typeTexts?: string[];
+  kind?: string;
+  countLabel?: string;
+  launch?: string;
+}
+
+/** A Threads follow or like is refused unless the goal says this and stops if it is not true. */
+export const THREADS_FOREGROUND = "Threads (com.instagram.barcelona) is the foreground app";
+
+/** Follow and Like exist in Instagram too. A Threads write has to name the package and stop otherwise. */
+export function threadsForegroundGated(goal: string): boolean {
+  return goal.includes(THREADS_FOREGROUND) && /stop without tapping/i.test(goal);
+}
+
+const DRAFT_DIALOG = /^(discard|save draft\??|start over|keep editing|start new video)$/i;
+
+function instructsDialogTap(goal: string): boolean {
+  const stripped = goal.replace(/do not tap[^.]*/gi, "");
+  return /\btap (discard|save draft|start over|keep editing|start new video)\b/i.test(stripped);
+}
+
+/**
+ * Threads tasks open Instagram or the launcher when they try to launch the app.
+ * A read phase is not read-only unless it cannot write. Draft-dialog buttons
+ * are never a tap this kit allows.
+ */
+export function phaseProblem(phases: Phase[]): string | null {
+  for (const p of phases) {
+    const goal = p.goal ?? "";
+    if (p.launch === "com.instagram.barcelona") {
+      return (
+        "do not launch Threads. A launch goes to the launcher or to Instagram. " +
+        `${THREADS_FOREGROUND}. If it is not, stop without tapping and without opening an app.`
+      );
+    }
+    if (p.kind === "read" && (p.allowWrites === true || Boolean(p.countLabel))) {
+      return "a read phase must not tap or write. Do not tap Discard, Save draft, Start over, or Keep editing.";
+    }
+    if (instructsDialogTap(goal)) {
+      return "do not tap Discard, Save draft, Start over, or Keep editing. If that dialog is showing, stop without tapping and without pressing Back.";
+    }
+    const aboutThreads = /com\.instagram\.barcelona|\bThreads\b/.test(goal) || /Like\([^)]*\\d/.test(p.countLabel ?? "");
+    if (aboutThreads && !threadsForegroundGated(goal)) {
+      return (
+        `every Threads step must say "${THREADS_FOREGROUND}" and stop without tapping if it is not. ` +
+        "Follow and Like also match Instagram. Do not open the app from the task."
+      );
+    }
+  }
+  return null;
 }
 
 export type Decision =
@@ -86,6 +135,12 @@ export function decide(toolName: string, input: Record<string, unknown>, ctx: Co
   }
   if (tool === "phone_tap_label") {
     const label = String(input.text ?? "");
+    if (DRAFT_DIALOG.test(label.trim())) {
+      return {
+        kind: "blocked",
+        reason: `do not tap '${label}'. Discard, Save draft, Start over, and Keep editing are not outreach. If that dialog is showing, stop without tapping and without pressing Back.`,
+      };
+    }
     if (WRITE_LABEL.test(label)) {
       return { kind: "blocked", reason: `tapping '${label}' would commit something; do it in a run_task writing phase instead` };
     }
@@ -93,11 +148,13 @@ export function decide(toolName: string, input: Record<string, unknown>, ctx: Co
   }
 
   if (tool === "run_task" || tool === "phone_task") {
+    const phases = (Array.isArray(input.phases) ? input.phases : []) as Phase[];
+    const problem = phaseProblem(phases);
+    if (problem) return { kind: "blocked", reason: problem };
     if (input.allow_writes !== true) return { kind: "read" };
     if (typeof input.request === "string" && input.request.trim()) {
       return { kind: "blocked", reason: "a planned run (request) may not write; give explicit phases" };
     }
-    const phases = (Array.isArray(input.phases) ? input.phases : []) as Phase[];
     const writing = phases.filter((p) => p && p.allowWrites === true);
     if (!writing.length) return { kind: "read" };
     if (!ctx.unattended) {
@@ -113,6 +170,17 @@ export function decide(toolName: string, input: Record<string, unknown>, ctx: Co
 
   if (tool === "resume_task") {
     if (input.abandon === true) return { kind: "read" };
+    const resumeGoal = String(input.goal ?? "");
+    const resumeLabel = String(input.countLabel ?? "");
+    const resumeThreads = /com\.instagram\.barcelona|\bThreads\b/.test(resumeGoal) || /Like\([^)]*\\d/.test(resumeLabel);
+    if (input.allowWrites === true && resumeThreads && !threadsForegroundGated(resumeGoal)) {
+      return {
+        kind: "blocked",
+        reason:
+          `a Threads follow or like must say "${THREADS_FOREGROUND}" and stop without tapping if it is not. ` +
+          "Follow and Like also match Instagram.",
+      };
+    }
     const taskId = String(input.task_id ?? "");
     const ticketed = ctx.ticketedTasks.has(taskId);
     if (input.allowWrites !== true && !ticketed) return { kind: "read" };

@@ -559,11 +559,14 @@ test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips
   ]);
   assert.deepEqual(plan.skip_bios_containing, plan.skip_names_containing);
   const dispatches = plan.dispatches as Array<{ keyword: string; posts: number }>;
-  assert.deepEqual(
-    dispatches.map((d) => [d.keyword, d.posts]),
-    [["NIW approved", 2]],
-    "likes cap how many source posts the follow budget opens",
-  );
+  assert.equal(dispatches.length, 2, "the follow budget is spread across keywords, not piled on the first");
+  assert.deepEqual(dispatches.map((d) => d.posts), [1, 1]);
+  assert.equal((plan.keywords_later as string[]).length, 6);
+  assert.match(String(plan.keyword_rotation), /changes with the date/);
+  const nextDay = engageTargets(agent, "threads", new Date("2026-10-02"));
+  const first = (plan.dispatches as Array<{ keyword: string }>)[0].keyword;
+  const second = (nextDay.dispatches as Array<{ keyword: string }>)[0].keyword;
+  assert.notEqual(first, second, "the starting keyword moves by a day");
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "looking for a lawyer recommendation"), null);
   assert.equal(engageRefusal("threads", "Mina", "批了", "求律师推荐"), null);
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "my lawyer got the I-140 approved"), null);

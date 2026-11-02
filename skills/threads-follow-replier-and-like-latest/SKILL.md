@@ -16,24 +16,49 @@ writes: follow them, and only then like one of their own posts. The source
 post is not liked and its author is not followed. Nothing is replied,
 reposted, quoted, messaged or posted.
 
-Stay inside the app. Do not open a profile URL. `resume_task` with
+Stay inside Threads. Do not open a profile URL. `resume_task` with
 `abandon: true` presses Back once as it leaves. After an abandon, look at
 the screen before you press Back yourself.
 
-This route has not been run on a phone. The notification dialog and the
-Profile tab are known from opening Threads: confirm them, and the rest of
-the route, on a device before trusting a count.
+## Foreground app
+
+Every `run_task` opens an app as its first step even when the phase has no
+`launch`. On 2026-11-02 that open resolved Threads to Instagram or looped
+on the launcher icon. Do not use a task to open Threads.
+
+Before every `run_task`, `resume_task`, `phone_scroll`, and `phone_tap_label`,
+call `phone_screen` with no `lease_id` unless you are inside a lease you
+just acquired. `current_app` must be `com.instagram.barcelona`. If it is
+anything else, including `com.instagram.android` or the launcher, stop.
+Do not call `run_task`. Do not press Back. Do not tap Discard, Save draft,
+Start over, Keep editing, or Start new video. Do not `phone_kill_app`.
+Say the foreground package and stop.
+
+Every goal starts with: `Threads (com.instagram.barcelona) is the foreground
+app. If it is not, stop without tapping and without opening an app.` A
+follow or like whose goal omits that sentence is refused. Follow and Like
+also match Instagram.
 
 ## Leases
 
-`phone_status` before the first call. If `leased` is true, that hold belongs
-to someone else. Do not pass their `lease_id` to `phone_screen`,
-`phone_screenshot`, or any other tool, and do not `release_phone` it. Poll
-`phone_status` until `leased` is false. Cap the wait at six polls, then stop
-this run. `acquire_phone` only for a short read, never while a `run_task` is
-queued or running, and `release_phone` that id as soon as the read returns.
-A lease you still hold blocks the task. Do not leave it to expire. The only
-`lease_id` you may pass is one `acquire_phone` just returned to you.
+`phone_status` before the first call, and again after `cancel_task`,
+`phone_screen`, `phone_scroll`, `phone_open_app`, and `phone_press`. Those
+calls can leave a lease for about 15 minutes. `cancel_task` does not
+release the lease of a paused task.
+
+If `busy` is true, or `leased` is true and the status names a holder
+(`holder`, `owner`, `client`, `name`, or `by`), stop on that first status.
+Say `phone busy:` and the holder. Do not poll, do not pass their
+`lease_id` to any tool, and do not `release_phone` it. Six polls are only
+for a lease with no named holder and `busy` not true. If the same holder
+is still there on the second status, stop. That wait cannot outlast
+someone who is renewing the lease.
+
+`acquire_phone` only for a short read, never while a `run_task` is queued
+or running. `release_phone` that id as soon as the read returns, and again
+if a later `phone_status` still shows it. A lease you still hold blocks the
+next task. The only `lease_id` you may pass or release is one
+`acquire_phone` just returned to you.
 
 ## Polling
 
@@ -59,29 +84,29 @@ One name per follow, and one name per like.
 
 ## Run it
 
-**1. Open Threads and read who is signed in.** Nothing is written. If no
-`account` was given, stop. Do not set `launch` on any phase. A `launch` of
-`com.instagram.barcelona` goes Home and taps the Threads icon; with the
-notification shade open that looped until it stuck. On 2026-11-02 the path
-that opened the app was Back, then `phone_open_app`.
+**1. Bring Threads to the front, then read who is signed in.** Nothing is
+written. If no `account` was given, stop. Do not set `launch`. Do not
+press Back first: Back on an Instagram draft dialog chooses Discard or
+Start over.
 
-```json
-phone_press({ "key": "back" })
-```
-
-Look once. Then:
+`phone_status` first. A live holder is `phone busy`. Then one
+`phone_open_app`. It can leave a lease: `phone_status` and `release_phone`
+only an id this run acquired.
 
 ```json
 phone_open_app({ "package_name": "com.instagram.barcelona" })
 ```
 
-Continue only when `confirmed` is true. If it is false, stop. Do not tap a
-home-screen icon. Every `run_task` below omits `launch`.
+`phone_screen`. Continue only when `current_app` is
+`com.instagram.barcelona` and, if `phone_open_app` returned `confirmed`,
+that is true. If the foreground app is Instagram or the launcher, stop.
+Do not call `run_task` to recover. Every later task omits `launch` and is
+preceded by the same `current_app` check.
 
 ```json
 run_task({
   "phases": [{
-    "goal": "Threads is already in front. If a dialog asks 'Allow Threads to send you notifications?', tap Don't allow. Do not tap Allow. Then tap Profile at the bottom right of the screen. Stop when that profile is open and the signed-in username is visible. Do not search. Do not tap Follow, Like, Reply, Repost or the composer.",
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Do not open an app and do not tap a launcher icon. If a dialog asks 'Allow Threads to send you notifications?', tap Don't allow. Do not tap Allow. Do not tap Discard, Save draft, Start over, or Keep editing. Then tap Profile at the bottom right. Stop when that profile is open and the signed-in username is visible. Do not search. Do not tap Follow, Like, Reply, Repost or the composer.",
     "pauseWhen": "the signed-in Threads profile is open and its username is on screen",
     "pauseScreenshot": true,
     "maxSteps": 8
@@ -96,25 +121,46 @@ ignoring case and a leading @. Anything else: `resume_task` with
 `abandon: true` and that `task_id`, say which account was showing, and
 stop. Do not search and do not follow.
 
-**2. Search once and open one post by its timestamp.** The profile task is
-paused and the account matched. `resume_task` with `abandon: true` (that
-presses Back once). Look. Then a new task, still with no `launch`. If a
-Recent or Latest chip is already on the results, tap it. If it is not on
-screen, do not open menus looking for it. Open the post by tapping its
-timestamp (`5d`, `3h`, `07/05`), the exact text on screen. Do not tap the
-author's name or avatar. Do not tap the post body, and do not tap a label
-that has been shortened with `…`: `phone_tap_label` matches the full text
-only, and its parameter is `text`.
+**2. Search, then tap the query row, then Recent.** `outreach targets`
+returns one source post per keyword, starting at a keyword that changes
+with the date. The rest are `keywords_later`. A dry or all-firm keyword is
+not the end of the day: go to the next dispatch.
+
+`phone_screen` first. `current_app` must still be
+`com.instagram.barcelona`. The profile task is paused. `resume_task` with
+`abandon: true` (that presses Back once). Look. If the foreground app
+changed, stop. Then a new task, no `launch`.
+
+Typing the query lands on suggested accounts, not posts. The goal pauses
+on that list. The next step, after the pause, is one tap on the row whose
+text is exactly the query. Do not tap an account. Then, if Recent or
+Latest is already on the post results, tap it. Skip a card whose author
+is `<account>` (the signed-in handle, such as `@quickfilingus`) and skip a
+law firm or promoter (law, lawyer, attorney, immigration, law office,
+律所, 律师, 移民, 中介) without opening it. Open a remaining post by its
+timestamp (`5d`, `3h`, `07/05`), the exact text. `phone_tap_label` takes
+`text`. Do not tap a label shortened with `…`, and do not tap the post body.
 
 ```json
 run_task({
   "phases": [{
-    "goal": "In the Threads app, tap Search in the bottom bar, tap the search field, type '<query>', and submit the search. This is a keyword search, not a post title. Do not read the home feed. Do not open a link or Chrome. If a chip labelled Recent or Latest is already visible, tap it once. If it is not visible, leave the results as they are. Skip a post whose author is <account>. Open one post by tapping its timestamp, the exact short text such as 5d, 3h, or 07/05. Do not tap the author's name or avatar. Do not tap the post text, and do not tap a label that contains an ellipsis. If the timestamp does not open the post, stop. On the post, scroll until one reply row is actually on screen, the replier's name and their reply text both visible. Do not tap Follow, Like, Reply, Repost, Quote or the heart. Do not like the post you just opened.",
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Do not open an app. Tap Search in the bottom bar, tap the search field, type '<query>', and submit. Stop when the suggestion list is showing and a row whose text is exactly '<query>' is on screen. Do not tap an account. Do not tap Follow or Like. Do not tap Discard, Save draft, Start over, or Keep editing.",
     "typeTexts": ["<query>"],
-    "pauseWhen": "a Threads post from the '<query>' search is open, and a reply row is on screen with the replier's name and the reply text",
+    "pauseWhen": "Threads search suggestions for '<query>' are showing, including a row whose text is exactly '<query>'",
     "pauseScreenshot": true,
-    "maxSteps": 18
+    "maxSteps": 12
   }]
+})
+```
+
+Stop on `paused`. Confirm `current_app` is still
+`com.instagram.barcelona`. Then:
+
+```json
+resume_task({
+  "task_id": "<id>",
+  "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Tap the row whose text is exactly '<query>'. Do not tap an account. If a chip labelled Recent or Latest is then visible, tap it once. If it is not visible, leave the results. Skip cards by <account> and skip law-firm and promoter cards without opening them. Open one remaining post by tapping its timestamp, the exact text such as 5d or 07/05. Do not tap the author name, the post text, or a label that contains an ellipsis. On the post, scroll until one reply row is on screen, name and reply text both visible. Do not tap Follow, Like, Reply, Repost, or Quote.",
+  "maxSteps": 14
 })
 ```
 
@@ -167,7 +213,7 @@ off, so Follow is not tapped yet.
 ```json
 resume_task({
   "task_id": "<id>",
-  "goal": "On the open Threads post, scroll until the reply by <name> is fully on screen, name and reply text included. Read that reply. Do not tap a row that is off screen. Tap that replier's avatar. Stop when their profile is open and the button reads Follow, Following, 关注, or 已关注. Do not tap that button. Do not press Back. Do not search. Do not tap Reply.",
+  "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. On the open Threads post, scroll until the reply by <name> is fully on screen, name and reply text included. Read that reply. Do not tap a row that is off screen. Tap that replier's avatar. Stop when their profile is open and the button reads Follow, Following, 关注, or 已关注. Do not tap that button. Do not press Back. Do not search. Do not tap Reply. Do not tap Discard, Save draft, Start over, or Keep editing.",
   "maxSteps": 10
 })
 ```
@@ -202,7 +248,7 @@ run_task({
     "allowWrites": true,
     "repeat": 1,
     "countLabel": "^(Follow|关注)$",
-    "goal": "The Threads profile of <name> is open. If the button reads Following or 已关注, do not tap it; stop. If it reads Follow or 关注, tap it exactly once. Then read the button. Stop when it reads Following or 已关注. If it still reads Follow or 关注, stop without tapping again; this follow is not done. Do not press Back, do not open a post, and do not tap Reply.",
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. The Threads profile of <name> is open. If the button reads Following or 已关注, do not tap it; stop. If it reads Follow or 关注, tap it exactly once. Then read the button. Stop when it reads Following or 已关注. If it still reads Follow or 关注, stop without tapping again; this follow is not done. Do not press Back, do not open a post, and do not tap Reply.",
     "pauseWhen": "the Threads profile of <name> is open and the button reads Follow, Following, 关注, or 已关注",
     "maxSteps": 6
   }]
@@ -243,7 +289,7 @@ not tap a heart hidden under it.
 ```json
 run_task({
   "phases": [{
-    "goal": "You are on <name>'s profile inside Threads. Do not search and do not open a link or Chrome. Do not tap the Threads or Media tab. Scroll until their posts are on screen. Prefer a single-item post. Open it by tapping its timestamp, the exact text such as 5d or 07/05, not their name and not the post text. Stop when that post is open and its first Like is on screen. Do not tap Like, the heart, Reply, Repost or Quote.",
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. You are on <name>'s profile inside Threads. Do not search and do not open a link or Chrome. Do not tap the Threads or Media tab. Scroll until their posts are on screen. Prefer a single-item post. Open it by tapping its timestamp, the exact text such as 5d or 07/05, not their name and not the post text. Stop when that post is open and its first Like is on screen. Do not tap Like, the heart, Reply, Repost or Quote.",
     "pauseWhen": "a single-item post by <name> is open, or the first item of a thread is open, and a Like label is on screen",
     "pauseScreenshot": true,
     "maxSteps": 8
@@ -269,7 +315,7 @@ resume_task({
   "allowWrites": true,
   "repeat": 1,
   "countLabel": "^(Like( \\d+)?|赞( \\d+)?)$",
-  "goal": "The post is open. Tap the first item's Like once. The label may be Like or Like 7, or 赞 with a count. Do not tap a later item's Like. Do not tap a heart that is filled, covered by the floating chat bubble, or labelled Liked, Unlike, or 已赞. Then stop. Do not tap again even if the count looks unchanged. A second tap removes the like. Do not tap Reply.",
+  "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. The post is open. Tap the first item's Like once. The label may be Like or Like 7, or 赞 with a count. Do not tap a later item's Like. Do not tap a heart that is filled, covered by the floating chat bubble, or labelled Liked, Unlike, or 已赞. Then stop. Do not tap again even if the count looks unchanged. A second tap removes the like. Do not tap Reply.",
   "maxSteps": 5
 })
 ```
@@ -292,7 +338,7 @@ empty heart.
 ```json
 run_task({
   "phases": [{
-    "goal": "Press the in-app Back control exactly once, then stop immediately. Do not press Back a second time. Do not tap Search and do not open a link.",
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Press the in-app Back control exactly once, then stop immediately. Do not press Back a second time. Do not press Back on a Discard, Save draft, or Start over dialog. Do not tap Search and do not open a link.",
     "maxSteps": 3
   }]
 })
@@ -336,11 +382,18 @@ post's URL when they are on screen.
 - **Don't allow on the notification dialog.** The first launch can ask
   "Allow Threads to send you notifications?". Tap Don't allow. Do not tap
   Allow, and do not treat that dialog as the profile.
-- **No `launch`.** `phone_press` with `key` `back`, then `phone_open_app`
-  with `package_name` `com.instagram.barcelona`. Tasks after that omit
-  `launch`. `resume_task` takes `task_id`, `goal`, `typeTexts`,
-  `allowWrites`, `repeat`, `countLabel`, `maxSteps`, and `abandon`. It does
-  not take `pauseWhen` or `pauseScreenshot`.
+- **No `launch`, and no task that opens the app.** `phone_open_app` with
+  `package_name` `com.instagram.barcelona`, then `phone_screen`.
+  `current_app` must be that package before every task. Instagram or the
+  launcher means stop. Do not press Back on Discard, Save draft, Start
+  over, or Keep editing, and do not kill Instagram. `resume_task` takes
+  `task_id`, `goal`, `typeTexts`, `allowWrites`, `repeat`, `countLabel`,
+  `maxSteps`, and `abandon`. It does not take `pauseWhen` or
+  `pauseScreenshot`.
+- **A live holder is `phone busy`.** One `phone_status` that names a
+  holder, or `busy: true`, stops the run. Say who holds it. Do not wait
+  them out. `cancel_task` and the screen tools can leave a 15-minute
+  lease: `release_phone` only an id this run acquired.
 - **Poll paused, then resume or abandon.** Waiting only for `done` holds a
   paused task. On `paused`, `resume_task` that task or abandon it. Do not
   start another task while one is paused. A new pause is a new `run_task`.
@@ -372,10 +425,11 @@ post's URL when they are on screen.
 - **`phone_scroll` takes `direction` only.** `phone_swipe` is refused.
   Release the lease before the next task. Another holder's lease is not
   yours to use or release. Six `phone_status` polls, then stop.
-- **Seen on a phone, 2026-11-02.** Account check, repliers only, no author
-  follow, no source like, no replies or DMs, and the leases were clean.
-  Follow became Following. What this revision still needs on a phone: open
-  by `phone_open_app` instead of `launch`, skipping a marriage post that a
-  keyword surfaced, `5d` and `07/05` ages, scrolling to the third replier,
-  liking item 1 of a single-item post, and reaching a replier's posts by
-  the timestamp rather than the Threads or Media tab.
+- **Seen on a phone, 2026-11-02, twice.** The first run followed repliers
+  and liked one post, and also followed off a marriage post. The second
+  run wrote nothing: tasks opened Instagram or the launcher, search stopped
+  on suggested accounts, and the only keyword was firms and old posts.
+  What this revision still needs on a phone: `current_app` stays
+  `com.instagram.barcelona` through a search, the query row then Recent
+  shows posts, the next keyword runs when the first is firms or too old,
+  and a follow and a like happen only while that package is in front.

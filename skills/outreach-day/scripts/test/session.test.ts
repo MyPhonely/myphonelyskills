@@ -357,10 +357,12 @@ offer:`,
     assert.deepEqual(plan.skip_names_containing, ["中介", "移民", "律师", "律所", "咨询", "办理", "代办", "移民公司", "私信"]);
     assert.deepEqual(plan.skip_text_containing, ["欢迎咨询", "中介", "代办", "移民公司", "私信", "办理"]);
     const dispatches = plan.dispatches as Array<{ keyword: string; posts: number }>;
+    assert.equal(dispatches.length, 1, "one source note covers commenters_per_post follows, so the follow budget opens one note");
+    assert.equal(dispatches[0].posts, 1);
+    assert.ok(["alpha topic", "beta topic"].includes(dispatches[0].keyword));
     assert.deepEqual(
-      dispatches.map((d) => [d.keyword, d.posts]),
-      [["alpha topic", 1]],
-      "one source note covers commenters_per_post follows, so the follow budget opens one note",
+      plan.keywords_later,
+      ["alpha topic", "beta topic"].filter((k) => k !== dispatches[0].keyword),
     );
 
     const commented = cli(agent, ["reserve", "--channel", "xiaohongshu", "--action", "comment", "--author", "a", "--title", "t"]);

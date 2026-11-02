@@ -98,12 +98,17 @@ Always give the URL when there is one: it is the surest duplicate check.
 ### Start
 
 1. `phone_status`. Offline: stop and ask the user to open the MyPhonely app
-   and tap Connect. If `leased` is true, that hold is not yours: do not pass
-   its `lease_id` to any tool, and do not release it. Poll `phone_status`
-   until `leased` is false, at most six times, then stop this run. When you
-   do `acquire_phone`, keep that id and `release_phone` it before the next
-   `run_task`. A lease you still hold while a task is queued blocks the task.
-   Do not leave your own lease to expire.
+   and tap Connect. If `busy` is true, or `leased` is true and the status
+   names a holder (`holder`, `owner`, `client`, `name`, or `by`), stop on
+   that first status with `phone busy:` and who holds it. Do not pass their
+   `lease_id` to any tool, and do not release it. Six polls are only for a
+   lease with no named holder and `busy` not true. A holder who is still
+   there on the second status is renewing the lease: stop. After
+   `cancel_task`, `phone_screen`, `phone_scroll`, `phone_open_app`, and
+   `phone_press`, call `phone_status` again. Those calls can leave a lease
+   for about 15 minutes, and `cancel_task` does not release a paused task's
+   lease. `release_phone` only an id this run got from `acquire_phone`, and
+   do it before the next `run_task`. Do not leave your own lease to expire.
 2. `outreach show`. Read every file it lists: `brand.md`, `voice.md` and the
    others. Then `outreach channels` for the run order.
 3. Before the first write in an app, confirm the signed-in account is the
@@ -245,13 +250,28 @@ consultant, 中介, 移民, 律师, 律所, 咨询. It lists
 私信 and 欢迎咨询). A reply that asks for a lawyer recommendation is the
 audience (`求律师`, "looking for a lawyer", "lawyer recommendation").
 
-Do not set `launch`. A launch goes Home and taps the Threads icon, and
-that looped under an open notification shade. `phone_press` with `key`
-`back`, then `phone_open_app` with `package_name`
-`com.instagram.barcelona`, then tasks with no `launch`. `pauseWhen` is a
-`run_task` field. `resume_task` does not accept it. `phone_scroll` takes
-`direction` only. `phone_tap_label` takes `text`, the exact full label,
-never a string cut off with `…`.
+Do not set `launch`, and do not use a task to open the app. A task's first
+step opens an app even with no `launch`, and that open has landed in
+Instagram or looped on the launcher icon. `phone_open_app` with
+`package_name` `com.instagram.barcelona`, then `phone_screen`. Continue
+only when `current_app` is `com.instagram.barcelona`. If it is not, stop.
+Do not press Back through an Instagram draft dialog, and do not tap
+Discard, Save draft, Start over, or Keep editing. Before every later task,
+`phone_screen` again. Every goal says `Threads (com.instagram.barcelona)
+is the foreground app` and stops without tapping if it is not. A follow
+or like that omits that sentence is refused, because Follow and Like also
+match Instagram. `pauseWhen` is a `run_task` field. `resume_task` does not
+accept it. `phone_scroll` takes `direction` only. `phone_tap_label` takes
+`text`, the exact full label, never a string cut off with `…`.
+
+`outreach targets` does not put the whole follow budget on the first
+keyword. It returns one source post per keyword, starting at a keyword
+that changes with the date, and lists the rest as `keywords_later`. A
+keyword that is all firms, your own posts, or too old is not the end of
+the day: open the next dispatch. After the query is typed, the screen is
+suggested accounts. Tap the row whose text is exactly the query, then
+Recent or Latest if that chip is already showing. Skip `@quickfilingus`
+(the channel's `account`) and law-firm cards before opening a post.
 
 Leases, polling, one Back then a look, and `phone_scroll` (never
 `phone_swipe`) are the same rules as the Xiaohongshu engage channel.

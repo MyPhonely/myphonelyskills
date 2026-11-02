@@ -522,10 +522,55 @@ export function engageLimits(ch: Channel): { follows: number; likes: number; per
  * or DM. `follows_per_day` is the ceiling for every person together; likes
  * match it unless `likes_per_day` is set.
  */
+/**
+ * One source post per keyword, then a second, up to posts_per_keyword.
+ * The first keyword changes with the date, so a dry search is not every day.
+ * Keywords that do not fit in today's post budget are returned separately.
+ */
+function spreadKeywordPosts(
+  keywords: string[],
+  perKeyword: number,
+  cap: number,
+  d: Date,
+  exclude: string[],
+): { today: Dispatch[]; later: string[] } {
+  if (!keywords.length || cap <= 0 || perKeyword <= 0) return { today: [], later: [...keywords] };
+  const n = keywords.length;
+  const start = ((daysSince(d, EPOCH) % n) + n) % n;
+  const order = [...keywords.slice(start), ...keywords.slice(0, start)];
+  const counts = new Array<number>(n).fill(0);
+  let left = cap;
+  for (let pass = 0; pass < perKeyword && left > 0; pass++) {
+    for (let i = 0; i < n && left > 0; i++) {
+      counts[i] += 1;
+      left -= 1;
+    }
+  }
+  const today: Dispatch[] = [];
+  const later: string[] = [];
+  order.forEach((keyword, i) => {
+    if (counts[i] > 0) {
+      const query = [keyword, ...exclude.map((t) => (/\s/.test(t) ? `-"${t}"` : `-${t}`))].join(" ");
+      today.push({ keyword, posts: counts[i], query });
+    } else later.push(keyword);
+  });
+  return { today, later };
+}
+
 export function engageTargets(agent: Agent, channel: string, d: Date): Record<string, unknown> {
   const ch = agent.channels[channel];
   const limits = engageLimits(ch);
   const plan = commentTargets(agent, channel, d, "comments_per_day", limits.notes);
+  const keywords = ((ch.keywords as string[] | undefined) ?? []).filter(Boolean);
+  if (keywords.length && !ch.targets) {
+    const exclude = ((ch.exclude_terms as string[] | undefined) ?? []).filter(Boolean);
+    const spread = spreadKeywordPosts(keywords, num(ch.posts_per_keyword, 3), limits.notes, d, exclude);
+    const kept = ((plan.dispatches as Dispatch[] | undefined) ?? []).filter((item) => !item.keyword);
+    plan.dispatches = [...kept, ...spread.today];
+    plan.keywords_later = spread.later;
+    plan.keyword_rotation =
+      "one source post per keyword, starting at a keyword that changes with the date. A dry keyword is not the end of the day. keywords_later waits for a later day.";
+  }
   delete plan.follow;
   plan.kind = "engage";
   plan.like_source = false;
