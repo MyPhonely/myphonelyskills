@@ -235,13 +235,23 @@ and like one of their latest posts.
 (the same number unless the channel sets it), `max_post_age_hours` and
 `account`. A QuickFiling-style list is `NIW approved`, `EB1A approved`,
 `NIW`, `EB-1A`, `green card approved`, `I-140 approved`, `NIW 获批`,
-`EB1A 获批`: approval and process posts, one search per keyword. It lists
-`skip_names_containing` and `skip_bios_containing`: lawyer, attorney, law
-firm, immigration consultant, 中介, 移民, 律师, 律所, 咨询. It lists
+`EB1A 获批`: those are searches, not proof the post is on topic. The post
+text itself must contain NIW, EB-1A, EB1A, I-140, or EB-2. Skip a post or
+a reply with married, spouse, wife, husband, marriage, K-1, or I-130.
+`reserve` refuses both (exit 3). It lists `skip_names_containing` and
+`skip_bios_containing`: lawyer, attorney, law firm, immigration
+consultant, 中介, 移民, 律师, 律所, 咨询. It lists
 `skip_text_containing` for a reply that sells or says DM me (including
 私信 and 欢迎咨询). A reply that asks for a lawyer recommendation is the
-audience (`求律师`, "looking for a lawyer", "lawyer recommendation"). One
-search per keyword, then the repliers under that post.
+audience (`求律师`, "looking for a lawyer", "lawyer recommendation").
+
+Do not set `launch`. A launch goes Home and taps the Threads icon, and
+that looped under an open notification shade. `phone_press` with `key`
+`back`, then `phone_open_app` with `package_name`
+`com.instagram.barcelona`, then tasks with no `launch`. `pauseWhen` is a
+`run_task` field. `resume_task` does not accept it. `phone_scroll` takes
+`direction` only. `phone_tap_label` takes `text`, the exact full label,
+never a string cut off with `…`.
 
 Leases, polling, one Back then a look, and `phone_scroll` (never
 `phone_swipe`) are the same rules as the Xiaohongshu engage channel.
@@ -253,39 +263,42 @@ empty after a like that took. `abandon: true` presses Back once.
    If the dialog "Allow Threads to send you notifications?" is showing, tap
    Don't allow. If the handle is not `account`, stop this channel. Do not
    search.
-2. **Open one post, once.** Step 2, with the keyword, not a title. If a
-   Recent or Latest chip is already on screen, tap it. Do not go looking
-   for a chip that is not there. Open the post by its text or media, never
-   by the author name. `outreach age --text "<the age>" --max-hours
-   <max_post_age_hours>`. `within: false` or `hours: null`: abandon (that
-   Backs once), look, and open the next post from the same results. Skip a
-   post `reserve` will refuse. Keep up to `repliers_per_post` people,
-   including a reply that asks for a lawyer. Read each chosen reply before
-   you open that profile, and keep the words. Skip the author, the
-   signed-in account, and anyone `outreach check` already has. No one
-   left: abandon, look, stay on the results. Do not search again.
+2. **Open one post, once.** Step 2, with the keyword, not a title. Open
+   the post by tapping its timestamp (`5d`, `07/05`), never the author
+   name and never a truncated post-text label. `outreach age` parses
+   `5d`, `3h`, `2w`, and `07/05`. `within: false`: abandon (that Backs
+   once), look, and open the next post. `hours: null` is text that is
+   still not an age. Skip a post `reserve` will refuse, including one
+   whose text is not NIW, EB-1A, EB1A, I-140, or EB-2. Keep up to
+   `repliers_per_post` people. When fewer than that are on screen,
+   `phone_scroll` `direction` `down` and read again, until the cap is met
+   or the screen stops changing. Include a reply that asks for a lawyer.
+   Read each chosen reply before you open that profile, and keep the
+   words. Skip the author, the signed-in account, a marriage reply, and
+   anyone `outreach check` already has. No one left: abandon, look, stay
+   on the results. Do not search again.
 3. **One replier at a time.** Open the profile with writes off. Reserve
    the follow only after the bio is on screen and before Follow is tapped:
-   `--title` is the source post's first words, `--body` is the reply,
-   `--bio` is the bio. A name or bio on the skip list, or a reply that
+   `--title` is the source post text, `--body` is the reply, `--bio` is
+   the bio. A name or bio on the skip list, a family post, or a reply that
    sells or says DM me, is refused (exit 3). Do not tap Follow. One Back,
    then the next replier. The follow counts only when the button then
    reads Following or 已关注. The task status does not. If the button
    still reads Follow or 关注, tap it once from a new task after the
    profile task has finished. If it does not change, `outreach release`
    and reserve that follow one more time. Do not `record failed` on the
-   first miss. Record a sent follow with `--note "<the reply you read>"`
-   and `--url` of their profile. Then the like, from that profile, with no
-   `launch`. If their posts are below the fold, `phone_scroll` them into
-   view, release that lease, then open one post by its text or media and
-   tap an empty heart once. A heart that is already filled is not tapped.
-   A labelled Like is the resume. An unlabeled heart is one `phone_tap`
-   while the like reservation is held, and a second tap is refused. Record
-   a like from a filled heart, Liked, or a count one higher, not from
-   `sent`. Return with one Back at a time, and count the Back an abandon
-   already pressed.
+   first miss. Record a sent follow with `--note "<the reply you read>"`,
+   `--title` of the source post, and `--url` of their profile. Then the
+   like, from that profile, with no `launch`. Scroll `direction` `down`
+   to their posts. Do not decide they have no posts because a Threads or
+   Media tap failed to switch the tab. Open a single-item post by its
+   timestamp and tap the first item's Like once (`Like` or `Like 7`). A
+   heart that is already filled, or hidden under the floating chat
+   bubble, is not tapped. Record the like with `--title` of the post that
+   was actually liked. Return with one Back at a time, and count the Back
+   an abandon already pressed.
 4. **Next post, same search.** One Back from the source post to the
-   results, then the next card. Do not set `launch` again.
+   results, then the next timestamp. Do not set `launch`.
 
 Unattended review mode skips the channel. Autopilot reads the pause and
 resumes on its own.
@@ -384,7 +397,8 @@ to get round it: the records are files its shell can reach.
 
 ## What comes back
 
-`outreach report`, per channel and action: sent, failed, still unsettled,
+`outreach report`, per channel and action, for every channel in the agent
+including one left out of `order`: sent, failed, still unsettled,
 and the budget left. Add what the records cannot show: how many posts or
 people were found and skipped, and why (competitor, duplicate, too old, not
 the audience), anything that stopped an app, and credits used from the task

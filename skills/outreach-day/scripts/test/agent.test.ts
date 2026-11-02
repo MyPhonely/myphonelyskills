@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
 
 import { clean, keysMatch, titleKey } from "../lib/common.ts";
-import { commentTargets, connectTargets, engageRefusal, engageTargets, renderMessage, rotationFor } from "../lib/plan.ts";
+import { commentTargets, connectTargets, engageRefusal, engageTargets, renderMessage, rotationFor, threadsTopic } from "../lib/plan.ts";
 import { personName, postUrlKey, profileKey } from "../lib/ledger.ts";
 import type { Agent } from "../lib/common.ts";
 
@@ -567,6 +567,15 @@ test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "looking for a lawyer recommendation"), null);
   assert.equal(engageRefusal("threads", "Mina", "批了", "求律师推荐"), null);
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "my lawyer got the I-140 approved"), null);
+  assert.equal(engageRefusal("threads", "Mina", "NIW approved", "Submitted for my wife since Nov."), "wife");
+  assert.equal(engageRefusal("threads", "Mina", "NIW approved after our marriage", "congrats"), "marriage");
+  assert.equal(threadsTopic("NIW approved"), null);
+  assert.equal(threadsTopic("EB-1A"), null);
+  assert.equal(threadsTopic("EB1A approved"), null);
+  assert.equal(threadsTopic("I-140 approved"), null);
+  assert.equal(threadsTopic("EB-2 worldwide"), null);
+  assert.equal(threadsTopic("Sep 22 - I-485 & I-765 submitted"), "off-topic");
+  assert.equal(threadsTopic("green card approved"), "off-topic");
   assert.equal(engageRefusal("threads", "Chen Law Firm", "NIW approved", "congrats"), "law firm");
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "thanks", "EB1A attorney"), "attorney");
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "DM me if you want this filed"), "dm me");

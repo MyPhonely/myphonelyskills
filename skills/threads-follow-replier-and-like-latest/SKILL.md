@@ -59,14 +59,29 @@ One name per follow, and one name per like.
 
 ## Run it
 
-**1. Open Threads and read who is signed in.** Nothing is written. `launch`
-is only on this call. If no `account` was given, stop before this call.
+**1. Open Threads and read who is signed in.** Nothing is written. If no
+`account` was given, stop. Do not set `launch` on any phase. A `launch` of
+`com.instagram.barcelona` goes Home and taps the Threads icon; with the
+notification shade open that looped until it stuck. On 2026-11-02 the path
+that opened the app was Back, then `phone_open_app`.
+
+```json
+phone_press({ "key": "back" })
+```
+
+Look once. Then:
+
+```json
+phone_open_app({ "package_name": "com.instagram.barcelona" })
+```
+
+Continue only when `confirmed` is true. If it is false, stop. Do not tap a
+home-screen icon. Every `run_task` below omits `launch`.
 
 ```json
 run_task({
   "phases": [{
-    "launch": "com.instagram.barcelona",
-    "goal": "Open the Threads app. If a dialog asks 'Allow Threads to send you notifications?', tap Don't allow. Do not tap Allow. Then tap Profile at the bottom right of the screen. Stop when that profile is open and the signed-in username is visible. Do not search. Do not tap Follow, Like, Reply, Repost or the composer.",
+    "goal": "Threads is already in front. If a dialog asks 'Allow Threads to send you notifications?', tap Don't allow. Do not tap Allow. Then tap Profile at the bottom right of the screen. Stop when that profile is open and the signed-in username is visible. Do not search. Do not tap Follow, Like, Reply, Repost or the composer.",
     "pauseWhen": "the signed-in Threads profile is open and its username is on screen",
     "pauseScreenshot": true,
     "maxSteps": 8
@@ -74,37 +89,58 @@ run_task({
 })
 ```
 
-Stop polling when status is `paused`. Read the username. It matches
-`account` only when the handle is the same, ignoring case and a leading @.
-Anything else: `resume_task` with `abandon: true`, say which account was
-showing, and stop. Do not search and do not follow.
+`pauseWhen` and `pauseScreenshot` belong on the `run_task` phase.
+`resume_task` does not accept them. Stop polling when status is `paused`.
+Read the username. It matches `account` only when the handle is the same,
+ignoring case and a leading @. Anything else: `resume_task` with
+`abandon: true` and that `task_id`, say which account was showing, and
+stop. Do not search and do not follow.
 
-**2. Search once and open one post so a reply is on screen.** The profile
-task is paused and the account matched. Resume it. No second `launch`. If
-a Recent or Latest chip is already on the results, tap it. If it is not on
+**2. Search once and open one post by its timestamp.** The profile task is
+paused and the account matched. `resume_task` with `abandon: true` (that
+presses Back once). Look. Then a new task, still with no `launch`. If a
+Recent or Latest chip is already on the results, tap it. If it is not on
 screen, do not open menus looking for it. Open the post by tapping its
-text or its picture. Do not tap the author's name or avatar: that opens
-their profile, and the author is not the audience.
+timestamp (`5d`, `3h`, `07/05`), the exact text on screen. Do not tap the
+author's name or avatar. Do not tap the post body, and do not tap a label
+that has been shortened with `…`: `phone_tap_label` matches the full text
+only, and its parameter is `text`.
 
 ```json
-resume_task({
-  "task_id": "<id>",
-  "goal": "In the Threads app, tap Search in the bottom bar, tap the search field, type '<query>', and submit the search. This is a keyword search, not a post title. Do not read the home feed. Do not open a link or Chrome. If a chip labelled Recent or Latest is already visible, tap it once. If it is not visible, leave the results as they are. Skip a post whose author is <account>. Open one post by tapping its text or its picture, and nothing else on that card. Do not tap the author's name or avatar. If that tap does not open the post, stop. On the post, scroll until one reply row is actually on screen, the replier's name and their reply text both visible. Do not tap Follow, Like, Reply, Repost, Quote or the heart. Do not like the post you just opened.",
-  "typeTexts": ["<query>"],
-  "pauseWhen": "a Threads post from the '<query>' search is open, and a reply row is on screen with the replier's name and the reply text",
-  "pauseScreenshot": true,
-  "maxSteps": 18
+run_task({
+  "phases": [{
+    "goal": "In the Threads app, tap Search in the bottom bar, tap the search field, type '<query>', and submit the search. This is a keyword search, not a post title. Do not read the home feed. Do not open a link or Chrome. If a chip labelled Recent or Latest is already visible, tap it once. If it is not visible, leave the results as they are. Skip a post whose author is <account>. Open one post by tapping its timestamp, the exact short text such as 5d, 3h, or 07/05. Do not tap the author's name or avatar. Do not tap the post text, and do not tap a label that contains an ellipsis. If the timestamp does not open the post, stop. On the post, scroll until one reply row is actually on screen, the replier's name and their reply text both visible. Do not tap Follow, Like, Reply, Repost, Quote or the heart. Do not like the post you just opened.",
+    "typeTexts": ["<query>"],
+    "pauseWhen": "a Threads post from the '<query>' search is open, and a reply row is on screen with the replier's name and the reply text",
+    "pauseScreenshot": true,
+    "maxSteps": 18
+  }]
 })
 ```
 
-Stop polling when status is `paused`. Read the age, the post text, and
-each reply that is on screen: the replier's name and the reply next to it.
-Keep that reply text. You will need it before you open their profile.
-Reserve nothing before that. A reply that is below the fold is not a row
-you can tap. If you need it, this task has to scroll it on screen first.
-`phone_scroll` only after this task has finished or been abandoned, and
-only with a lease you release before the next task. `phone_swipe` is
-refused.
+Stop polling when status is `paused`. Read the age, the whole post text,
+and each reply that is on screen. `outreach age` accepts Threads' compact
+ages (`5d`, `3h`, `2w`) and a month/day date (`07/05`, `07/05/2025`). Keep
+the reply text. The post itself has to be an employment case: its text
+must contain NIW, EB-1A, EB1A, I-140, or EB-2. A search keyword is not the
+post. Skip a family or marriage post, and a reply, whose text contains
+married, spouse, wife, husband, marriage, K-1, or I-130. `reserve` refuses
+both. Reserve nothing before that check.
+
+A reply below the fold is not a row you can tap. After this task has
+finished or been abandoned, and only with a lease you release before the
+next task, scroll the replies until you have `repliers_per_post` audience
+repliers or the list ends:
+
+```json
+phone_scroll({ "direction": "down" })
+```
+
+`phone_scroll` takes `direction` only (`down`, `up`, `left`, or `right`).
+There is no distance. `down` reveals the next screenful. `phone_screen`
+after each scroll. If the elements are unchanged, the list has ended.
+`phone_swipe` is refused. Do not stop at two repliers while a third is
+still below the fold and the cap is 3.
 
 **3. Choose one name.** Skip the author, the signed-in account, and an
 agency, law firm or promoter. Skip a name or a bio that contains lawyer,
@@ -115,14 +151,18 @@ reply that asks for a lawyer recommendation: 求律师, 求推荐, "looking for
 a lawyer", "lawyer recommendation". That person is the audience. Read the
 chosen reply from the screen and keep those words before any tap on their
 avatar. `outreach check` now. Reserve in step 4, after the bio is on
-screen and before Follow is tapped. Pass the source post's first words as
-`--title`, the reply as `--body`, and the bio as `--bio`. The same reply
-goes on the follow record as `--note`.
+screen and before Follow is tapped. Pass the source post text as
+`--title` (not just a couple of words: the topic check reads it), the
+reply as `--body`, and the bio as `--bio`. The same reply goes on the
+follow record as `--note`, and the same source text is `--title` again.
+If the record omits `--title`, the ledger keeps the text from reserve.
 
 **4. Open the profile, then follow, and do not call it done early.** The
-post task is paused. Resume it to open the profile, with writes off, so
-Follow is not tapped yet. The reply row has to be on screen. Do not start
-a second task while this one is paused.
+post task is paused. Resume it to open the profile. Do not abandon it:
+abandon presses Back and leaves the post. `resume_task` has no
+`pauseWhen`, so this resume runs until it stops, and `phone_screen` is
+how you read the profile. The reply row has to be on screen. Writes stay
+off, so Follow is not tapped yet.
 
 ```json
 resume_task({
@@ -149,7 +189,8 @@ means one Back, then the next replier. There is no reservation to release.
 
 If the button already reads Following or 已关注, do not tap. Record the
 reserved follow as sent, with `--note` set to the reply you read on the
-post and `--url` set to their profile.
+post, `--title` set to the source post text, and `--url` set to their
+profile.
 
 If it reads Follow or 关注, the previous task has finished, so a new task
 may start. No `launch`. This task is not a success until the button changes:
@@ -168,9 +209,10 @@ run_task({
 })
 ```
 
-`pauseWhen` here is the profile you are already on, so the write is the
-resume of this task: `resume_task` with `allowWrites: true`, `repeat: 1`,
-`countLabel` `^(Follow|关注)$`, and the same goal. Then look again.
+The phase pauses on the profile. The write is `resume_task` with
+`task_id`, `allowWrites: true`, `repeat: 1`, and `countLabel`
+`^(Follow|关注)$`. Do not pass `pauseWhen` or `pauseScreenshot` to
+`resume_task`. Then look again.
 
 Sent only when a screen read shows Following or 已关注. Pass
 `--note "<the reply>"` on that record. If the button still reads Follow or
@@ -179,18 +221,30 @@ release` that reservation and `reserve` it once more, then repeat this tap
 once. Do not `record failed` on the first miss. The second miss is
 `record failed`, and there is no third try.
 
-**5. Like one of their posts, as its own step.** No `launch`. Open the
-post by its text or its picture, not by their name. If their posts are
-below the fold, bring one on screen with `phone_scroll` before this task.
-Do not `phone_swipe`. `release_phone` before you start the task. Do not
-hold that lease while the task is queued. Do not tap a heart that is
-already filled.
+**5. Like one of their posts, as its own step.** No `launch`. Their posts
+are on the profile, under the bio. Scroll to them with
+`phone_scroll({ "direction": "down" })`. Do not tap the Threads or Media
+tab to go looking: on 2026-11-02 those taps did not switch the tab, and
+Media still read "No media threads yet" without the tab changing. A tab
+counts as switched only when a later `phone_screen` shows that tab
+selected or the list content changed. "No posts" is a skip only after that
+visible change and a further scroll that leaves the elements unchanged.
+
+Open a post by its timestamp. `phone_tap_label` takes `text`, and the
+match is the exact full label. A timestamp such as `5d` or `07/05` is that
+label. A post-body label shortened with `…` never matches, and a direct
+tap on long post text is refused. Prefer a single-item post, one Like
+control. Skip a poll or a multi-item thread when another post is a single
+item. Do not `phone_swipe`. `release_phone` before you start the task. Do
+not hold that lease while the task is queued. Do not tap a heart that is
+already filled. A floating chat bubble covers the bottom-left heart: do
+not tap a heart hidden under it.
 
 ```json
 run_task({
   "phases": [{
-    "goal": "You are on <name>'s profile inside Threads. Do not search and do not open a link or Chrome. Open their first post by tapping its text or its picture once, not their name. Stop when that post is open and a heart is on screen. Do not tap Like, the heart, Reply, Repost or Quote.",
-    "pauseWhen": "a post by <name> is open and its heart is on screen, either empty and labelled Like or 赞, or already filled",
+    "goal": "You are on <name>'s profile inside Threads. Do not search and do not open a link or Chrome. Do not tap the Threads or Media tab. Scroll until their posts are on screen. Prefer a single-item post. Open it by tapping its timestamp, the exact text such as 5d or 07/05, not their name and not the post text. Stop when that post is open and its first Like is on screen. Do not tap Like, the heart, Reply, Repost or Quote.",
+    "pauseWhen": "a single-item post by <name> is open, or the first item of a thread is open, and a Like label is on screen",
     "pauseScreenshot": true,
     "maxSteps": 8
   }]
@@ -199,21 +253,23 @@ run_task({
 
 Stop polling on `paused`. If the heart is filled, or the control reads
 Liked, Unlike, or 已赞, do not reserve a like and do not tap it.
-`resume_task` with `abandon: true` presses Back once. Look. You may open
-the next post the same way, once. If that heart is filled too, stop
-without a like.
+`resume_task` with `abandon: true` and `task_id` presses Back once. Look.
+You may open the next post the same way, once. If that heart is filled
+too, stop without a like.
 
-If the control reads Like or 赞 and the heart is empty, reserve the like
-(pass their name as `--author`, the post's first words as `--title`, and
-the post URL as `--url` when it is on screen), then:
+If the first item's control reads `Like` or `Like 7` (or 赞 with a count)
+and the heart is empty, reserve the like. Pass their name as `--author`,
+the text of the post you actually opened as `--title`, and its URL as
+`--url` when it is on screen. A later record with a different `--title`
+stores that new title, not the one from reserve. Then:
 
 ```json
 resume_task({
   "task_id": "<id>",
   "allowWrites": true,
   "repeat": 1,
-  "countLabel": "^(Like|赞)$",
-  "goal": "The post is open. Tap the labelled Like or 赞 once. Do not tap a heart that is filled, and do not tap a control that reads Liked, Unlike, or 已赞. Then stop. Do not tap again even if the count looks unchanged. A second tap removes the like. Do not use a coordinate tap when the button has a label. Do not tap Reply.",
+  "countLabel": "^(Like( \\d+)?|赞( \\d+)?)$",
+  "goal": "The post is open. Tap the first item's Like once. The label may be Like or Like 7, or 赞 with a count. Do not tap a later item's Like. Do not tap a heart that is filled, covered by the floating chat bubble, or labelled Liked, Unlike, or 已赞. Then stop. Do not tap again even if the count looks unchanged. A second tap removes the like. Do not tap Reply.",
   "maxSteps": 5
 })
 ```
@@ -263,13 +319,15 @@ search.
 ## What comes back
 
 The task status and `sent` do not decide the record. `phone_screen` does.
-A follow is sent only when the button reads Following or 已关注, and the
-record's `--note` is the reply you read before opening the profile. A task
-that ended with the button still reading Follow is not a follow: release
-it and retry once. A like is sent when the heart is filled, the label
-reads Liked, or the count is one higher, even when `sent` is empty and
-even when a Back task reported failed. One tap only. Record their profile
-URL on the follow and the liked post's URL when they are on screen.
+A follow is sent only when the button reads Following or 已关注. The
+record's `--note` is the reply you read before opening the profile, and
+`--title` is the source post text. A task that ended with the button still
+reading Follow is not a follow: release it and retry once. A like is sent
+when the first item's heart is filled, the label reads Liked, or that
+count is one higher, even when `sent` is empty and even when a Back task
+reported failed. One tap only. Pass `--title` of the post that was
+actually liked. Record their profile URL on the follow and the liked
+post's URL when they are on screen.
 
 ## Notes
 
@@ -278,32 +336,46 @@ URL on the follow and the liked post's URL when they are on screen.
 - **Don't allow on the notification dialog.** The first launch can ask
   "Allow Threads to send you notifications?". Tap Don't allow. Do not tap
   Allow, and do not treat that dialog as the profile.
-- **Poll paused, then resume.** Waiting only for `done` holds a paused
-  task. On `paused`, resume that task or abandon it. Do not start another
-  task while one is paused.
-- **The post body opens the post.** The author name and avatar open the
+- **No `launch`.** `phone_press` with `key` `back`, then `phone_open_app`
+  with `package_name` `com.instagram.barcelona`. Tasks after that omit
+  `launch`. `resume_task` takes `task_id`, `goal`, `typeTexts`,
+  `allowWrites`, `repeat`, `countLabel`, `maxSteps`, and `abandon`. It does
+  not take `pauseWhen` or `pauseScreenshot`.
+- **Poll paused, then resume or abandon.** Waiting only for `done` holds a
+  paused task. On `paused`, `resume_task` that task or abandon it. Do not
+  start another task while one is paused. A new pause is a new `run_task`.
+- **The timestamp opens the post.** `phone_tap_label` `text` is the exact
+  full timestamp. An ellipsis is not a label. The author name opens the
   author. The author is not followed, and the source post's heart is not
   the like.
+- **The post text has to be NIW, EB-1A, EB1A, I-140, or EB-2.** The search
+  keyword is not the post. Skip married, spouse, wife, husband, marriage,
+  K-1, and I-130 in the post or the reply.
+- **Scroll until `repliers_per_post` or the list ends.** `phone_scroll`
+  `direction` `down`, then look. An unchanged screen is the end.
 - **Read the reply, then the profile.** The reply text is stored with the
-  follow. A name or bio with lawyer, attorney, law firm, immigration
-  consultant, 中介, 移民, 律师, 律所, or 咨询 is not followed. A reply that
-  asks for a lawyer recommendation is the audience. A reply that says DM
-  me, or that the writer is a lawyer or a firm, is not.
+  follow, and the source post text is the title column. A name or bio with
+  lawyer, attorney, law firm, immigration consultant, 中介, 移民, 律师,
+  律所, or 咨询 is not followed. A reply that asks for a lawyer
+  recommendation is the audience. A reply that says DM me, or that the
+  writer is a lawyer or a firm, is not.
 - **Following is the follow.** The button has to read Following or 已关注.
   The number on the profile is how many people they follow.
-- **One empty heart, one tap.** A filled heart is never tapped. A second
-  tap takes the like off. A labelled Like is the resume. An unlabeled
-  heart is one `phone_tap` while the like reservation is held.
-- **One Back, then look. Abandon is a Back.** `resume_task({ abandon: true })`
-  presses Back once. Look before you add another.
-- **`phone_scroll` brings a reply or a post on screen.** `phone_swipe` is
-  refused. Release the lease before the next task. Another holder's lease
-  is not yours to use or release. Six `phone_status` polls, then stop.
-- **Not yet run on a phone.** Still to confirm on a device: the
-  notification dialog's exact button, that Profile is bottom right and
-  shows the handle, that search offers a Recent or Latest chip only
-  sometimes, that the post body opens the post and the author name does
-  not, that a reply row's avatar opens that replier, that Follow changes
-  to Following, that an empty heart likes on one tap and a filled heart is
-  visibly filled, and that one Back returns to the thread and then the
-  results.
+- **Their posts are below the bio.** Do not treat an unmoved Threads or
+  Media tab as an empty profile. Open a single-item post by its timestamp.
+- **The first Like, one tap.** `countLabel` is `^(Like( \d+)?|赞( \d+)?)$`,
+  so `Like 7` on item 1 counts and item 2 does not. A filled heart is never
+  tapped. A heart under the floating chat bubble is not tapped. A second
+  tap takes the like off. The record title is the post that was liked.
+- **One Back, then look. Abandon is a Back.** `resume_task` with
+  `abandon: true` presses Back once. Look before you add another.
+- **`phone_scroll` takes `direction` only.** `phone_swipe` is refused.
+  Release the lease before the next task. Another holder's lease is not
+  yours to use or release. Six `phone_status` polls, then stop.
+- **Seen on a phone, 2026-11-02.** Account check, repliers only, no author
+  follow, no source like, no replies or DMs, and the leases were clean.
+  Follow became Following. What this revision still needs on a phone: open
+  by `phone_open_app` instead of `launch`, skipping a marriage post that a
+  keyword surfaced, `5d` and `07/05` ages, scrolling to the third replier,
+  liking item 1 of a single-item post, and reaching a replier's posts by
+  the timestamp rather than the Threads or Media tab.

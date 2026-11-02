@@ -129,6 +129,33 @@ test("a lead may be invited; anyone already contacted may not", () => {
   }
 });
 
+test("the report lists a channel that was configured but left out of order", () => {
+  const agent = freshAgent((y) =>
+    y.replace(
+      "\noffer:",
+      `
+  threads:
+    kind: engage
+    keywords: ["NIW approved"]
+
+offer:`,
+    ),
+  );
+  try {
+    cli(agent, ["init"]);
+    const rows = JSON.parse(cli(agent, ["report", "--json"]).out) as Array<{ channel: string }>;
+    const names = rows.map((r) => r.channel);
+    assert.ok(names.includes("threads"), "a channel missing from order is still reported");
+    assert.ok(names.indexOf("linkedin") < names.indexOf("threads"));
+    assert.equal(cli(agent, ["reserve", "--channel", "threads", "--action", "follow", "--name", "Mina", "--title", "NIW approved"]).code, 0);
+    const after = JSON.parse(cli(agent, ["report", "--json"]).out) as Array<{ channel: string; action: string; unsettled: string[] }>;
+    const follow = after.find((r) => r.channel === "threads" && r.action === "follow");
+    assert.equal(follow?.unsettled.length, 1);
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
+  }
+});
+
 test("the report shows each channel's sends, failures and what is still open", () => {
   const agent = freshAgent();
   try {
@@ -532,6 +559,37 @@ offer:`,
       3,
     );
     assert.equal(json(cli(agent, ["budget", "--channel", "threads", "--action", "follow", "--json"])).left, 4, "a refusal takes no budget");
+    const offTopic = cli(agent, [
+      "reserve",
+      "--channel",
+      "threads",
+      "--action",
+      "follow",
+      "--name",
+      "Mina",
+      "--title",
+      "Sep 22 - I-485 & I-765 submitted",
+      "--body",
+      "So quick lol",
+    ]);
+    assert.equal(offTopic.code, 3, "a keyword hit is not a topic hit");
+    assert.match(offTopic.err, /off-topic/);
+    assert.equal(
+      cli(agent, [
+        "reserve",
+        "--channel",
+        "threads",
+        "--action",
+        "follow",
+        "--name",
+        "Tee",
+        "--title",
+        "NIW approved",
+        "--body",
+        "Submitted for my wife since Nov.",
+      ]).code,
+      3,
+    );
 
     const follow = json(
       cli(agent, [
@@ -612,6 +670,44 @@ offer:`,
       cli(agent, ["reserve", "--channel", "threads", "--action", "like", "--author", "Mina Chen", "--title", "another post", "--url", postB, "--json"]),
     );
     assert.equal(likeB.action, "like");
+    const liked = json(
+      cli(agent, [
+        "record",
+        "--reservation",
+        String(likeB.reserved),
+        "--outcome",
+        "sent",
+        "--author",
+        "Mina Chen",
+        "--title",
+        "the post that was actually liked",
+        "--url",
+        postB,
+        "--json",
+      ]),
+    );
+    assert.match(String(liked.target), /the post that was actually liked/);
+    const engaged = readFileSync(join(agent, "records", "engaged.md"), "utf8");
+    assert.match(engaged, /the post that was actually liked/);
+    assert.doesNotMatch(engaged, /another post/);
+    const quiet = json(
+      cli(agent, [
+        "reserve",
+        "--channel",
+        "threads",
+        "--action",
+        "follow",
+        "--name",
+        "Ada",
+        "--title",
+        "I-140 approved today",
+        "--body",
+        "congrats",
+        "--json",
+      ]),
+    );
+    assert.equal(cli(agent, ["record", "--reservation", String(quiet.reserved), "--outcome", "sent", "--name", "Ada"]).code, 0);
+    assert.match(readFileSync(join(agent, "records", "engaged.md"), "utf8"), /I-140 approved today/);
     assert.equal(
       cli(agent, ["reserve", "--channel", "threads", "--action", "like", "--author", "Wei", "--title", "a third post", "--url", "https://www.threads.net/@wei/post/D000other"]).code,
       4,

@@ -410,6 +410,15 @@ export const THREADS_NAME_MARKERS = [
 ] as const;
 
 /**
+ * Family and marriage words. A source post or a reply that is about a
+ * spouse, a K-1, or an I-130 is not the NIW / EB-1A audience.
+ */
+export const THREADS_FAMILY_MARKERS = ["marriage", "married", "spouse", "husband", "wives", "wife", "k-1", "k1", "i-130", "i130"] as const;
+
+/** The source post has to be an employment case, not merely a green-card keyword hit. */
+const THREADS_TOPIC = [/\bniw\b/, /\beb[-\s]?1a\b/, /\bi-?140\b/, /\beb[-\s]?2\b/];
+
+/**
  * A Threads reply that sells a service or asks to be messaged. "lawyer" is
  * not here: a reply asking for a lawyer recommendation is the audience.
  */
@@ -461,9 +470,22 @@ function threadsSelfId(text: string): string | null {
 }
 
 /**
+ * Why a Threads source post is not an employment case, or null when its text
+ * contains NIW, EB-1A, EB1A, I-140, or EB-2. The reply does not count: a
+ * marriage post stays off-topic even if a replier mentions NIW.
+ */
+export function threadsTopic(title: string): string | null {
+  const n = normText(title).replace(/[\u2010-\u2015\u2212]/g, "-");
+  if (THREADS_TOPIC.some((re) => re.test(n))) return null;
+  return "off-topic";
+}
+
+/**
  * Why this follow or like is refused, or null when the person can be engaged.
- * Xiaohongshu keeps its own lists. Threads skips agency names and bios, and a
- * reply that sells or says DM me. A reply that asks for a lawyer does not.
+ * Xiaohongshu keeps its own lists. Threads skips agency names and bios, a
+ * family or marriage post or reply, and a reply that sells or says DM me.
+ * A reply that asks for a lawyer does not. The NIW / EB topic check is
+ * `threadsTopic`, applied to a follow's source post only.
  */
 export function engageRefusal(channel: string, person: string, title: string, body: string, bio = ""): string | null {
   if (channel.trim().toLowerCase() === "threads") {
@@ -472,6 +494,8 @@ export function engageRefusal(channel: string, person: string, title: string, bo
     const bioHit = bio ? markerHit(bio, THREADS_NAME_MARKERS) : null;
     if (bioHit) return bioHit;
     const reply = `${title}\n${body}`;
+    const family = markerHit(reply, THREADS_FAMILY_MARKERS);
+    if (family) return family;
     return markerHit(reply, THREADS_REPLY_MARKERS) ?? threadsSelfId(reply);
   }
   return (person ? commenterSkip(person) : null) ?? promoHit(`${title} ${body}`);

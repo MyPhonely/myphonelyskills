@@ -32,6 +32,14 @@ test("post ages from a phone normalize to hours", () => {
     Math.round((now.getTime() - new Date(2024, 3, 11, 12, 0, 0).getTime()) / 3_600_000),
   );
   assert.equal(parseAge("12-01", now).date, "2025-12-01", "a month-day still in the future is last year");
+  assert.equal(parseAge("5d", now).hours, 120, "Threads compact days");
+  assert.equal(parseAge("3h", now).hours, 3);
+  assert.equal(parseAge("2w", now).hours, 336);
+  assert.equal(parseAge("45m", now).hours, 1, "compact m is minutes");
+  assert.equal(parseAge("07/05", now).date, "2026-07-05", "MM/DD is month then day");
+  assert.equal(parseAge("7/5", now).date, "2026-07-05");
+  assert.equal(parseAge("07/05/2025", now).date, "2025-07-05");
+  assert.equal(parseAge("07/05/25", now).date, "2025-07-05");
   assert.equal(parseAge("not a date", now).hours, null);
   assert.equal(parseAge("13-40", now).hours, null);
   assert.equal(parseAge("", now).hours, null);
@@ -63,6 +71,12 @@ test("outreach age reports hours and whether the note is inside the window", () 
   const fresh = run(["--text", "3天前", "--now", "2026-10-28T15:00:00", "--max-hours", "168"]);
   assert.equal(fresh.hours, 72);
   assert.equal(fresh.within, true);
+  const compact = run(["--text", "5d", "--now", "2026-11-02T14:40:00", "--max-hours", "168"]);
+  assert.equal(compact.hours, 120);
+  assert.equal(compact.within, true);
+  const slash = run(["--text", "07/05", "--now", "2026-11-02T14:40:00", "--max-hours", "168"]);
+  assert.equal(slash.date, "2026-07-05");
+  assert.equal(slash.within, false);
   const old = run(["--text", "2024-04-11", "--now", "2026-10-28T15:00:00", "--max-hours", "168"]);
   assert.equal(old.date, "2024-04-11");
   assert.equal(old.within, false);
