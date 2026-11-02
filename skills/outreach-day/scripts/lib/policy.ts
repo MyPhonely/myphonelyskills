@@ -139,8 +139,10 @@ export interface Target {
   author?: string;
   title?: string;
   url?: string;
-  /** Visible note body or comment text, scanned for agency promo. */
+  /** Visible post or reply text, scanned for a promo. */
   body?: string;
+  /** Profile bio, scanned on Threads for a lawyer, firm or agency. */
+  bio?: string;
 }
 
 /**

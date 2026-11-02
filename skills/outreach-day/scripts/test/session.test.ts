@@ -439,3 +439,184 @@ offer:`,
     rmSync(agent, { recursive: true, force: true });
   }
 });
+
+test("threads engage follows repliers and likes one post, never replies, and skips firms", () => {
+  const agent = freshAgent((y) =>
+    y.replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, threads]").replace(
+      "\noffer:",
+      `
+  threads:
+    kind: engage
+    account: "@quickfiling"
+    posts_per_keyword: 2
+    follows_per_day: 4
+    likes_per_day: 2
+    repliers_per_post: 1
+    max_post_age_hours: 72
+    keywords: ["NIW approved", "EB1A approved"]
+
+offer:`,
+    ),
+  );
+  const postA = "https://www.threads.net/@mina/post/DAbC1234xyz";
+  const postAOtherHost = "https://www.threads.com/@renamed/post/DAbC1234xyz?xmt=1";
+  const postAOtherCase = "https://www.threads.net/@mina/post/DAbC1234xyZ";
+  const postB = "https://www.threads.net/@mina/post/DXyz9999abc";
+  try {
+    cli(agent, ["init"]);
+    const plan = json(cli(agent, ["targets", "--channel", "threads", "--json"]));
+    assert.equal(plan.audience, "repliers");
+    assert.equal(plan.account, "@quickfiling");
+    assert.equal(plan.repliers_per_post, 1);
+    assert.equal(plan.likes_per_day, 2);
+    assert.equal(plan.reply, false);
+    assert.equal(plan.dm, false);
+
+    for (const action of ["comment", "reply", "message", "dm", "repost", "quote"]) {
+      const refused = cli(agent, ["reserve", "--channel", "threads", "--action", action, "--author", "Mina", "--title", "NIW approved"]);
+      assert.equal(refused.code, 2, action);
+      assert.match(refused.err, /follow or like/);
+    }
+    assert.equal(cli(agent, ["draft", "--channel", "threads", "--author", "Mina", "--title", "NIW approved", "--comment", "hi"]).code, 2);
+
+    const ask = json(
+      cli(agent, [
+        "reserve",
+        "--channel",
+        "threads",
+        "--action",
+        "follow",
+        "--name",
+        "Mina",
+        "--title",
+        "NIW approved",
+        "--body",
+        "looking for a lawyer recommendation",
+        "--json",
+      ]),
+    );
+    assert.equal(ask.action, "follow", "a reply that asks for a lawyer is the audience");
+    assert.equal(cli(agent, ["release", "--reservation", String(ask.reserved)]).code, 0);
+    assert.equal(
+      json(
+        cli(agent, [
+          "reserve",
+          "--channel",
+          "threads",
+          "--action",
+          "follow",
+          "--name",
+          "Wei",
+          "--title",
+          "EB1A approved",
+          "--body",
+          "my lawyer got the I-140 approved",
+          "--json",
+        ]),
+      ).action,
+      "follow",
+    );
+    assert.equal(cli(agent, ["release", "--reservation", "r2"]).code, 0);
+
+    assert.equal(cli(agent, ["reserve", "--channel", "threads", "--action", "follow", "--name", "Chen Law Firm", "--title", "NIW approved"]).code, 3);
+    assert.equal(
+      cli(agent, ["reserve", "--channel", "threads", "--action", "follow", "--name", "Mina", "--title", "NIW approved", "--bio", "immigration attorney"]).code,
+      3,
+    );
+    assert.equal(
+      cli(agent, ["reserve", "--channel", "threads", "--action", "follow", "--name", "Mina", "--title", "NIW approved", "--body", "DM me for a filing"]).code,
+      3,
+    );
+    assert.equal(
+      cli(agent, ["reserve", "--channel", "threads", "--action", "follow", "--name", "Mina", "--title", "NIW approved", "--body", "I am a lawyer, happy to help"]).code,
+      3,
+    );
+    assert.equal(json(cli(agent, ["budget", "--channel", "threads", "--action", "follow", "--json"])).left, 4, "a refusal takes no budget");
+
+    const follow = json(
+      cli(agent, [
+        "reserve",
+        "--channel",
+        "threads",
+        "--action",
+        "follow",
+        "--name",
+        "Mina Chen",
+        "--title",
+        "NIW approved",
+        "--body",
+        "求律师推荐",
+        "--url",
+        "https://www.threads.net/@mina.chen",
+        "--json",
+      ]),
+    );
+    assert.equal(
+      cli(agent, [
+        "record",
+        "--reservation",
+        String(follow.reserved),
+        "--outcome",
+        "sent",
+        "--channel",
+        "threads",
+        "--name",
+        "Mina Chen",
+        "--title",
+        "NIW approved",
+        "--url",
+        "https://www.threads.net/@mina.chen",
+        "--note",
+        "求律师推荐",
+      ]).code,
+      0,
+    );
+    assert.match(readFileSync(join(agent, "records", "engaged.md"), "utf8"), /求律师推荐/);
+    assert.equal(cli(agent, ["check", "--channel", "threads", "--action", "follow", "--name", "@Mina Chen"]).code, 0);
+    assert.equal(
+      cli(agent, ["check", "--channel", "threads", "--action", "follow", "--name", "Other Name", "--url", "https://www.threads.com/@Mina.Chen/"]).code,
+      0,
+      "the same Threads profile is the same person",
+    );
+
+    const like = json(
+      cli(agent, ["reserve", "--channel", "threads", "--action", "like", "--author", "Mina Chen", "--title", "timeline post", "--url", postA, "--json"]),
+    );
+    assert.equal(
+      cli(agent, [
+        "record",
+        "--reservation",
+        String(like.reserved),
+        "--outcome",
+        "sent",
+        "--author",
+        "Mina Chen",
+        "--title",
+        "timeline post",
+        "--url",
+        postA,
+      ]).code,
+      0,
+    );
+    assert.equal(
+      cli(agent, ["check", "--channel", "threads", "--action", "like", "--author", "Someone", "--title", "different words", "--url", postAOtherHost]).code,
+      0,
+      "threads.net and threads.com are one post",
+    );
+    assert.equal(
+      cli(agent, ["check", "--channel", "threads", "--action", "like", "--author", "Mina Chen", "--title", "timeline post", "--url", postAOtherCase]).code,
+      1,
+      "a different code case is a different post",
+    );
+    const likeB = json(
+      cli(agent, ["reserve", "--channel", "threads", "--action", "like", "--author", "Mina Chen", "--title", "another post", "--url", postB, "--json"]),
+    );
+    assert.equal(likeB.action, "like");
+    assert.equal(
+      cli(agent, ["reserve", "--channel", "threads", "--action", "like", "--author", "Wei", "--title", "a third post", "--url", "https://www.threads.net/@wei/post/D000other"]).code,
+      4,
+    );
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
+  }
+});

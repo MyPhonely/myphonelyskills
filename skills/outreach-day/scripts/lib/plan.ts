@@ -393,20 +393,110 @@ export function promoHit(text: string): string | null {
   return null;
 }
 
+/**
+ * Name or bio fragments that mark a Threads agency, lawyer, law firm or
+ * consultant. A reply that merely mentions a lawyer is not in this list.
+ */
+export const THREADS_NAME_MARKERS = [
+  "immigration consultant",
+  "law firm",
+  "attorney",
+  "lawyer",
+  "中介",
+  "移民",
+  "律师",
+  "律所",
+  "咨询",
+] as const;
+
+/**
+ * A Threads reply that sells a service or asks to be messaged. "lawyer" is
+ * not here: a reply asking for a lawyer recommendation is the audience.
+ */
+export const THREADS_REPLY_MARKERS = [
+  "immigration services",
+  "free consultation",
+  "book a consult",
+  "our services",
+  "my services",
+  "欢迎咨询",
+  "dm for",
+  "dm me",
+  "私信",
+] as const;
+
+function normText(text: string): string {
+  return text.normalize("NFKC").toLowerCase().replace(/[’‘]/g, "'");
+}
+
+/** Longer markers win. Latin phrases match as words, so "lawyer" is not "law". */
+function markerHit(text: string, markers: readonly string[]): string | null {
+  const n = normText(text);
+  const ordered = [...markers].sort((a, b) => b.length - a.length || a.localeCompare(b));
+  for (const marker of ordered) {
+    const m = normText(marker);
+    if (/[a-z]/.test(m)) {
+      const body = m
+        .split(/\s+/)
+        .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("\\s+");
+      if (new RegExp(`(?:^|[^a-z])${body}s?(?:[^a-z]|$)`).test(n)) return marker;
+    } else if (n.includes(m)) {
+      return marker;
+    }
+  }
+  return null;
+}
+
+/** A reply that says the writer is the lawyer or the firm, not someone asking for one. */
+function threadsSelfId(text: string): string | null {
+  const n = normText(text);
+  const role = n.match(/\bi(?:'m| am)\s+(?:a|an)\s+(?:immigration consultant|lawyer|attorney)\b/);
+  if (role) return role[0];
+  if (/\b(?:our|my)\s+law firm\b/.test(n) || /\bwe(?:'re| are)\s+(?:a|an)\s+law firm\b/.test(n)) return "law firm";
+  const raw = text.normalize("NFKC");
+  if (/我是(?:一名|个)?律师|本人(?:是)?律师/.test(raw)) return "我是律师";
+  if (/律师事务所|我们是(?:一家)?律所/.test(raw)) return "律所";
+  return null;
+}
+
+/**
+ * Why this follow or like is refused, or null when the person can be engaged.
+ * Xiaohongshu keeps its own lists. Threads skips agency names and bios, and a
+ * reply that sells or says DM me. A reply that asks for a lawyer does not.
+ */
+export function engageRefusal(channel: string, person: string, title: string, body: string, bio = ""): string | null {
+  if (channel.trim().toLowerCase() === "threads") {
+    const nameHit = person ? markerHit(person, THREADS_NAME_MARKERS) : null;
+    if (nameHit) return nameHit;
+    const bioHit = bio ? markerHit(bio, THREADS_NAME_MARKERS) : null;
+    if (bioHit) return bioHit;
+    const reply = `${title}\n${body}`;
+    return markerHit(reply, THREADS_REPLY_MARKERS) ?? threadsSelfId(reply);
+  }
+  return (person ? commenterSkip(person) : null) ?? promoHit(`${title} ${body}`);
+}
+
 /** Daily ceilings for an engage channel. Likes match follows unless set. */
 export function engageLimits(ch: Channel): { follows: number; likes: number; perNote: number; notes: number } {
   const follows = num(ch.follows_per_day, 20);
   const likes = ch.likes_per_day === undefined ? follows : num(ch.likes_per_day, follows);
-  const perNote = num(ch.commenters_per_post, 3);
-  const notes = ch.follow_commenters === false || perNote <= 0 ? 0 : Math.ceil(Math.min(follows, likes) / perNote);
+  // Threads names the cap repliers_per_post. Commenter channels keep the old key.
+  const perNote =
+    ch.repliers_per_post !== undefined && ch.repliers_per_post !== null
+      ? num(ch.repliers_per_post, 3)
+      : num(ch.commenters_per_post, 3);
+  const followAudience = ch.follow_commenters !== false && ch.follow_repliers !== false;
+  const notes = !followAudience || perNote <= 0 ? 0 : Math.ceil(Math.min(follows, likes) / perNote);
   return { follows, likes, perNote, notes };
 }
 
 /**
- * An engage channel finds notes as a comment channel does, then follows
- * people who commented on them and likes one latest note of each. It does
- * not follow the author, like the source note, comment, reply or DM.
- * `follows_per_day` is the ceiling for every commenter together; likes match it.
+ * An engage channel finds posts as a comment channel does, then follows
+ * people who commented or replied and likes one latest post of each. It does
+ * not follow the author, like the source post, comment, reply, repost, quote
+ * or DM. `follows_per_day` is the ceiling for every person together; likes
+ * match it unless `likes_per_day` is set.
  */
 export function engageTargets(agent: Agent, channel: string, d: Date): Record<string, unknown> {
   const ch = agent.channels[channel];
@@ -414,20 +504,38 @@ export function engageTargets(agent: Agent, channel: string, d: Date): Record<st
   const plan = commentTargets(agent, channel, d, "comments_per_day", limits.notes);
   delete plan.follow;
   plan.kind = "engage";
-  plan.audience = "commenters";
   plan.like_source = false;
   plan.follow_author = false;
-  plan.follow_commenters = ch.follow_commenters !== false;
-  plan.commenters_per_post = limits.perNote;
   plan.follows_per_day = limits.follows;
   plan.likes_per_day = limits.likes;
   plan.comment = false;
+  plan.reply = false;
+  plan.repost = false;
+  plan.quote = false;
   plan.dm = false;
-  // Without Latest the search is weeks old and the age filter drops it.
-  plan.tab = "latest";
-  plan.sort = "latest";
-  plan.skip_names_containing = [...AGENCY_MARKERS];
-  plan.skip_text_containing = [...PROMO_MARKERS];
+  if (typeof ch.account === "string" && ch.account.trim()) plan.account = ch.account.trim();
+  if (channel === "threads") {
+    // Repliers, not the author. Recent is used when the chip is already on
+    // screen; Threads does not always offer a Latest tab.
+    plan.audience = "repliers";
+    plan.follow_repliers = ch.follow_repliers !== false;
+    plan.repliers_per_post = limits.perNote;
+    plan.sort = "recent";
+    plan.tab = "recent-if-offered";
+    plan.skip_names_containing = [...THREADS_NAME_MARKERS];
+    plan.skip_bios_containing = [...THREADS_NAME_MARKERS];
+    plan.skip_text_containing = [...THREADS_REPLY_MARKERS];
+    plan.keep_replies_matching = ["lawyer recommendation", "looking for a lawyer", "looking for an attorney", "求律师", "求推荐"];
+  } else {
+    plan.audience = "commenters";
+    plan.follow_commenters = ch.follow_commenters !== false;
+    plan.commenters_per_post = limits.perNote;
+    // Without Latest the search is weeks old and the age filter drops it.
+    plan.tab = "latest";
+    plan.sort = "latest";
+    plan.skip_names_containing = [...AGENCY_MARKERS];
+    plan.skip_text_containing = [...PROMO_MARKERS];
+  }
   return plan;
 }
 

@@ -25,7 +25,7 @@ import { dataRows, die, ensureDir, ledgerPath, quietly, stateDir, today } from "
 import type { Agent } from "./common.ts";
 import { addEngaged, addPerson, addPost, addQueue, countEngaged, countPosts, findEngaged, findPeople, findPosts, invitePerson, openQueueRows, queueRows, setStage, updateQueueRow } from "./ledger.ts";
 import type { QueueRow } from "./ledger.ts";
-import { commentTargets, commenterSkip, engageLimits, promoHit, resolveChannel } from "./plan.ts";
+import { commentTargets, engageLimits, engageRefusal, resolveChannel } from "./plan.ts";
 import { targetKey } from "./policy.ts";
 import type { Target } from "./policy.ts";
 import { inviteRoom } from "./quota.ts";
@@ -88,8 +88,12 @@ export function actionFor(agent: Agent, channel: string, action?: string): Actio
   const allowed = ACTIONS[kind];
   const a = (action || allowed[0]) as Action;
   if (!allowed.includes(a)) {
-    const article = kind === "engage" ? "an" : "a";
-    die(`${channel} is ${article} ${kind} channel: --action must be ${allowed.join(" or ")}`);
+    if (kind === "engage") {
+      die(
+        `${channel} is an engage channel: it only follows and likes, never a reply, comment, repost, quote or DM. --action must be follow or like`,
+      );
+    }
+    die(`${channel} is a ${kind} channel: --action must be ${allowed.join(" or ")}`);
   }
   return a;
 }
@@ -141,12 +145,12 @@ export function budget(agent: Agent, channel: string, action: Action, day = load
 export function check(agent: Agent, channel: string, action: Action, t: Target): { found: boolean; blocking: boolean; rows: string[] } {
   if (action === "follow") {
     // Followed once, ever: the commenter, whichever note they were found on.
-    if (!t.name) die("a follow is --name (the commenter's nickname), with --title of the note they were found on and --url of their profile id when you have it");
+    if (!t.name) die("a follow is --name (the person), with --title of the post or note they were found on and --url of their profile when you have it");
     const rows = findEngaged(channel, "follow", t.name, t.title ?? "", t.url ?? "");
     return { found: rows.length > 0, blocking: rows.length > 0, rows };
   }
   if (action === "like") {
-    if (!t.author || !t.title) die("a like is --author and --title of the commenter's note, with --url of its id when you have it");
+    if (!t.author || !t.title) die("a like is --author and --title of their post or note, with --url of its id when you have it");
     const rows = findEngaged(channel, "like", t.author, t.title, t.url ?? "");
     return { found: rows.length > 0, blocking: rows.length > 0, rows };
   }
@@ -175,10 +179,10 @@ export function reserve(agent: Agent, channelArg: string, actionArg: string | un
   const action = actionFor(agent, channel, actionArg);
   if (action === "follow" || action === "like") {
     const person = action === "follow" ? t.name ?? "" : t.author ?? "";
-    const marker = (person ? commenterSkip(person) : null) ?? promoHit(`${t.title ?? ""} ${t.body ?? ""}`);
+    const marker = engageRefusal(channel, person, t.title ?? "", t.body ?? "", t.bio ?? "");
     if (marker) {
       die(
-        `refused: promo wording (${marker}) in the name, title or body. Skip agency and consultancy notes and commenters.`,
+        `refused: promo wording (${marker}) in the name, bio, title or body. Skip agency, lawyer and consultancy accounts, and a reply that sells or says DM me.`,
         3,
       );
     }

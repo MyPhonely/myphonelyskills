@@ -42,8 +42,10 @@ best guess for each from what you read:
 - Who exactly to reach: job titles, or the kind of person, and where they
   are (a country, schools, industries, cities).
 - Which channels and accounts: LinkedIn, X, Reddit (which subreddits),
-  Facebook (which groups the account has joined), Xiaohongshu. Each needs
-  the brand's account signed in on the phone.
+  Facebook (which groups the account has joined), Xiaohongshu, Threads
+  (the signed-in handle, as `account`). Xiaohongshu and Threads engage
+  channels follow people and like one post of theirs; they do not comment
+  or reply. Each needs the brand's account signed in on the phone.
 - How many a day: suggest modest numbers (LinkedIn 10-15 invites a day and
   under 100 a week; 4-10 comments a day per channel) and say why.
 - What must never be said: advice the product does not give, claims that

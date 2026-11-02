@@ -99,9 +99,29 @@ const PLATFORM_ALIASES: Record<string, string> = {
  * the same status as twitter.com and x.com, with or without `?s=20` share
  * junk, a trailing slash or a `/photo/1` suffix.
  */
+/**
+ * A Threads profile or post, before the rest of this function lowercases the
+ * URL. Post codes are case-sensitive. threads.net and threads.com are one
+ * site, and the handle in a post URL is not part of the post's identity.
+ */
+function threadsUrlKey(raw: string): string {
+  const tagged = /^(?:threads:@|threads-user:)([A-Za-z0-9._]+)$/i.exec(raw.trim());
+  if (tagged) return `threads.net/@${tagged[1].toLowerCase()}`;
+  const u = raw.trim().replace(/[?#].*$/, "").replace(/\/+$/, "");
+  const post = /(?:https?:\/\/)?(?:www\.)?threads\.(?:net|com)\/@[^/]+\/post\/([A-Za-z0-9_-]+)/i.exec(u);
+  if (post) return `threads.net/post/${post[1]}`;
+  const short = /(?:https?:\/\/)?(?:www\.)?threads\.(?:net|com)\/t\/([A-Za-z0-9_-]+)/i.exec(u);
+  if (short) return `threads.net/post/${short[1]}`;
+  const user = /(?:https?:\/\/)?(?:www\.)?threads\.(?:net|com)\/@([A-Za-z0-9._]+)/i.exec(u);
+  if (user) return `threads.net/@${user[1].toLowerCase()}`;
+  return "";
+}
+
 export function postUrlKey(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "";
+  const threads = threadsUrlKey(trimmed);
+  if (threads) return threads;
   // A Xiaohongshu note id copied off the note, or a profile id passed as
   // `user:<red id>`, with no URL around it.
   const bareNote = /^[0-9a-f]{24}$/i.exec(trimmed);
@@ -124,11 +144,12 @@ export function postUrlKey(raw: string): string {
   return u;
 }
 
-/** A Xiaohongshu profile id, when `raw` is one. Empty for note urls and other links. */
+/** A Xiaohongshu or Threads profile id, when `raw` is one. Empty for post urls and other links. */
 export function profileKey(raw: string): string {
   if (!raw.trim()) return "";
   const k = postUrlKey(raw);
   if (k.startsWith("xiaohongshu.com/user/")) return k;
+  if (k.startsWith("threads.net/@")) return k;
   // The numeric 小红书号 shown on a profile, with no URL around it.
   if (/^\d{5,20}$/.test(raw.trim())) return `xiaohongshu.com/user/${raw.trim()}`;
   return "";
@@ -422,9 +443,9 @@ export function addPost(v: Values, json: boolean): number {
  * Engaged-ledger rows for one like or follow already made.
  *
  * A follow is the person, on any day: `@Name` and `name` are one account, and
- * so are two nicknames that share a profile id. A like is the note. When both
- * sides have an id, only the id counts, so two notes by one person stay
- * distinct. A missing id falls back to the person plus the title.
+ * so are two nicknames that share a profile id. A like is the note or post.
+ * When both sides have an id, only the id counts, so two posts by one person
+ * stay distinct. A missing id falls back to the person plus the title.
  */
 export function findEngaged(platform: string, action: string, who: string, title = "", url = ""): string[] {
   const plat = normPlatform(platform);
@@ -592,17 +613,18 @@ date | platform | author | title-key | full-title | post-url
 Append-only log of every like and follow made by an engage channel. A follow
 is never made twice to the same person (a leading @ and case do not count, and
 neither does a second nickname with the same profile id). A like is never made
-twice to the same note id.
+twice to the same note or post id.
 
 \`\`\`
 date | platform | action | who | title-key | full-title | post-url | comment
 \`\`\`
 
-action is follow (who is the commenter; title is the note they were found on;
-post-url is their profile id or url when known; comment is the words they
-wrote, read before their profile was opened) or like (who is that commenter;
-title and post-url are the note of theirs that was liked; comment is empty).
-The source note's author is not followed, and the source note is not liked.
+action is follow (who is the commenter or replier; title is the source post
+they were found on; post-url is their profile id or url when known; comment
+is the words they wrote, read before their profile was opened) or like (who
+is that person; title and post-url are the note or post of theirs that was
+liked; comment is empty). The source author is not followed, and the source
+post is not liked.
 
 ## Rows
 `,

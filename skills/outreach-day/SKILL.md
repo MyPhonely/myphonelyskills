@@ -1,9 +1,9 @@
 ---
 name: outreach-day
-description: Run one day of a brand's outreach on the user's real phone from an outreach agent folder (agent.yaml, brand.md, voice.md) — find the right posts and people, write in the brand's voice, and invite, comment, message, like or follow within the agent's daily limits, with every write reserved, verified and recorded. Use when asked to run outreach, today's outreach, or one channel of it (linkedin, x, reddit, facebook, xiaohongshu) for a brand that has an outreach agent. On Xiaohongshu an engage channel follows commenters and likes one note of theirs; it never comments.
+description: Run one day of a brand's outreach on the user's real phone from an outreach agent folder (agent.yaml, brand.md, voice.md) — find the right posts and people, write in the brand's voice, and invite, comment, message, like or follow within the agent's daily limits, with every write reserved, verified and recorded. Use when asked to run outreach, today's outreach, or one channel of it (linkedin, x, reddit, facebook, xiaohongshu, threads) for a brand that has an outreach agent. On Xiaohongshu an engage channel follows commenters and likes one note of theirs. On Threads it follows repliers and likes one post of theirs. Neither comments, replies or sends a DM.
 kind: agent
 title: Run a day of outreach for your brand
-apps: com.linkedin.android, com.twitter.android, com.reddit.frontpage, com.facebook.katana, com.xingin.xhs
+apps: com.linkedin.android, com.twitter.android, com.reddit.frontpage, com.facebook.katana, com.xingin.xhs, com.instagram.barcelona
 writes: true
 reviews: true
 ---
@@ -80,8 +80,8 @@ Follow these exactly; the scripts refuse what breaks them.
 4. **Record every reservation.** `outreach record --reservation <id>
    --outcome sent` only when the write was verified on screen (the phase's
    `sent` list, the reply under the post, the name in Sent invitations).
-   A Xiaohongshu like often never appears in `sent`; the heart, the Liked
-   label or the count is the check, in the engage channel below.
+   A Xiaohongshu or Threads like often never appears in `sent`; the heart,
+   the Liked label or the count is the check, in the engage channel below.
    `--outcome failed` otherwise, which keeps the draft for a later day.
    Reserved but nothing written: `outreach release`. `--channel` may be
    passed and must be that reservation's channel.
@@ -107,8 +107,10 @@ Always give the URL when there is one: it is the surest duplicate check.
 2. `outreach show`. Read every file it lists: `brand.md`, `voice.md` and the
    others. Then `outreach channels` for the run order.
 3. Before the first write in an app, confirm the signed-in account is the
-   brand's (X: the profile in the navigation drawer; LinkedIn: Me). If it is
-   not, skip that app and say so.
+   brand's (X: the profile in the navigation drawer; LinkedIn: Me; Threads:
+   the Profile tab at the bottom right, which must match the channel's
+   `account`). If it is not, skip that app and say so. On Threads, a first
+   launch that asks "Allow Threads to send you notifications?" is Don't allow.
 
 ### Each channel, in order
 
@@ -157,11 +159,12 @@ it), after checking the post is still there.
 
 #### An engage channel (`kind: engage`)
 
-Likes and follows, never a comment, reply or DM: `reserve` refuses
-`--action comment`, and drafts are refused too. The audience is people who
-**comment** on a note. Do not follow the note's author. Do not like the
-source note. For each chosen commenter, follow them and like one of their
-latest notes.
+Likes and follows only. `reserve` refuses a reply, comment, repost, quote
+or DM (exit 2), and drafts are refused too. On Xiaohongshu the audience is
+people who **comment** on a note: follow each chosen commenter and like one
+of their latest notes. On Threads the audience is people who **replied**
+under a post; that procedure is the Threads section below. Do not follow
+the author. Do not like the source post.
 
 `outreach targets` shows today's keywords, `sort: latest`,
 `commenters_per_post` (default 3), `follows_per_day` (default 20, every
@@ -217,6 +220,75 @@ you press Back yourself.
 
 Unattended review mode has no drafts for likes or follows: skip the
 channel. Autopilot reads the pause and resumes on its own.
+
+#### Threads (`threads`, `kind: engage`)
+
+Follows and likes only, same refusal as Xiaohongshu: `reserve` of a reply,
+comment, repost, quote or DM exits 2, and drafts are refused. Nothing is
+replied, reposted, quoted, messaged or posted. The audience is people who
+**replied** under a post. Do not follow the post's author. Do not like the
+source post. For each chosen replier, read the reply first, follow them,
+and like one of their latest posts.
+
+`outreach targets` shows today's keywords, `repliers_per_post` (default 3),
+`follows_per_day` (default 20, every replier together), `likes_per_day`
+(the same number unless the channel sets it), `max_post_age_hours` and
+`account`. A QuickFiling-style list is `NIW approved`, `EB1A approved`,
+`NIW`, `EB-1A`, `green card approved`, `I-140 approved`, `NIW 获批`,
+`EB1A 获批`: approval and process posts, one search per keyword. It lists
+`skip_names_containing` and `skip_bios_containing`: lawyer, attorney, law
+firm, immigration consultant, 中介, 移民, 律师, 律所, 咨询. It lists
+`skip_text_containing` for a reply that sells or says DM me (including
+私信 and 欢迎咨询). A reply that asks for a lawyer recommendation is the
+audience (`求律师`, "looking for a lawyer", "lawyer recommendation"). One
+search per keyword, then the repliers under that post.
+
+Leases, polling, one Back then a look, and `phone_scroll` (never
+`phone_swipe`) are the same rules as the Xiaohongshu engage channel.
+`phone_screen` decides sent or failed. A like task's `sent` list is often
+empty after a like that took. `abandon: true` presses Back once.
+
+1. **Confirm the account, once.** `threads-follow-replier-and-like-latest`
+   step 1, with the channel's `account`. Profile is the bottom-right tab.
+   If the dialog "Allow Threads to send you notifications?" is showing, tap
+   Don't allow. If the handle is not `account`, stop this channel. Do not
+   search.
+2. **Open one post, once.** Step 2, with the keyword, not a title. If a
+   Recent or Latest chip is already on screen, tap it. Do not go looking
+   for a chip that is not there. Open the post by its text or media, never
+   by the author name. `outreach age --text "<the age>" --max-hours
+   <max_post_age_hours>`. `within: false` or `hours: null`: abandon (that
+   Backs once), look, and open the next post from the same results. Skip a
+   post `reserve` will refuse. Keep up to `repliers_per_post` people,
+   including a reply that asks for a lawyer. Read each chosen reply before
+   you open that profile, and keep the words. Skip the author, the
+   signed-in account, and anyone `outreach check` already has. No one
+   left: abandon, look, stay on the results. Do not search again.
+3. **One replier at a time.** Open the profile with writes off. Reserve
+   the follow only after the bio is on screen and before Follow is tapped:
+   `--title` is the source post's first words, `--body` is the reply,
+   `--bio` is the bio. A name or bio on the skip list, or a reply that
+   sells or says DM me, is refused (exit 3). Do not tap Follow. One Back,
+   then the next replier. The follow counts only when the button then
+   reads Following or 已关注. The task status does not. If the button
+   still reads Follow or 关注, tap it once from a new task after the
+   profile task has finished. If it does not change, `outreach release`
+   and reserve that follow one more time. Do not `record failed` on the
+   first miss. Record a sent follow with `--note "<the reply you read>"`
+   and `--url` of their profile. Then the like, from that profile, with no
+   `launch`. If their posts are below the fold, `phone_scroll` them into
+   view, release that lease, then open one post by its text or media and
+   tap an empty heart once. A heart that is already filled is not tapped.
+   A labelled Like is the resume. An unlabeled heart is one `phone_tap`
+   while the like reservation is held, and a second tap is refused. Record
+   a like from a filled heart, Liked, or a count one higher, not from
+   `sent`. Return with one Back at a time, and count the Back an abandon
+   already pressed.
+4. **Next post, same search.** One Back from the source post to the
+   results, then the next card. Do not set `launch` again.
+
+Unattended review mode skips the channel. Autopilot reads the pause and
+resumes on its own.
 
 #### A connect channel (`kind: connect`, LinkedIn)
 

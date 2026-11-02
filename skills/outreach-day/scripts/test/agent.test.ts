@@ -10,8 +10,8 @@ import { readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
 
 import { clean, keysMatch, titleKey } from "../lib/common.ts";
-import { commentTargets, connectTargets, renderMessage, rotationFor } from "../lib/plan.ts";
-import { personName, postUrlKey } from "../lib/ledger.ts";
+import { commentTargets, connectTargets, engageRefusal, engageTargets, renderMessage, rotationFor } from "../lib/plan.ts";
+import { personName, postUrlKey, profileKey } from "../lib/ledger.ts";
 import type { Agent } from "../lib/common.ts";
 
 const SCRIPTS = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -500,6 +500,87 @@ test("one X post has one URL key however it was copied", () => {
   assert.equal(postUrlKey("64f1aabbccddeeff00112233"), note);
   assert.equal(postUrlKey("https://www.xiaohongshu.com/user/profile/abc123"), "xiaohongshu.com/user/abc123");
   assert.equal(postUrlKey("user:10000000001"), "xiaohongshu.com/user/10000000001");
+  const post = "threads.net/post/DAbC1234xyz";
+  assert.equal(postUrlKey("https://www.threads.net/@Jane/post/DAbC1234xyz?xmt=1"), post);
+  assert.equal(postUrlKey("https://www.threads.com/@other/post/DAbC1234xyz/"), post);
+  assert.equal(postUrlKey("https://threads.net/t/DAbC1234xyz"), post);
+  assert.notEqual(postUrlKey("https://www.threads.net/@Jane/post/DAbC1234xyZ"), post, "a Threads post code keeps its case");
+  assert.equal(postUrlKey("https://www.threads.com/@Jane.Chen"), "threads.net/@jane.chen");
+  assert.equal(profileKey("https://www.threads.net/@Jane.Chen/"), "threads.net/@jane.chen");
+  assert.equal(profileKey("threads:@Jane.Chen"), "threads.net/@jane.chen");
+  assert.equal(profileKey("https://www.threads.net/@Jane/post/DAbC1234xyz"), "", "a post url is not a profile");
+});
+
+test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips the firm", () => {
+  const agent: Agent = {
+    id: "t",
+    audience: { titles: ["t"] },
+    channels: {
+      threads: {
+        kind: "engage",
+        account: " @QuickFiling ",
+        posts_per_keyword: 2,
+        follows_per_day: 4,
+        likes_per_day: 2,
+        repliers_per_post: 1,
+        max_post_age_hours: 72,
+        keywords: ["NIW approved", "EB1A approved", "NIW", "EB-1A", "green card approved", "I-140 approved", "NIW 获批", "EB1A 获批"],
+      },
+    },
+  };
+  const plan = engageTargets(agent, "threads", new Date("2026-10-01"));
+  assert.equal(plan.kind, "engage");
+  assert.equal(plan.audience, "repliers");
+  assert.equal(plan.account, "@QuickFiling");
+  assert.equal(plan.repliers_per_post, 1);
+  assert.equal(plan.commenters_per_post, undefined);
+  assert.equal(plan.follows_per_day, 4);
+  assert.equal(plan.likes_per_day, 2);
+  assert.equal(plan.max_post_age_hours, 72);
+  assert.equal(plan.comment, false);
+  assert.equal(plan.reply, false);
+  assert.equal(plan.repost, false);
+  assert.equal(plan.quote, false);
+  assert.equal(plan.dm, false);
+  assert.equal(plan.follow_author, false);
+  assert.equal(plan.like_source, false);
+  assert.equal(plan.sort, "recent");
+  assert.equal(plan.tab, "recent-if-offered");
+  assert.deepEqual(plan.skip_names_containing, [
+    "immigration consultant",
+    "law firm",
+    "attorney",
+    "lawyer",
+    "中介",
+    "移民",
+    "律师",
+    "律所",
+    "咨询",
+  ]);
+  assert.deepEqual(plan.skip_bios_containing, plan.skip_names_containing);
+  const dispatches = plan.dispatches as Array<{ keyword: string; posts: number }>;
+  assert.deepEqual(
+    dispatches.map((d) => [d.keyword, d.posts]),
+    [["NIW approved", 2]],
+    "likes cap how many source posts the follow budget opens",
+  );
+  assert.equal(engageRefusal("threads", "Mina", "NIW approved", "looking for a lawyer recommendation"), null);
+  assert.equal(engageRefusal("threads", "Mina", "批了", "求律师推荐"), null);
+  assert.equal(engageRefusal("threads", "Mina", "NIW approved", "my lawyer got the I-140 approved"), null);
+  assert.equal(engageRefusal("threads", "Chen Law Firm", "NIW approved", "congrats"), "law firm");
+  assert.equal(engageRefusal("threads", "Mina", "NIW approved", "thanks", "EB1A attorney"), "attorney");
+  assert.equal(engageRefusal("threads", "Mina", "NIW approved", "DM me if you want this filed"), "dm me");
+  assert.equal(engageRefusal("threads", "Mina", "NIW approved", "I am a lawyer and I file these"), "i am a lawyer");
+  assert.equal(engageRefusal("xiaohongshu", "小王", "批了", "求律所推荐，求律师"), null, "Xiaohongshu still treats 求律师 as the audience");
+  const y = readFileSync(join(SCRIPTS, "..", "templates", "agent.yaml"), "utf8");
+  assert.match(y, /# threads:/);
+  assert.match(y, /repliers_per_post: 3/);
+  assert.match(y, /follows_per_day: 20/);
+  assert.match(y, /likes_per_day: 20/);
+  assert.match(y, /max_post_age_hours: 168/);
+  assert.match(y, /NIW approved/);
+  assert.match(y, /EB1A 获批/);
+  assert.match(y, /account: CHANGEME/);
 });
 
 test("check-post finds an X post by URL even when the snippet was read differently", () => {

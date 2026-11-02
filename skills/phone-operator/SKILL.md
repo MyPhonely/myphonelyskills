@@ -65,9 +65,10 @@ sends, from the user's own accounts.
    Xiaohongshu, YouTube, Facebook, Discord, Slack).
 
 Common packages: X `com.twitter.android`, LinkedIn `com.linkedin.android`,
-Reddit `com.reddit.frontpage`, Instagram `com.instagram.android`, Xiaohongshu
-`com.xingin.xhs`, YouTube `com.google.android.youtube`, Facebook
-`com.facebook.katana`, Discord `com.discord`, Slack `com.Slack`.
+Reddit `com.reddit.frontpage`, Instagram `com.instagram.android`, Threads
+`com.instagram.barcelona`, Xiaohongshu `com.xingin.xhs`, YouTube
+`com.google.android.youtube`, Facebook `com.facebook.katana`, Discord
+`com.discord`, Slack `com.Slack`.
 
 ## Tasks run in the background
 

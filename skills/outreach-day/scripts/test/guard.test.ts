@@ -118,6 +118,40 @@ test("one coordinate tap is allowed while a like reservation is held, and a seco
   }
 });
 
+test("a Threads like allows one heart tap, and a reply is not a reservation", () => {
+  const dir = freshAgent();
+  const yaml = join(dir, "agent.yaml");
+  writeFileSync(
+    yaml,
+    readFileSync(yaml, "utf8").replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, threads]").replace(
+      "\noffer:",
+      "\n  threads:\n    kind: engage\n    account: '@quickfiling'\n    keywords: [NIW approved]\n\noffer:",
+    ),
+  );
+  try {
+    run(dir, ["init"]);
+    const reply = execFileSync(process.execPath, [CLI, "reserve", "--agent", dir, "--channel", "threads", "--action", "reply", "--author", "Mina", "--title", "NIW approved"], {
+      encoding: "utf8",
+      env: env(dir),
+      stdio: "pipe",
+    });
+    assert.fail(`reply reservation should have been refused, got ${reply}`);
+  } catch (error) {
+    const e = error as { status?: number; stderr?: string };
+    assert.equal(e.status, 2);
+    assert.match(e.stderr ?? "", /follow or like/);
+  }
+  try {
+    run(dir, ["reserve", "--channel", "threads", "--action", "follow", "--name", "Mina", "--title", "NIW approved"]);
+    assert.equal(hook(dir, "phone_tap", { x: 10, y: 20 }).decision, "deny", "a follow is not a heart");
+    run(dir, ["reserve", "--channel", "threads", "--action", "like", "--author", "Mina", "--title", "their latest post"]);
+    assert.equal(hook(dir, "phone_tap", { x: 400, y: 900 }).decision, "allow");
+    assert.equal(hook(dir, "phone_tap", { x: 400, y: 900 }).decision, "deny");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("unattended: no pause needed and no question asked, but still no write without a reservation", () => {
   const agent = freshAgent();
   try {
