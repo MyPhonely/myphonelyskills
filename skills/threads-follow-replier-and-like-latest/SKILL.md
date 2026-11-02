@@ -255,10 +255,22 @@ run_task({
 })
 ```
 
-The phase pauses on the profile. The write is `resume_task` with
-`task_id`, `allowWrites: true`, `repeat: 1`, and `countLabel`
-`^(Follow|关注)$`. Do not pass `pauseWhen` or `pauseScreenshot` to
-`resume_task`. Then look again.
+The phase pauses on the profile. The write is this resume. The goal is
+required: without it, Follow can match Instagram. Do not pass `pauseWhen`
+or `pauseScreenshot`.
+
+```json
+resume_task({
+  "task_id": "<id>",
+  "allowWrites": true,
+  "repeat": 1,
+  "countLabel": "^(Follow|关注)$",
+  "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. The Threads profile of <name> is open. If the button reads Following or 已关注, do not tap it. If it reads Follow or 关注, tap it exactly once. Stop when it reads Following or 已关注. Do not tap a second time. Do not tap Reply.",
+  "maxSteps": 4
+})
+```
+
+Then look again.
 
 Sent only when a screen read shows Following or 已关注. Pass
 `--note "<the reply>"` on that record. If the button still reads Follow or
