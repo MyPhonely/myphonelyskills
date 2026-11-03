@@ -19,7 +19,7 @@ test("only MyPhonely tools are judged; reading and navigating are free", () => {
 });
 
 test("Mode 2 never writes: typing, coordinate taps and write-looking labels are refused", () => {
-  for (const name of ["phone_type", "phone_long_press", "phone_swipe", "phone_clear_text", "phone_push_file"]) {
+  for (const name of ["phone_type", "phone_long_press", "phone_swipe", "phone_push_file"]) {
     assert.equal(decide(t(name), {}, attended).kind, "blocked", name);
   }
   assert.equal(decide(t("phone_tap"), { x: 10, y: 20 }, attended).kind, "heart", "the guard, not this check, holds the like reservation");
@@ -36,6 +36,15 @@ test("a planned run may not write, and a writing phase must pause for review", (
   const paused = { allow_writes: true, phases: [{ goal: "open the composer", allowWrites: true, pauseWhen: "composer open" }, { goal: "invite", allowWrites: true, pauseWhen: "card", repeat: 3 }] };
   assert.deepEqual(decide(t("run_task"), paused, attended), { kind: "write", count: 4, approve: null }, "repeat counts each write");
   assert.equal(decide(t("run_task"), { allow_writes: true, phases: [{ goal: "navigate" }] }, attended).kind, "read", "master switch on, no writing phase");
+});
+
+test("clearing a draft is not a send, and phone_task and dispatch_task follow run_task", () => {
+  assert.equal(decide(t("phone_clear_text"), { lease_id: "x" }, attended).kind, "clear");
+  const paused = { allow_writes: true, phases: [{ goal: "type the warmup", allowWrites: true, pauseWhen: "composer open" }] };
+  assert.deepEqual(decide(t("phone_task"), paused, attended), { kind: "write", count: 1, approve: null });
+  assert.deepEqual(decide(t("dispatch_task"), paused, attended), { kind: "write", count: 1, approve: null });
+  assert.equal(decide(t("dispatch_task"), { allow_writes: true, request: "send the warmup" }, unattended).kind, "blocked");
+  assert.equal(decide(t("phone_task"), { phases: [{ goal: "read connections" }] }, attended).kind, "read");
 });
 
 test("the commit is the resume: it needs approval, and a reservation unless the run already spent one", () => {

@@ -118,7 +118,11 @@ Record the reserved follow as sent, with `--note` set to the comment you
 read in the panel.
 
 If it reads Follow or 关注, the previous task has finished, so a new task
-may start. No `launch`. This task is not a success until the button changes:
+may start. No `launch`. The target is the red header pill beside the
+nickname, not the stats line (a number then Following or 关注, which is how
+many people they follow and is not a button) and not the bottom tab. A goal
+that says both "do not tap" and "tap Follow" makes the operator refuse the
+control. This task taps that pill, then checks the label:
 
 ```json
 run_task({
@@ -126,24 +130,28 @@ run_task({
   "phases": [{
     "allowWrites": true,
     "repeat": 1,
-    "countLabel": "^(关注|Follow)$",
-    "goal": "The profile of <name> is open. If the button reads Following, Friends, 已关注, or 互相关注, do not tap it; stop. If it reads Follow or 关注, tap it exactly once. Then read the button. Stop when it reads Following, Friends, 已关注, or 互相关注. If it still reads Follow or 关注, stop without tapping again; this follow is not done. Do not press Back and do not open a note.",
-    "pauseWhen": "the profile of <name> is open and the button beside the name reads Follow, Following, Friends, 关注, or 已关注",
-    "maxSteps": 6
+    "countLabel": "^(关注(按钮)?|[+＋]\\s*关注|Follow( button)?)$",
+    "require": { "label": "^(关注(按钮)?|[+＋]\\s*关注|Follow( button)?)$" },
+    "goal": "The Xiaohongshu profile of <name> is already open. Tap the red header button beside the nickname. Its label is exactly Follow, Follow button, 关注, 关注按钮, or + 关注. That button sits in the profile header, above the notes grid. Do not tap the stats line (a number followed by Following or 关注), the bottom tab bar, a note, or a Follow on any other person. Do not follow the author of the source note. Do not like the source note. Do not comment, reply, or send a message. If the screen says 操作太频繁 or 请稍后再试, tap nothing and stop. After the tap, read that same header button. The follow took only when it reads Following, Friends, 已关注, or 互相关注. If it still reads Follow or 关注, tap that same header button once more and read it again. Then stop. Do not tap a third time.",
+    "pauseWhen": "the profile of <name> is open and the red header button beside the nickname reads Follow or 关注, and it has not been tapped yet",
+    "maxSteps": 8
   }]
 })
 ```
 
 `pauseWhen` here is the profile you are already on, so the write is the
 resume of this task: `resume_task` with `allowWrites: true`, `repeat: 1`,
-`countLabel` `^(关注|Follow)$`, and the same goal. Then look again.
+`countLabel` `^(关注(按钮)?|[+＋]\\s*关注|Follow( button)?)$`, and the same
+goal. Then look again.
 
-Sent only when a screen read shows Following, Friends, 已关注, or 互相关注.
-Pass `--note "<the comment>"` on that record. If the button still reads
-Follow or 关注, or the profile never opened, the follow is not done.
-`outreach release` that reservation and `reserve` it once more, then repeat
-this tap once. Do not `record failed` on the first miss. The second miss is
-`record failed`, and there is no third try.
+Sent only when a screen read shows the header button as Following, Friends,
+已关注, or 互相关注. Pass `--note "<the comment>"` on that record. If it
+still reads Follow or 关注 after the one retry tap, or the profile never
+opened, the follow is not done. `outreach release` that reservation and
+`reserve` it once more, then repeat this tap once. Do not `record failed`
+on the first miss. The second miss is `record failed`, and there is no
+third try. 操作太频繁 or 请稍后再试 is not a miss to retry: stop
+Xiaohongshu for the day and release the open reservation.
 
 **4. Like one photo note, as its own step.** No `launch`. Prefer a photo
 or carousel: its Like control has a label. A video heart is an unlabeled
@@ -245,7 +253,10 @@ title when they are on screen.
   screen and the avatar taps miss. The 评论 count opens a real panel.
   On 2026-10-28 that panel was what had tappable avatars.
 - **Scroll inside the panel, then tap the avatar.** The row has to be on
-  screen. A follow is not done until the button reads Following or 已关注.
+  screen. A follow is not done until the header button reads Following,
+  Friends, 已关注, or 互相关注. The stats line that says 关注 is not that
+  button; tapping it does not change anything. Tap the header pill, look,
+  and tap that same pill once more if the label did not change.
 - **Photo notes have a labelled Like. Video hearts do not.** A coordinate
   tap is the one unlabeled heart, once, with a like reservation held.
   Prefer the labelled button. Never a second tap: it toggles the like off.

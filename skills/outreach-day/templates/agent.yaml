@@ -98,7 +98,7 @@ channels:
     post_keywords: []            # required when source is post_engagement
     qualify_rule: ""
     qualify_per_run: 8           # profiles to open per run -- the costly step
-    discover_scrolls: 6          # how far down People results to read when finding leads
+    discover_scrolls: 6          # pages of People results; outreach reads read_cards (scrolls x 8, at least 24)
     lead_buffer: 30              # stop discovering once this many Leads are queued
     harvest_scrolls: 5           # how far down Connections to look for new acceptances
     warmup_delay_days: 0         # wait this long after acceptance before messaging

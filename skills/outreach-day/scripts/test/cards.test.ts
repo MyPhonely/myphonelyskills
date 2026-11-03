@@ -68,9 +68,24 @@ test("pair searches each rotation value with today's paired schools, within the 
   } as unknown as Agent;
   const day = new Date(2026, 9, 1);
   assert.deepEqual(pairFor(agent, day), ["Tsinghua University", "Peking University"]);
-  const plan = targetsFor(agent, "linkedin", day) as { dispatches: Array<{ query: string; pair_value: string }>; card_filter: unknown };
-  assert.deepEqual(plan.dispatches.map((d) => d.query), ["PhD UCLA Tsinghua University", "PhD UC Irvine Tsinghua University", "PhD UCLA Peking University"]);
+  const plan = targetsFor(agent, "linkedin", day) as {
+    dispatches: Array<{ query: string; pair_value: string; paging?: boolean; read_cards?: number; connects?: number }>;
+    card_filter: unknown;
+    connects_target: number;
+    weekly_invite_cap: number;
+    stop_when: string;
+  };
+  assert.deepEqual(plan.dispatches.map((d) => d.query), [
+    "PhD UCLA Tsinghua University",
+    "PhD UC Irvine Tsinghua University",
+    "PhD UCLA Peking University",
+    "PhD UC Irvine Peking University",
+  ]);
   assert.equal(plan.dispatches[0].pair_value, "Tsinghua University");
+  assert.ok(plan.dispatches.every((d) => d.paging === true && (d.read_cards ?? 0) >= 24), "each search keeps paging past the first screen");
+  assert.equal(plan.connects_target, 9, "the daily cap is unchanged");
+  assert.equal(plan.weekly_invite_cap, 100, "the weekly cap is unchanged");
+  assert.equal(plan.stop_when, "daily_cap_or_sources_exhausted");
   assert.deepEqual(plan.card_filter, FILTER);
   assert.deepEqual(pairFor(agent, new Date(2026, 9, 2)), ["IIT Bombay", "KAIST"]);
 });

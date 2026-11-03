@@ -87,6 +87,12 @@ opening each profile, which is a separate task per person.
   `require` ends the phase in one look if the chip row is not there.
 - Do not open All filters: it is the most common reason a run sends or reads
   nothing.
+- **One screen is not the list.** `count` is how many cards to read.
+  Keep scrolling later pages until that many are collected or the list
+  ends. Outreach passes `read_cards` from `outreach targets` (several
+  screens) and then the next search while the daily invite cap still has
+  room. Do not stop after the first page when `count` is larger than what
+  is on screen.
 - **Measured on 2026-10-06:** by link, 6 of 6 people in 2 steps and 6
   credits, every card's button label read; typing into the search box had
   stalled in five of six earlier attempts.

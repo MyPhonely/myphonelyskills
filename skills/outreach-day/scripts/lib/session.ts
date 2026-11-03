@@ -260,6 +260,12 @@ function recordQuietly(agent: Agent, input: RecordInput): Reservation {
       }
     } else if (input.outcome === "sent") {
       setStage({ name: t.name, stage: input.note === "answer" ? "Answered" : "Warmup Sent", touch: true }, json);
+    } else if (r.action === "message" && input.note !== "answer") {
+      // The send did not verify. Stay on the current stage (Connected, for a
+      // warmup) and do not stamp last_message, so the row stays in the
+      // warmup pool. The note is what a later day looks for. An answer is
+      // recorded with --note answer and is not a warmup.
+      setStage({ name: t.name, note: "warmup retry" }, json);
     }
   } else {
     if (!t.author || !t.title) die("a post needs --author and --title");

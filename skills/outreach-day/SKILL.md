@@ -195,23 +195,34 @@ you press Back yourself.
    anyone `outreach check` already has. No one left: abandon, look, stay on
    the results. Do not search again.
 3. **One commenter at a time.** Resume the panel task, writes off, to open
-   that profile. The follow counts only when the button then reads
-   Following, Friends, 已关注, or 互相关注. The task's own status does not:
-   a Back task often ends `failed` after a Back that landed, and a like
-   task's `sent` list is often empty after a like that took. `phone_screen`
-   decides `outreach record`. If the button still reads Follow or 关注,
-   tap it once from a new task after the profile task has finished. If it
-   does not change, `outreach release` and reserve that follow one more
-   time. Do not `record failed` on the first miss. Record a sent follow
-   with `--note "<the comment you read>"`. Then the like, from that
-   profile, with no `launch`. If the notes grid is below the fold,
-   `phone_scroll` it into view (`phone_swipe` is refused), release that
-   lease, then open a photo note and tap its labelled Like once. A video
-   heart is one `phone_tap` while the like reservation is held. Record a
-   like from a filled heart, Liked, 已赞, or a count one higher, not from
-   `sent`. Return with one Back at a time, and count the Back an abandon
-   already pressed. Explore or the search home means stop. Do not search
-   again.
+   that profile. Do not follow the note's author and do not like the source
+   note. No comments, replies, or DMs. A screen that says 操作太频繁 or
+   请稍后再试 stops Xiaohongshu for the day: `outreach release` the open
+   reservation and do not start another follow or like.
+   The follow counts only when the **header** button then reads Following,
+   Friends, 已关注, or 互相关注. The stats line (a number, then Following
+   or 关注) is how many people they follow; it is not the button, and
+   tapping it does nothing. The task's own status does not decide: a Back
+   task often ends `failed` after a Back that landed, and a like task's
+   `sent` list is often empty after a like that took. `phone_screen`
+   decides `outreach record`. If the header button still reads Follow or
+   关注, run `outreach phases --flow xhs-follow --name "<nickname>"` and
+   send that task (no `launch`). It taps that red header pill, reads it,
+   and taps the same pill once more if it did not change. Do not hand-write
+   a looser goal: a goal that both says "do not tap" and "tap Follow" makes
+   the operator refuse the control ("no action clears its floor"). If the
+   button still reads Follow or 关注 after that, `outreach release` and
+   reserve the follow one more time. Do not `record failed` on the first
+   miss. Record a sent follow with `--note "<the comment you read>"` only
+   after the header button changed. Then the like, from that profile, with
+   no `launch`, and only for one of their notes, never the source note. If
+   the notes grid is below the fold, `phone_scroll` it into view
+   (`phone_swipe` is refused), release that lease, then open a photo note
+   and tap its labelled Like once. A video heart is one `phone_tap` while
+   the like reservation is held. Record a like from a filled heart, Liked,
+   已赞, or a count one higher, not from `sent`. Return with one Back at a
+   time, and count the Back an abandon already pressed. Explore or the
+   search home means stop. Do not search again.
 4. **Next note, same search.** One Back from the source note to the Latest
    results, then the next card. Do not set `launch` again.
 
@@ -229,13 +240,31 @@ In this order, each with its workflow:
    `linkedin-message-connection`, record with `--note answer`.
 2. **Welcome new connections.** `linkedin-new-connections` lists who
    accepted. For each one the records have as Invited: `outreach ledger
-   accept --name ...`, then send `outreach message --name warmup` with
-   `linkedin-message-connection` after `outreach reserve --action message`,
-   and record it.
-3. **Invite**, while `outreach budget --channel linkedin` has room:
-   1. `linkedin-search-people` with today's queries from `outreach targets`
-      (titles crossed with the rotation, or two schools per search when the
-      agent has `audience.pair`), 2nd degree.
+   accept --name ...`, then `outreach reserve --action message` and send
+   `outreach message --name warmup` with the phases from `outreach phases
+   --flow warmup --name "<person>" --text "<that message>"` (the same route
+   as `linkedin-message-connection`). The invitation note already in the
+   thread is not a reply: do not back out because of it. Type that text,
+   confirm it is in the field, tap Send once, and record `sent` only when
+   the bubble is on screen and the field is empty. If any step fails, clear
+   the composer (`phone_clear_text` while the reservation is still open, or
+   the `clear` phase) so no draft remains, then `outreach record --outcome
+   failed`. That leaves the row Connected, with no `last_message`, and a
+   note `warmup retry` for a later day. Do not record `sent` for an unsent
+   draft, and do not release a warmup you already typed.
+3. **Invite**, while `outreach budget --channel linkedin` has room. One
+   search page is not the day's sourcing. `outreach targets` lists every
+   search for today. Each dispatch has `paging: true` and `read_cards`
+   (several screens). `stop_when` is `daily_cap_or_sources_exhausted`.
+   `connects` on a dispatch is only how many invites one phone task should
+   send (`batch_size`); it is not a reason to stop. The caps stay the
+   channel's `connects_per_day` and `weekly_invite_cap`. Do not change them.
+   Walk the dispatches in order. `outreach check` before every reserve, so
+   someone already in the ledger is not invited again.
+   1. `linkedin-search-people` for that dispatch's query, 2nd degree, with
+      `count` = `read_cards`. Keep scrolling later result pages until that
+      many cards are collected or the list ends. Do not stop on the first
+      screen, and do not use the workflow's example count of 10.
    2. **When `outreach targets` shows a `card_filter`**, the cards decide:
       save the search's `collected` list and run `outreach cards --pair
       "<the dispatch's pair_value>" --file <it>`. Invite only the people it
@@ -247,7 +276,7 @@ In this order, each with its workflow:
       ledger add-person --stage Disqualified`, so they are never opened
       again.
    3. `outreach reserve` each person you would invite, no more than the
-      budget's `left`.
+      budget's `left`, and no more than `batch_size` in one phone task.
    4. `linkedin-invite-from-results` with `count` = the number reserved
       (`linkedin-connect-with-note` when the channel sends a note). After a
       card filter, pin it to the kept names: `countLabel` `^Invite (<name
@@ -257,14 +286,20 @@ In this order, each with its workflow:
    5. Confirm with `linkedin-sent-invitations`. Record `sent` for each name
       listed there (a name you had not reserved: reserve it first, then
       record it); record `failed` for reservations that did not go out.
+   6. If `left` is still above 0, this search is not done while its last
+      read returned `read_cards` cards: scroll on (same query, no new
+      search) and repeat from the filter. A short page means this search is
+      exhausted: go to the next dispatch. Stop only when `left` is 0 or
+      every dispatch is exhausted.
 4. **Withdraw** invitations older than `withdraw_after_days` with
    `linkedin-withdraw-invitations`, when the Sent list is long. It is a
    write: review mode pauses for it like the others.
 
 ### Stop
 
-- A limit, "unusual activity", verification or CAPTCHA screen: stop that
-  app for today and report it. It is not a failure to retry.
+- A limit, "unusual activity", verification, CAPTCHA, or a Xiaohongshu
+  操作太频繁 / 请稍后再试 screen: stop that app for today and report it. It
+  is not a failure to retry.
 - A phase ending `stuck` or `precondition_failed`: look (`phone_screen`),
   make at most one navigation fix (a label tap, a link, back), retry once,
   then move on.
@@ -332,7 +367,9 @@ records.
   `--add-dir`). Close stdin (`< /dev/null`): `pi -p` with no terminal
   otherwise waits for input forever.
 - **One attempt per target per day.** A failed write is retried on a later
-  day, never in a loop.
+  day, never in a loop. A warmup that did not send is that later-day retry:
+  record it failed (the ledger notes `warmup retry`) after the composer is
+  cleared, and do not leave the draft on screen.
 - **Records** default to `records/` in the agent folder. They hold people's
   names: keep them out of a public repo (`records:` in `agent.yaml` can point
   outside it, e.g. `~/.outreach/<id>`).

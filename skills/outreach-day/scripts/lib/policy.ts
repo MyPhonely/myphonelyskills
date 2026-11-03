@@ -8,11 +8,13 @@
  *
  * The rules:
  *
- *   1. Writes go through run_task, never through the direct tools. Direct
- *      calls that can write (typing, long presses, swipes, files) are
- *      refused, and so is a label tap on a write-looking control. One
- *      exception: a single coordinate tap, for an unlabeled heart, which
- *      the guard allows only while a like reservation is held.
+ *   1. Writes go through run_task (also phone_task / dispatch_task), never
+ *      through the direct tools. Direct calls that can write (typing, long
+ *      presses, swipes, files) are refused, and so is a label tap on a
+ *      write-looking control. Two exceptions: a single coordinate tap, for
+ *      an unlabeled heart, which the guard allows only while a like
+ *      reservation is held; and phone_clear_text, which the guard allows
+ *      only to empty an unsent message draft.
  *   2. A planned run (`request`) may not write: its phases are not known in
  *      advance, so nothing can be checked against them.
  *   3. A writing phase pauses for review (`pauseWhen`) unless the person
@@ -33,12 +35,14 @@ export const SERVER = "myphonely";
 /** Direct (Mode 2) calls that can change something in an app. */
 export const WRITING_DIRECT = new Set([
   "phone_type",
-  "phone_clear_text",
   "phone_long_press",
   "phone_swipe",
   "phone_push_file",
   "phone_pull_file",
 ]);
+
+/** Task tools. phone_task and dispatch_task are the same write path as run_task. */
+const TASK_TOOLS = new Set(["run_task", "phone_task", "dispatch_task"]);
 
 /** A label that commits something when tapped. */
 export const WRITE_LABEL =
@@ -63,6 +67,8 @@ export type Decision =
   | { kind: "blocked"; reason: string }
   /** One coordinate tap. The guard allows it once, against a held like reservation. */
   | { kind: "heart" }
+  /** Empty an unsent message draft. The guard allows it only while that reservation is open. */
+  | { kind: "clear" }
   /** `count` writes, each spending a reservation; `approve` when the person must see it now. */
   | { kind: "write"; count: number; approve: string | null; taskId?: string };
 
@@ -81,6 +87,10 @@ export function decide(toolName: string, input: Record<string, unknown>, ctx: Co
   // The guard, not this function, checks that a like reservation is held and
   // that this is the only coordinate tap spent on it.
   if (tool === "phone_tap") return { kind: "heart" };
+  // Clearing a field sends nothing. The guard still requires a message
+  // reservation that has not been recorded sent, so this cannot wipe an
+  // arbitrary screen.
+  if (tool === "phone_clear_text") return { kind: "clear" };
   if (WRITING_DIRECT.has(tool)) {
     return { kind: "blocked", reason: `${tool} can write on the phone; writes go through run_task with a review pause` };
   }
@@ -92,7 +102,7 @@ export function decide(toolName: string, input: Record<string, unknown>, ctx: Co
     return { kind: "read" };
   }
 
-  if (tool === "run_task" || tool === "phone_task") {
+  if (TASK_TOOLS.has(tool)) {
     if (input.allow_writes !== true) return { kind: "read" };
     if (typeof input.request === "string" && input.request.trim()) {
       return { kind: "blocked", reason: "a planned run (request) may not write; give explicit phases" };
