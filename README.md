@@ -3,9 +3,9 @@
 Skills for AI agents that operate a real Android phone through the
 [MyPhonely](https://myphonely.ai) MCP server. Install them and your agent
 knows both how to drive a phone and the use cases it can do end to end:
-47 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
-Facebook, TikTok, WeChat and Google Play, and agents that chain them into a
-recurring job, such as a day of outreach for your brand.
+48 workflows across X, LinkedIn, Reddit, YouTube, Google Maps, Xiaohongshu,
+Threads, Facebook, TikTok, WeChat and Google Play, and agents that chain
+them into a recurring job, such as a day of outreach for your brand.
 
 ## Install
 
@@ -66,6 +66,7 @@ they are about to do, and continue only on `resume_task`.
 | YouTube | videos from a search · a channel's videos · comments on a video | |
 | Google Maps | local businesses · a place's details · a place's reviews | |
 | Xiaohongshu | notes from a search · a creator's notes · comments on a note | comment on a note · follow a commenter and like their latest note · publish a note |
+| Threads | | follow someone who replied and like one of their posts |
 | Facebook | posts from a group you belong to · a page's recent posts · search posts about a topic | comment on a post, as yourself or as an anonymous group member · publish a post |
 | Instagram | find accounts | |
 | TikTok | videos from a search · comments on a video | |
@@ -81,7 +82,7 @@ built from these files and refreshes within minutes of a merge.
 | agent | what it does |
 |---|---|
 | `create-outreach-agent` | set up an outreach agent for a brand: reads its site, asks you what a site cannot say, writes the folder below and checks it is ready |
-| `outreach-day` | one day of a brand's outreach: answer replies, welcome new connections and invite on LinkedIn, comment on X, Reddit and Facebook, and on Xiaohongshu follow commenters and like a note of theirs, in the brand's voice, within its daily limits, every write reserved, verified and recorded |
+| `outreach-day` | one day of a brand's outreach: answer replies, welcome new connections and invite on LinkedIn, comment on X, Reddit and Facebook, on Xiaohongshu follow commenters and like a note of theirs, and on Threads follow repliers and like a post of theirs, in the brand's voice, within its daily limits, every write reserved, verified and recorded |
 | `news-desk` | one day of a news site: collect from Reddit, X, LinkedIn and forums on the phone (reading only), keep the real news and the case reports the desk wants, check every fact against a primary source, and write drafts or publish to the site's API, from a desk folder (`desk.yaml`, `style.md`) |
 
 An agent runs from a folder you own, which `create-outreach-agent` writes

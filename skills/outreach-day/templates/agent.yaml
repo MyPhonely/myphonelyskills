@@ -146,6 +146,27 @@ channels:
   #   commenters_per_post: 3      # individual commenters per note
   #   follows_per_day: 20         # one ceiling for every commenter
   #   likes_per_day: 20           # defaults to follows_per_day
+  #
+  # threads:                      # kind engage: follow repliers, like one post of theirs
+  #   kind: engage                # never a reply, repost, quote, comment, DM or post
+  #   account: CHANGEME           # stop if Profile (bottom right) is a different handle
+  #   lang: en
+  #   posts_per_keyword: 2
+  #   keywords:                   # a personal case, not a short token or a news headline
+  #     - NIW approval
+  #     - I-140 approved NIW
+  #     - EB1A I-140 approved
+  #     - my NIW
+  #     - NIW petition
+  #     - got my green card NIW
+  #     - PhD NIW approved
+  #     - EB-1A I-140
+  #     - 绿卡 NIW
+  #     - I140 批了
+  #   max_post_age_hours: 168
+  #   repliers_per_post: 3        # maximum per post, not a quota; 1 reply is enough
+  #   follows_per_day: 20         # one ceiling for every replier
+  #   likes_per_day: 20           # defaults to follows_per_day
 
 # Single source of truth for anything price-shaped. Messages render from here,
 # so a pricing or promo change is one edit in one place. `outreach message`

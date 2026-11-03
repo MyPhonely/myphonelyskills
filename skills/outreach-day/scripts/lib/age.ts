@@ -119,6 +119,14 @@ export function parseAge(text: string, now = new Date()): ParsedAge {
     return { hours: Math.round(Number(zh[1]) * unit), date: null };
   }
 
+  // Threads writes a compact age with no word: 3h, 5d, 2w. m is minutes.
+  const compact = /^(\d+)\s*([smhdw])(?:\s*ago)?$/i.exec(s);
+  if (compact) {
+    const unit = { s: 1 / 3600, m: 1 / 60, h: 1, d: 24, w: 24 * 7 }[compact[2].toLowerCase()];
+    if (!unit) return none;
+    return { hours: Math.round(Number(compact[1]) * unit), date: null };
+  }
+
   const dated = calendar(s, now);
   if (dated) return dated;
 
@@ -127,6 +135,16 @@ export function parseAge(text: string, now = new Date()): ParsedAge {
 
 /** A named or numeric calendar day. Month-day with no year rolls back if it is still ahead of `now`. */
 function calendar(s: string, now: Date): ParsedAge | null {
+  // US month/day, with an optional year: 07/05, 07/05/2025, 07/05/25.
+  const mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})$/.exec(s);
+  if (mdy) {
+    let year = Number(mdy[3]);
+    if (mdy[3].length === 2) year += year >= 70 ? 1900 : 2000;
+    const then = at(year, Number(mdy[1]), Number(mdy[2]), 12, 0);
+    if (!then) return null;
+    return { hours: hoursBetween(then, now), date: dayStamp(then) };
+  }
+
   const named = new RegExp(`^(${MONTH})(?:/(\\d{1,2})/(\\d{4})|\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?)$`, "i").exec(s);
   if (named) {
     const month = monthNumber(named[1]);

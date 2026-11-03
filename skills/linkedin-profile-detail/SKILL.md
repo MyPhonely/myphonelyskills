@@ -1,6 +1,6 @@
 ---
 name: linkedin-profile-detail
-description: Read a named person's LinkedIn profile: headline, about, current role, experience and education. Use when asked what someone does, to research a lead or candidate, to enrich a name into a profile, or to prepare for outreach.
+description: "Read a named person's LinkedIn profile: headline, about, current role, experience and education. Use when asked what someone does, to research a lead or candidate, to enrich a name into a profile, or to prepare for outreach."
 kind: workflow
 title: Read one LinkedIn profile
 apps: com.linkedin.android

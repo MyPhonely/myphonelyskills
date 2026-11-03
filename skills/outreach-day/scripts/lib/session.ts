@@ -25,7 +25,7 @@ import { dataRows, die, ensureDir, ledgerPath, quietly, stateDir, today } from "
 import type { Agent } from "./common.ts";
 import { addEngaged, addPerson, addPost, addQueue, countEngaged, countPosts, findEngaged, findPeople, findPosts, invitePerson, openQueueRows, queueRows, setStage, updateQueueRow } from "./ledger.ts";
 import type { QueueRow } from "./ledger.ts";
-import { commentTargets, commenterSkip, engageLimits, promoHit, resolveChannel } from "./plan.ts";
+import { commentTargets, engageLimits, engageRefusal, resolveChannel, threadsTopic } from "./plan.ts";
 import { targetKey } from "./policy.ts";
 import type { Target } from "./policy.ts";
 import { inviteRoom } from "./quota.ts";
@@ -51,6 +51,10 @@ export interface Reservation {
   at: string;
   /** The one coordinate tap allowed for an unlabeled heart. */
   heartTap?: boolean;
+  /** Source post text from reserve. A follow record uses it when --title is omitted. */
+  sourceTitle?: string;
+  /** Profile or post URL from reserve, used when record omits --url. */
+  sourceUrl?: string;
 }
 
 interface Day {
@@ -88,8 +92,12 @@ export function actionFor(agent: Agent, channel: string, action?: string): Actio
   const allowed = ACTIONS[kind];
   const a = (action || allowed[0]) as Action;
   if (!allowed.includes(a)) {
-    const article = kind === "engage" ? "an" : "a";
-    die(`${channel} is ${article} ${kind} channel: --action must be ${allowed.join(" or ")}`);
+    if (kind === "engage") {
+      die(
+        `${channel} is an engage channel: it only follows and likes, never a reply, comment, repost, quote or DM. --action must be follow or like`,
+      );
+    }
+    die(`${channel} is a ${kind} channel: --action must be ${allowed.join(" or ")}`);
   }
   return a;
 }
@@ -141,12 +149,12 @@ export function budget(agent: Agent, channel: string, action: Action, day = load
 export function check(agent: Agent, channel: string, action: Action, t: Target): { found: boolean; blocking: boolean; rows: string[] } {
   if (action === "follow") {
     // Followed once, ever: the commenter, whichever note they were found on.
-    if (!t.name) die("a follow is --name (the commenter's nickname), with --title of the note they were found on and --url of their profile id when you have it");
+    if (!t.name) die("a follow is --name (the person), with --title of the post or note they were found on and --url of their profile when you have it");
     const rows = findEngaged(channel, "follow", t.name, t.title ?? "", t.url ?? "");
     return { found: rows.length > 0, blocking: rows.length > 0, rows };
   }
   if (action === "like") {
-    if (!t.author || !t.title) die("a like is --author and --title of the commenter's note, with --url of its id when you have it");
+    if (!t.author || !t.title) die("a like is --author and --title of their post or note, with --url of its id when you have it");
     const rows = findEngaged(channel, "like", t.author, t.title, t.url ?? "");
     return { found: rows.length > 0, blocking: rows.length > 0, rows };
   }
@@ -175,10 +183,16 @@ export function reserve(agent: Agent, channelArg: string, actionArg: string | un
   const action = actionFor(agent, channel, actionArg);
   if (action === "follow" || action === "like") {
     const person = action === "follow" ? t.name ?? "" : t.author ?? "";
-    const marker = (person ? commenterSkip(person) : null) ?? promoHit(`${t.title ?? ""} ${t.body ?? ""}`);
+    const marker = engageRefusal(channel, person, t.title ?? "", t.body ?? "", t.bio ?? "");
     if (marker) {
       die(
-        `refused: promo wording (${marker}) in the name, title or body. Skip agency and consultancy notes and commenters.`,
+        `refused: promo wording (${marker}) in the name, bio, title or body. Skip agency, lawyer and consultancy accounts, family or marriage posts, and a reply that sells or says DM me.`,
+        3,
+      );
+    }
+    if (action === "follow" && channel === "threads" && threadsTopic(t.title ?? "")) {
+      die(
+        "refused: source post is off-topic. The card needs NIW, EB-1A, or I-140 together with a personal or case signal (approved, approval, RFE, filed, PD, I-140, my, 获批, 批了). A keyword match is not enough, and the reply does not count.",
         3,
       );
     }
@@ -202,7 +216,17 @@ export function reserve(agent: Agent, channelArg: string, actionArg: string | un
   if (seen.blocking) die(`refused: the records already have ${label(t)}; skip it.\n${seen.rows.join("\n")}`, 3);
   const b = budget(agent, channel, action, day);
   if (b.left <= 0) die(`refused: no ${action} budget left on ${channel} today (${b.note}). Stop this channel.`, 4);
-  const r: Reservation = { id: `r${day.next++}`, channel, action, key, label: label(t), state: "open", at: new Date().toISOString() };
+  const r: Reservation = {
+    id: `r${day.next++}`,
+    channel,
+    action,
+    key,
+    label: label(t),
+    state: "open",
+    at: new Date().toISOString(),
+    sourceTitle: t.title,
+    sourceUrl: t.url,
+  };
   day.items.push(r);
   saveDay(day);
   return { reservation: r, left: b.left - 1 };
@@ -246,10 +270,17 @@ function recordQuietly(agent: Agent, input: RecordInput): Reservation {
   const json = true;
   if (r.action === "like" || r.action === "follow") {
     const who = r.action === "follow" ? t.name : t.author;
+    // The title passed to record is the post that was actually opened. A follow
+    // that omits it keeps the source post stored when it was reserved.
+    const title = t.title || r.sourceTitle;
+    const url = t.url || r.sourceUrl;
     if (r.action === "follow" && !who) die("a follow needs --name");
-    if (r.action === "like" && (!who || !t.title)) die("a like needs --author and --title");
+    if (r.action === "like" && (!who || !title)) die("a like needs --author and --title");
+    if (t.title && r.action === "like") r.label = `${who}: ${t.title}`;
+    if (t.title) r.sourceTitle = t.title;
+    if (t.url) r.sourceUrl = t.url;
     if (input.outcome === "sent") {
-      addEngaged({ platform: r.channel, action: r.action, who, title: t.title, url: t.url, note: input.note || input.comment }, json);
+      addEngaged({ platform: r.channel, action: r.action, who, title, url, note: input.note || input.comment }, json);
     }
   } else if (r.action === "invite" || r.action === "message") {
     if (!t.name) die("a person needs --name");
@@ -341,10 +372,27 @@ export function release(id: string): Reservation {
   return r;
 }
 
+/**
+ * Every configured channel. `order` is the run order, and a channel that was
+ * left out of `order` is still reported, after the ones that are listed.
+ */
+function reportChannels(agent: Agent): string[] {
+  const declared = Object.keys(agent.channels ?? {});
+  if (!agent.order) return declared;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const name of [...agent.order, ...declared]) {
+    if (seen.has(name)) continue;
+    seen.add(name);
+    out.push(name);
+  }
+  return out;
+}
+
 /** Today per channel: reserved, sent, failed, still open, and the budget left. */
 export function report(agent: Agent, date = today()): Array<Record<string, unknown>> {
   const day = loadDay(date);
-  const channels = agent.order ?? Object.keys(agent.channels);
+  const channels = reportChannels(agent);
   const out: Array<Record<string, unknown>> = [];
   for (const channel of channels) {
     const actions = ACTIONS[kindOf(agent, channel)];

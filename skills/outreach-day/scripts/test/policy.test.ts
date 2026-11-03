@@ -38,6 +38,39 @@ test("a planned run may not write, and a writing phase must pause for review", (
   assert.equal(decide(t("run_task"), { allow_writes: true, phases: [{ goal: "navigate" }] }, attended).kind, "read", "master switch on, no writing phase");
 });
 
+test("Threads writes are refused unless the foreground app is named, and draft dialogs are never tapped", () => {
+  const gate = "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app.";
+  const bare = { phases: [{ goal: "In the Threads app, tap Profile." }] };
+  assert.equal(decide(t("run_task"), bare, attended).kind, "blocked");
+  const launch = { phases: [{ goal: gate, launch: "com.instagram.barcelona" }] };
+  assert.equal(decide(t("run_task"), launch, attended).kind, "blocked");
+  const follow = {
+    allow_writes: true,
+    phases: [{ goal: `In the Threads app, tap Follow. ${gate}`, allowWrites: true, pauseWhen: "the profile is open", countLabel: "^(Follow|关注)$" }],
+  };
+  assert.equal(decide(t("run_task"), follow, attended).kind, "write");
+  const like = {
+    allow_writes: true,
+    phases: [{ goal: "Tap Like", allowWrites: true, pauseWhen: "the post is open", countLabel: "^(Like( \\d+)?|赞( \\d+)?)$" }],
+  };
+  assert.equal(decide(t("run_task"), like, attended).kind, "blocked", "a counted Like with no package check can hit Instagram");
+  const xhs = {
+    allow_writes: true,
+    phases: [{ goal: "In Xiaohongshu, tap 赞", allowWrites: true, pauseWhen: "the note is open", countLabel: "^(赞|点赞|Like)$" }],
+  };
+  assert.equal(decide(t("run_task"), xhs, attended).kind, "write", "a Xiaohongshu like is not a Threads gate");
+  assert.equal(decide(t("phone_tap_label"), { text: "Discard" }, attended).kind, "blocked");
+  assert.equal(decide(t("phone_tap_label"), { text: "Save draft" }, attended).kind, "blocked");
+  assert.equal(decide(t("phone_tap_label"), { text: "Start over" }, attended).kind, "blocked");
+  assert.equal(decide(t("phone_tap_label"), { text: "Keep editing" }, attended).kind, "blocked");
+  const reading = { phases: [{ kind: "read", goal: "do not tap anything", allowWrites: true }] };
+  assert.equal(decide(t("run_task"), reading, unattended).kind, "blocked");
+  const resume = decide(t("resume_task"), { task_id: "t1", allowWrites: true, countLabel: "^(Like( \\d+)?)$", goal: "tap Like" }, attended);
+  assert.equal(resume.kind, "blocked");
+  const resumeOk = decide(t("resume_task"), { task_id: "t1", allowWrites: true, countLabel: "^(Like( \\d+)?)$", goal: gate, repeat: 1 }, attended);
+  assert.equal(resumeOk.kind, "write");
+});
+
 test("the commit is the resume: it needs approval, and a reservation unless the run already spent one", () => {
   const fresh = decide(t("resume_task"), { task_id: "task_1", text: "Congrats on DUET!", allowWrites: true }, attended);
   assert.equal(fresh.kind, "write");

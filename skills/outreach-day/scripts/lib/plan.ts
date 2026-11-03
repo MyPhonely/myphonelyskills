@@ -20,7 +20,8 @@ export const EPOCH = Date.UTC(2026, 0, 1);
 const DAY = 86_400_000;
 
 function daysSince(d: Date, start: number): number {
-  return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - start) / DAY);
+  // UTC calendar day, the same day the follow cap is counted on.
+  return Math.floor((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - start) / DAY);
 }
 
 /** `rotate.start` as epoch ms, or the global EPOCH when absent. */
@@ -164,7 +165,7 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
       if (dispatches.reduce((s, p) => s + (p.connects ?? 0), 0) >= target) break;
     }
     return {
-      date: iso(d),
+      date: iso(d), day_basis: "utc",
       platform: channel,
       kind: "connect",
       source,
@@ -207,7 +208,7 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
       }
     }
     return {
-      date: iso(d),
+      date: iso(d), day_basis: "utc",
       platform: channel,
       kind: "connect",
       source,
@@ -246,7 +247,7 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
   }
 
   return {
-    date: iso(d),
+    date: iso(d), day_basis: "utc",
     platform: channel,
     kind: "connect",
     source,
@@ -289,7 +290,7 @@ export function commentTargets(
     for (const group of today) dispatches.push({ scope: "group", group, posts: n });
     if (!dispatches.length) dispatches.push({ scope: "your_groups", keyword: groupKeywords.join(" | "), posts: n });
     return {
-      date: iso(d),
+      date: iso(d), day_basis: "utc",
       platform: channel,
       kind: "comment",
       source: "groups",
@@ -342,7 +343,7 @@ export function commentTargets(
     left -= posts;
   }
   const plan: Record<string, unknown> = {
-    date: iso(d),
+    date: iso(d), day_basis: "utc",
     platform: channel,
     // A channel named `<app>-<stream>` (x-papers) runs in <app>, and the
     // ledger files it under <app>, so check-post spans every stream.
@@ -393,41 +394,239 @@ export function promoHit(text: string): string | null {
   return null;
 }
 
+/**
+ * Name or bio fragments that mark a Threads agency, lawyer, law firm or
+ * consultant. A reply that merely mentions a lawyer is not in this list.
+ */
+export const THREADS_NAME_MARKERS = [
+  "immigration consultant",
+  "law firm",
+  "attorney",
+  "lawyer",
+  "中介",
+  "移民",
+  "律师",
+  "律所",
+  "咨询",
+] as const;
+
+/**
+ * Family and marriage words. A source post or a reply that is about a
+ * spouse, a K-1, or an I-130 is not the NIW / EB-1A audience.
+ */
+export const THREADS_FAMILY_MARKERS = ["marriage", "married", "spouse", "husband", "wives", "wife", "k-1", "k1", "i-130", "i130"] as const;
+
+/**
+ * News and other "approved" posts that are not someone's own case.
+ * Dutch NIW coverage, PTA phone approvals, retail posts, celebrity EB-1A.
+ */
+export const THREADS_NOISE_MARKERS = ["phone approved", "niw.nl", "celebrity", "melania", "retail", "pta"] as const;
+
+/** A case word on the card. Bare "NIW" in a typo or a news headline is not enough. */
+const THREADS_CASE = [/\bniw\b/, /\beb[-\s]?1a\b/, /\bi-?\s?140\b/];
+
+/** A personal or case signal that has to sit with the case word. */
+const THREADS_SIGNAL = [/\bapprov(?:ed|al)\b/, /\brfe\b/, /\bfiled\b/, /\bpd\b/, /\bi-?\s?140\b/, /\bmy\b/, /获批/, /批了/];
+
+/**
+ * A Threads reply that sells a service or asks to be messaged. "lawyer" is
+ * not here: a reply asking for a lawyer recommendation is the audience.
+ */
+export const THREADS_REPLY_MARKERS = [
+  "immigration services",
+  "free consultation",
+  "book a consult",
+  "our services",
+  "my services",
+  "欢迎咨询",
+  "dm for",
+  "dm me",
+  "私信",
+] as const;
+
+function normText(text: string): string {
+  return text.normalize("NFKC").toLowerCase().replace(/[’‘]/g, "'");
+}
+
+/** Longer markers win. Latin phrases match as words, so "lawyer" is not "law". */
+function markerHit(text: string, markers: readonly string[]): string | null {
+  const n = normText(text);
+  const ordered = [...markers].sort((a, b) => b.length - a.length || a.localeCompare(b));
+  for (const marker of ordered) {
+    const m = normText(marker);
+    if (/[a-z]/.test(m)) {
+      const body = m
+        .split(/\s+/)
+        .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("\\s+");
+      if (new RegExp(`(?:^|[^a-z])${body}s?(?:[^a-z]|$)`).test(n)) return marker;
+    } else if (n.includes(m)) {
+      return marker;
+    }
+  }
+  return null;
+}
+
+/** A reply that says the writer is the lawyer or the firm, not someone asking for one. */
+function threadsSelfId(text: string): string | null {
+  const n = normText(text);
+  const role = n.match(/\bi(?:'m| am)\s+(?:a|an)\s+(?:immigration consultant|lawyer|attorney)\b/);
+  if (role) return role[0];
+  if (/\b(?:our|my)\s+law firm\b/.test(n) || /\bwe(?:'re| are)\s+(?:a|an)\s+law firm\b/.test(n)) return "law firm";
+  const raw = text.normalize("NFKC");
+  if (/我是(?:一名|个)?律师|本人(?:是)?律师/.test(raw)) return "我是律师";
+  if (/律师事务所|我们是(?:一家)?律所/.test(raw)) return "律所";
+  return null;
+}
+
+/**
+ * Why a Threads card is not someone's own case, or null when the text has a
+ * case word (NIW, EB-1A, I-140) together with a personal signal (approved,
+ * approval, RFE, filed, PD, I-140, my, 获批, 批了). Matching is
+ * case-insensitive. The reply does not count.
+ */
+export function threadsTopic(title: string): string | null {
+  const n = normText(title).replace(/[\u2010-\u2015\u2212]/g, "-");
+  const caseHit = THREADS_CASE.some((re) => re.test(n));
+  const signal = THREADS_SIGNAL.some((re) => re.test(n));
+  if (caseHit && signal) return null;
+  return "off-topic";
+}
+
+/**
+ * Why this follow or like is refused, or null when the person can be engaged.
+ * Xiaohongshu keeps its own lists. Threads skips agency names and bios, a
+ * family or marriage post or reply, and a reply that sells or says DM me.
+ * A reply that asks for a lawyer does not. The NIW / EB topic check is
+ * `threadsTopic`, applied to a follow's source post only.
+ */
+export function engageRefusal(channel: string, person: string, title: string, body: string, bio = ""): string | null {
+  if (channel.trim().toLowerCase() === "threads") {
+    const nameHit = person ? markerHit(person, THREADS_NAME_MARKERS) : null;
+    if (nameHit) return nameHit;
+    const bioHit = bio ? markerHit(bio, THREADS_NAME_MARKERS) : null;
+    if (bioHit) return bioHit;
+    const reply = `${title}\n${body}`;
+    const noise = markerHit(reply, THREADS_NOISE_MARKERS);
+    if (noise) return noise;
+    const family = markerHit(reply, THREADS_FAMILY_MARKERS);
+    if (family) return family;
+    return markerHit(reply, THREADS_REPLY_MARKERS) ?? threadsSelfId(reply);
+  }
+  return (person ? commenterSkip(person) : null) ?? promoHit(`${title} ${body}`);
+}
+
 /** Daily ceilings for an engage channel. Likes match follows unless set. */
 export function engageLimits(ch: Channel): { follows: number; likes: number; perNote: number; notes: number } {
   const follows = num(ch.follows_per_day, 20);
   const likes = ch.likes_per_day === undefined ? follows : num(ch.likes_per_day, follows);
-  const perNote = num(ch.commenters_per_post, 3);
-  const notes = ch.follow_commenters === false || perNote <= 0 ? 0 : Math.ceil(Math.min(follows, likes) / perNote);
+  // Threads names the cap repliers_per_post. Commenter channels keep the old key.
+  const perNote =
+    ch.repliers_per_post !== undefined && ch.repliers_per_post !== null
+      ? num(ch.repliers_per_post, 3)
+      : num(ch.commenters_per_post, 3);
+  const followAudience = ch.follow_commenters !== false && ch.follow_repliers !== false;
+  const notes = !followAudience || perNote <= 0 ? 0 : Math.ceil(Math.min(follows, likes) / perNote);
   return { follows, likes, perNote, notes };
 }
 
 /**
- * An engage channel finds notes as a comment channel does, then follows
- * people who commented on them and likes one latest note of each. It does
- * not follow the author, like the source note, comment, reply or DM.
- * `follows_per_day` is the ceiling for every commenter together; likes match it.
+ * An engage channel finds posts as a comment channel does, then follows
+ * people who commented or replied and likes one latest post of each. It does
+ * not follow the author, like the source post, comment, reply, repost, quote
+ * or DM. `follows_per_day` is the ceiling for every person together; likes
+ * match it unless `likes_per_day` is set.
  */
+/**
+ * One source post per keyword, then a second, up to posts_per_keyword.
+ * The first keyword changes with the date, so a dry search is not every day.
+ * Keywords that do not fit in today's post budget are returned separately.
+ */
+function spreadKeywordPosts(
+  keywords: string[],
+  perKeyword: number,
+  cap: number,
+  d: Date,
+  exclude: string[],
+): { today: Dispatch[]; later: string[] } {
+  if (!keywords.length || cap <= 0 || perKeyword <= 0) return { today: [], later: [...keywords] };
+  const n = keywords.length;
+  const start = ((daysSince(d, EPOCH) % n) + n) % n;
+  const order = [...keywords.slice(start), ...keywords.slice(0, start)];
+  const counts = new Array<number>(n).fill(0);
+  let left = cap;
+  for (let pass = 0; pass < perKeyword && left > 0; pass++) {
+    for (let i = 0; i < n && left > 0; i++) {
+      counts[i] += 1;
+      left -= 1;
+    }
+  }
+  const today: Dispatch[] = [];
+  const later: string[] = [];
+  order.forEach((keyword, i) => {
+    if (counts[i] > 0) {
+      const query = [keyword, ...exclude.map((t) => (/\s/.test(t) ? `-"${t}"` : `-${t}`))].join(" ");
+      today.push({ keyword, posts: counts[i], query });
+    } else later.push(keyword);
+  });
+  return { today, later };
+}
+
 export function engageTargets(agent: Agent, channel: string, d: Date): Record<string, unknown> {
   const ch = agent.channels[channel];
   const limits = engageLimits(ch);
   const plan = commentTargets(agent, channel, d, "comments_per_day", limits.notes);
+  const keywords = ((ch.keywords as string[] | undefined) ?? []).filter(Boolean);
+  if (keywords.length && !ch.targets) {
+    const exclude = ((ch.exclude_terms as string[] | undefined) ?? []).filter(Boolean);
+    // On Threads, repliers_per_post is a maximum per post, not a quota. A
+    // post often has one reply, so the day's post budget is the follow cap.
+    const postCap = channel === "threads" ? Math.min(limits.follows, limits.likes) : limits.notes;
+    const spread = spreadKeywordPosts(keywords, num(ch.posts_per_keyword, 3), postCap, d, exclude);
+    const kept = ((plan.dispatches as Dispatch[] | undefined) ?? []).filter((item) => !item.keyword);
+    plan.dispatches = [...kept, ...spread.today];
+    plan.keywords_later = spread.later;
+    plan.keyword_rotation =
+      "one source post per keyword, starting at a keyword that changes with the date. A dry keyword is not the end of the day. keywords_later waits for a later day.";
+  }
   delete plan.follow;
   plan.kind = "engage";
-  plan.audience = "commenters";
   plan.like_source = false;
   plan.follow_author = false;
-  plan.follow_commenters = ch.follow_commenters !== false;
-  plan.commenters_per_post = limits.perNote;
   plan.follows_per_day = limits.follows;
   plan.likes_per_day = limits.likes;
   plan.comment = false;
+  plan.reply = false;
+  plan.repost = false;
+  plan.quote = false;
   plan.dm = false;
-  // Without Latest the search is weeks old and the age filter drops it.
-  plan.tab = "latest";
-  plan.sort = "latest";
-  plan.skip_names_containing = [...AGENCY_MARKERS];
-  plan.skip_text_containing = [...PROMO_MARKERS];
+  if (typeof ch.account === "string" && ch.account.trim()) plan.account = ch.account.trim();
+  if (channel === "threads") {
+    // Repliers, not the author. The results filter at the top left must be
+    // Recent posts before any card is judged. Top posts are mostly weeks old.
+    plan.audience = "repliers";
+    plan.follow_repliers = ch.follow_repliers !== false;
+    plan.repliers_per_post = limits.perNote;
+    plan.repliers_per_post_is = "maximum";
+    plan.scrolls_per_keyword = 4;
+    plan.sort = "recent";
+    plan.tab = "recent-posts";
+    plan.recent_filter = "top-left filter, select Recent posts, stop if it cannot be selected";
+    plan.skip_noise_containing = [...THREADS_NOISE_MARKERS];
+    plan.skip_names_containing = [...THREADS_NAME_MARKERS];
+    plan.skip_bios_containing = [...THREADS_NAME_MARKERS];
+    plan.skip_text_containing = [...THREADS_REPLY_MARKERS];
+    plan.keep_replies_matching = ["lawyer recommendation", "looking for a lawyer", "looking for an attorney", "求律师", "求推荐"];
+  } else {
+    plan.audience = "commenters";
+    plan.follow_commenters = ch.follow_commenters !== false;
+    plan.commenters_per_post = limits.perNote;
+    // Without Latest the search is weeks old and the age filter drops it.
+    plan.tab = "latest";
+    plan.sort = "latest";
+    plan.skip_names_containing = [...AGENCY_MARKERS];
+    plan.skip_text_containing = [...PROMO_MARKERS];
+  }
   return plan;
 }
 
@@ -505,8 +704,9 @@ export function renderMessage(agent: Agent, name: string): string {
   return text.split(/\s+/).filter(Boolean).join(" ");
 }
 
+/** UTC calendar day, same as `today()` in the ledgers and the follow cap. */
 function iso(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 const COMMANDS = ["targets", "message", "channels", "show"] as const;
@@ -521,7 +721,8 @@ export function main(argv: string[]): number {
     name: { type: "string", default: "warmup" },
   });
   const agent = loadAgent(values.agent as string | undefined);
-  const d = values.date ? new Date(`${values.date as string}T00:00:00`) : new Date();
+  // `--date` is a UTC day, so it names the same day the cap file uses.
+  const d = values.date ? new Date(`${values.date as string}T00:00:00Z`) : new Date();
   const asJson = Boolean(values.json);
 
   if (cmd === "targets") {

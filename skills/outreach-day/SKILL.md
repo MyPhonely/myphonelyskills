@@ -1,9 +1,9 @@
 ---
 name: outreach-day
-description: Run one day of a brand's outreach on the user's real phone from an outreach agent folder (agent.yaml, brand.md, voice.md) — find the right posts and people, write in the brand's voice, and invite, comment, message, like or follow within the agent's daily limits, with every write reserved, verified and recorded. Use when asked to run outreach, today's outreach, or one channel of it (linkedin, x, reddit, facebook, xiaohongshu) for a brand that has an outreach agent. On Xiaohongshu an engage channel follows commenters and likes one note of theirs; it never comments.
+description: Run one day of a brand's outreach on the user's real phone from an outreach agent folder (agent.yaml, brand.md, voice.md) — find the right posts and people, write in the brand's voice, and invite, comment, message, like or follow within the agent's daily limits, with every write reserved, verified and recorded. Use when asked to run outreach, today's outreach, or one channel of it (linkedin, x, reddit, facebook, xiaohongshu, threads) for a brand that has an outreach agent. On Xiaohongshu an engage channel follows commenters and likes one note of theirs. On Threads it follows repliers and likes one post of theirs. Neither comments, replies or sends a DM.
 kind: agent
 title: Run a day of outreach for your brand
-apps: com.linkedin.android, com.twitter.android, com.reddit.frontpage, com.facebook.katana, com.xingin.xhs
+apps: com.linkedin.android, com.twitter.android, com.reddit.frontpage, com.facebook.katana, com.xingin.xhs, com.instagram.barcelona
 writes: true
 reviews: true
 ---
@@ -80,8 +80,8 @@ Follow these exactly; the scripts refuse what breaks them.
 4. **Record every reservation.** `outreach record --reservation <id>
    --outcome sent` only when the write was verified on screen (the phase's
    `sent` list, the reply under the post, the name in Sent invitations).
-   A Xiaohongshu like often never appears in `sent`; the heart, the Liked
-   label or the count is the check, in the engage channel below.
+   A Xiaohongshu or Threads like often never appears in `sent`; the heart,
+   the Liked label or the count is the check, in the engage channel below.
    `--outcome failed` otherwise, which keeps the draft for a later day.
    Reserved but nothing written: `outreach release`. `--channel` may be
    passed and must be that reservation's channel.
@@ -98,17 +98,24 @@ Always give the URL when there is one: it is the surest duplicate check.
 ### Start
 
 1. `phone_status`. Offline: stop and ask the user to open the MyPhonely app
-   and tap Connect. If `leased` is true, that hold is not yours: do not pass
-   its `lease_id` to any tool, and do not release it. Poll `phone_status`
-   until `leased` is false, at most six times, then stop this run. When you
-   do `acquire_phone`, keep that id and `release_phone` it before the next
-   `run_task`. A lease you still hold while a task is queued blocks the task.
-   Do not leave your own lease to expire.
+   and tap Connect. If `busy` is true, or `leased` is true and the status
+   names a holder (`holder`, `owner`, `client`, `name`, or `by`), stop on
+   that first status with `phone busy:` and who holds it. Do not pass their
+   `lease_id` to any tool, and do not release it. Six polls are only for a
+   lease with no named holder and `busy` not true. A holder who is still
+   there on the second status is renewing the lease: stop. After
+   `cancel_task`, `phone_screen`, `phone_scroll`, `phone_open_app`, and
+   `phone_press`, call `phone_status` again. Those calls can leave a lease
+   for about 15 minutes, and `cancel_task` does not release a paused task's
+   lease. `release_phone` only an id this run got from `acquire_phone`, and
+   do it before the next `run_task`. Do not leave your own lease to expire.
 2. `outreach show`. Read every file it lists: `brand.md`, `voice.md` and the
    others. Then `outreach channels` for the run order.
 3. Before the first write in an app, confirm the signed-in account is the
-   brand's (X: the profile in the navigation drawer; LinkedIn: Me). If it is
-   not, skip that app and say so.
+   brand's (X: the profile in the navigation drawer; LinkedIn: Me; Threads:
+   the Profile tab at the bottom right, which must match the channel's
+   `account`). If it is not, skip that app and say so. On Threads, a first
+   launch that asks "Allow Threads to send you notifications?" is Don't allow.
 
 ### Each channel, in order
 
@@ -157,11 +164,12 @@ it), after checking the post is still there.
 
 #### An engage channel (`kind: engage`)
 
-Likes and follows, never a comment, reply or DM: `reserve` refuses
-`--action comment`, and drafts are refused too. The audience is people who
-**comment** on a note. Do not follow the note's author. Do not like the
-source note. For each chosen commenter, follow them and like one of their
-latest notes.
+Likes and follows only. `reserve` refuses a reply, comment, repost, quote
+or DM (exit 2), and drafts are refused too. On Xiaohongshu the audience is
+people who **comment** on a note: follow each chosen commenter and like one
+of their latest notes. On Threads the audience is people who **replied**
+under a post; that procedure is the Threads section below. Do not follow
+the author. Do not like the source post.
 
 `outreach targets` shows today's keywords, `sort: latest`,
 `commenters_per_post` (default 3), `follows_per_day` (default 20, every
@@ -217,6 +225,135 @@ you press Back yourself.
 
 Unattended review mode has no drafts for likes or follows: skip the
 channel. Autopilot reads the pause and resumes on its own.
+
+#### Threads (`threads`, `kind: engage`)
+
+Follows and likes only, same refusal as Xiaohongshu: `reserve` of a reply,
+comment, repost, quote or DM exits 2, and drafts are refused. Nothing is
+replied, reposted, quoted, messaged or posted. The audience is people who
+**replied** under a post. Do not follow the post's author. Do not like the
+source post. For each chosen replier, read the reply first, follow them,
+and like one of their latest posts.
+
+`outreach targets` shows today's keywords, `repliers_per_post` (default 3,
+a maximum, not a quota), `follows_per_day` (default 20, every replier
+together), `likes_per_day` (the same number unless the channel sets it),
+`max_post_age_hours` and `account`. The `date` is the UTC day, the same
+day the follow cap is counted on (`day_basis: utc`). A post with 1 or 2
+eligible repliers is engaged, then the run moves to the next post or
+keyword until the daily cap is hit or the keywords run out. The keyword
+list is a personal case, not a short token: `NIW approval`, `I-140
+approved NIW`, `EB1A I-140 approved`, `my NIW`, `NIW petition`, `got my
+green card NIW`, `PhD NIW approved`, `EB-1A I-140`, `绿卡 NIW`, `I140
+批了`. Before opening a card, its text needs NIW, EB-1A, or I-140 as a
+word together with a personal or case signal (approved, approval, RFE,
+filed, PD, I-140, my, 获批, 批了). Case does not matter. Skip a post or
+a reply with married, spouse, wife, husband, marriage, K-1, or I-130, and
+skip `niw.nl`, PTA or phone approvals, retail posts, and Melania or other
+celebrity news. `reserve` refuses these (exit 3). It lists `skip_names_containing` and
+`skip_bios_containing`: lawyer, attorney, law firm, immigration
+consultant, 中介, 移民, 律师, 律所, 咨询. It lists
+`skip_text_containing` for a reply that sells or says DM me (including
+私信 and 欢迎咨询). A reply that asks for a lawyer recommendation is the
+audience (`求律师`, "looking for a lawyer", "lawyer recommendation").
+
+Do not set `launch`, and do not use a task to open the app. A task's first
+step opens an app even with no `launch`, and that open has landed in
+Instagram or looped on the launcher icon. `phone_open_app` with
+`package_name` `com.instagram.barcelona`, then `phone_screen`. Continue
+only when `current_app` is `com.instagram.barcelona`. If it is not, stop.
+Do not press Back through an Instagram draft dialog, and do not tap
+Discard, Save draft, Start over, or Keep editing. Before every later task,
+`phone_screen` again. Every goal says `Threads (com.instagram.barcelona)
+is the foreground app` and stops without tapping if it is not. A follow
+or like that omits that sentence is refused, because Follow and Like also
+match Instagram. `pauseWhen` is a `run_task` field. `resume_task` does not
+accept it. `phone_scroll` takes `direction` only. `phone_tap_label` takes
+`text`, the exact full label, never a string cut off with `…`.
+
+`outreach targets` does not put the whole follow budget on the first
+keyword. It returns one source post per keyword, starting at a keyword
+that changes with the date, and lists the rest as `keywords_later`. A
+keyword that is all firms, your own posts, or too old is not the end of
+the day: open the next dispatch. After the query is typed, the screen is
+suggested accounts, and a saved search with the same text pauses the
+task before anything is typed. Do not tap a saved-search row. Type the
+query fresh. For Chinese, clear the field completely, then press Enter.
+Read the field and the results: they must show this query, not the
+previous keyword's list. `i-140 approved` and `I-140 approved` are the
+same query. Stay in `com.instagram.barcelona`. If the foreground app
+changes, including to WeChat, cancel that task and stop. Do not switch
+apps. The results filter is at the top left. Select Recent posts only.
+Top posts are not scanned. Wait for the brief overlay to clear, and read
+the filter on the screen. A filter task that reports failed or stuck
+still succeeded when the screen says Recent posts. Profile is one tap on
+the right-most bottom tab, with no scrolling. `cancel_task` a paused task
+again if the first cancel leaves it paused. Do not use `abandon: true`.
+If that filter cannot be selected, stop and say so. Do not scan Top posts.
+The search task stops on the results list. Opening a post is a later task.
+A card whose author or date is off screen is scrolled or opened before it
+is rejected. `max_post_age_hours` stays 168. Skip `@quickfilingus` (the
+channel's `account`) and law-firm cards before treating a post as a
+candidate. A task still `running` after about 4 minutes is cancelled, then
+the foreground app is checked. One Back is one press. A Back task that
+reports `failed` is judged by the screen. Do not search that keyword
+again. A cancelled task that reports 0 credits is unknown usage, not zero.
+
+Leases, polling, one Back then a look, and `phone_scroll` (never
+`phone_swipe`) are the same rules as the Xiaohongshu engage channel.
+`phone_screen` decides sent or failed. A like task's `sent` list is often
+empty after a like that took. `abandon: true` presses Back once.
+
+1. **Confirm the account, once.** `threads-follow-replier-and-like-latest`
+   step 1, with the channel's `account`. Profile is the right-most bottom
+   tab, not a Profile label in the middle of the bar. Do not press Back
+   unless a step says to. A leftover filter sheet is tapped closed, not
+   dismissed with Back.
+   If the dialog "Allow Threads to send you notifications?" is showing, tap
+   Don't allow. If the handle is not `account`, stop this channel. Do not
+   search.
+2. **Recent posts, then one post.** Step 2, with the keyword, not a
+   title. Select Recent posts from the top-left filter and stop on the
+   results. Only then open a post, by its timestamp (`5d`, `07/05`), never
+   the author name and never a truncated post-text label. If the author or
+   the date is off the card, scroll once or open the post and read them
+   before rejecting it. `outreach age` parses `5d`, `3h`, `2w`, and
+   `07/05`. `within: false`: one Back, look, and open the next Recent
+   post. Do not search the keyword again. `hours: null` is text that is
+   still not an age. Skip a post `reserve` will refuse, including one
+   whose text is not NIW, EB-1A, EB1A, I-140, or EB-2. Keep up to
+   `repliers_per_post` people at most. One eligible replier is enough; then
+   the next post or keyword. At most 4 scrolls on a keyword. Visible posts
+   with no replies means the next keyword. Include a reply that asks for a lawyer.
+   Read each chosen reply before you open that profile, and keep the
+   words. Skip the author, the signed-in account, a marriage reply, and
+   anyone `outreach check` already has. No one left: abandon, look, stay
+   on the results. Do not search again.
+3. **One replier at a time.** Open the profile with writes off. Reserve
+   the follow only after the bio is on screen and before Follow is tapped:
+   `--title` is the source post text, `--body` is the reply, `--bio` is
+   the bio. A name or bio on the skip list, a family post, or a reply that
+   sells or says DM me, is refused (exit 3). Do not tap Follow. One Back,
+   then the next replier. The follow counts only when the button then
+   reads Following or 已关注. The task status does not. If the button
+   still reads Follow or 关注, tap it once from a new task after the
+   profile task has finished. If it does not change, `outreach release`
+   and reserve that follow one more time. Do not `record failed` on the
+   first miss. Record a sent follow with `--note "<the reply you read>"`,
+   `--title` of the source post, and `--url` of their profile. Then the
+   like, from that profile, with no `launch`. Scroll `direction` `down`
+   to their posts. Do not decide they have no posts because a Threads or
+   Media tap failed to switch the tab. Open a single-item post by its
+   timestamp and tap the first item's Like once (`Like` or `Like 7`). A
+   heart that is already filled, or hidden under the floating chat
+   bubble, is not tapped. Record the like with `--title` of the post that
+   was actually liked. Return with one Back at a time, and count the Back
+   an abandon already pressed.
+4. **Next post, same search.** One Back from the source post to the
+   results, then the next timestamp. Do not set `launch`.
+
+Unattended review mode skips the channel. Autopilot reads the pause and
+resumes on its own.
 
 #### A connect channel (`kind: connect`, LinkedIn)
 
@@ -312,7 +449,8 @@ to get round it: the records are files its shell can reach.
 
 ## What comes back
 
-`outreach report`, per channel and action: sent, failed, still unsettled,
+`outreach report`, per channel and action, for every channel in the agent
+including one left out of `order`: sent, failed, still unsettled,
 and the budget left. Add what the records cannot show: how many posts or
 people were found and skipped, and why (competitor, duplicate, too old, not
 the audience), anything that stopped an app, and credits used from the task

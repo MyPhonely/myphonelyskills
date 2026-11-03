@@ -67,6 +67,7 @@ const TARGET: Options = {
   title: { type: "string" },
   url: { type: "string" },
   body: { type: "string" },
+  bio: { type: "string" },
 };
 
 const COMMON: Options = {
@@ -77,7 +78,7 @@ const COMMON: Options = {
 const str = (v: unknown): string | undefined => (typeof v === "string" && v ? v : undefined);
 
 function target(v: Record<string, unknown>) {
-  return { name: str(v.name), author: str(v.author), title: str(v.title), url: str(v.url), body: str(v.body) };
+  return { name: str(v.name), author: str(v.author), title: str(v.title), url: str(v.url), body: str(v.body), bio: str(v.bio) };
 }
 
 async function readStdin(): Promise<string> {
