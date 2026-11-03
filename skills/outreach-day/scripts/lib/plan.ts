@@ -20,7 +20,8 @@ export const EPOCH = Date.UTC(2026, 0, 1);
 const DAY = 86_400_000;
 
 function daysSince(d: Date, start: number): number {
-  return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - start) / DAY);
+  // UTC calendar day, the same day the follow cap is counted on.
+  return Math.floor((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - start) / DAY);
 }
 
 /** `rotate.start` as epoch ms, or the global EPOCH when absent. */
@@ -164,7 +165,7 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
       if (dispatches.reduce((s, p) => s + (p.connects ?? 0), 0) >= target) break;
     }
     return {
-      date: iso(d),
+      date: iso(d), day_basis: "utc",
       platform: channel,
       kind: "connect",
       source,
@@ -207,7 +208,7 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
       }
     }
     return {
-      date: iso(d),
+      date: iso(d), day_basis: "utc",
       platform: channel,
       kind: "connect",
       source,
@@ -246,7 +247,7 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
   }
 
   return {
-    date: iso(d),
+    date: iso(d), day_basis: "utc",
     platform: channel,
     kind: "connect",
     source,
@@ -289,7 +290,7 @@ export function commentTargets(
     for (const group of today) dispatches.push({ scope: "group", group, posts: n });
     if (!dispatches.length) dispatches.push({ scope: "your_groups", keyword: groupKeywords.join(" | "), posts: n });
     return {
-      date: iso(d),
+      date: iso(d), day_basis: "utc",
       platform: channel,
       kind: "comment",
       source: "groups",
@@ -342,7 +343,7 @@ export function commentTargets(
     left -= posts;
   }
   const plan: Record<string, unknown> = {
-    date: iso(d),
+    date: iso(d), day_basis: "utc",
     platform: channel,
     // A channel named `<app>-<stream>` (x-papers) runs in <app>, and the
     // ledger files it under <app>, so check-post spans every stream.
@@ -421,8 +422,11 @@ export const THREADS_FAMILY_MARKERS = ["marriage", "married", "spouse", "husband
  */
 export const THREADS_NOISE_MARKERS = ["phone approved", "niw.nl", "celebrity", "melania", "retail", "pta"] as const;
 
-/** The source post has to be an employment case, not merely a green-card keyword hit. */
-const THREADS_TOPIC = [/\bniw\b/, /\beb[-\s]?1a\b/, /\bi-?140\b/, /\beb[-\s]?2\b/];
+/** A case word on the card. Bare "NIW" in a typo or a news headline is not enough. */
+const THREADS_CASE = [/\bniw\b/, /\beb[-\s]?1a\b/, /\bi-?\s?140\b/];
+
+/** A personal or case signal that has to sit with the case word. */
+const THREADS_SIGNAL = [/\bapprov(?:ed|al)\b/, /\brfe\b/, /\bfiled\b/, /\bpd\b/, /\bi-?\s?140\b/, /\bmy\b/, /获批/, /批了/];
 
 /**
  * A Threads reply that sells a service or asks to be messaged. "lawyer" is
@@ -476,13 +480,16 @@ function threadsSelfId(text: string): string | null {
 }
 
 /**
- * Why a Threads source post is not an employment case, or null when its text
- * contains NIW, EB-1A, EB1A, I-140, or EB-2. The reply does not count: a
- * marriage post stays off-topic even if a replier mentions NIW.
+ * Why a Threads card is not someone's own case, or null when the text has a
+ * case word (NIW, EB-1A, I-140) together with a personal signal (approved,
+ * approval, RFE, filed, PD, I-140, my, 获批, 批了). Matching is
+ * case-insensitive. The reply does not count.
  */
 export function threadsTopic(title: string): string | null {
   const n = normText(title).replace(/[\u2010-\u2015\u2212]/g, "-");
-  if (THREADS_TOPIC.some((re) => re.test(n))) return null;
+  const caseHit = THREADS_CASE.some((re) => re.test(n));
+  const signal = THREADS_SIGNAL.some((re) => re.test(n));
+  if (caseHit && signal) return null;
   return "off-topic";
 }
 
@@ -697,8 +704,9 @@ export function renderMessage(agent: Agent, name: string): string {
   return text.split(/\s+/).filter(Boolean).join(" ");
 }
 
+/** UTC calendar day, same as `today()` in the ledgers and the follow cap. */
 function iso(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 const COMMANDS = ["targets", "message", "channels", "show"] as const;
@@ -713,7 +721,8 @@ export function main(argv: string[]): number {
     name: { type: "string", default: "warmup" },
   });
   const agent = loadAgent(values.agent as string | undefined);
-  const d = values.date ? new Date(`${values.date as string}T00:00:00`) : new Date();
+  // `--date` is a UTC day, so it names the same day the cap file uses.
+  const d = values.date ? new Date(`${values.date as string}T00:00:00Z`) : new Date();
   const asJson = Boolean(values.json);
 
   if (cmd === "targets") {

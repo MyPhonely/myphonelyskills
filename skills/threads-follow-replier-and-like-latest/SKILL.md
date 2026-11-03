@@ -16,9 +16,11 @@ writes: follow them, and only then like one of their own posts. The source
 post is not liked and its author is not followed. Nothing is replied,
 reposted, quoted, messaged or posted.
 
-Stay inside Threads. Do not open a profile URL. `resume_task` with
-`abandon: true` presses Back once as it leaves. After an abandon, look at
-the screen before you press Back yourself.
+Stay inside Threads (`com.instagram.barcelona`). Do not open a profile
+URL. Do not call `resume_task` with `abandon: true`. Abandon presses Back
+and leaves the Recent posts list. To drop a paused task, `cancel_task`.
+If the status is still `paused`, `cancel_task` that same id again. Do not
+resume it. Press Back only when a step below says to press Back.
 
 ## Foreground app
 
@@ -72,9 +74,12 @@ After every `run_task` and `resume_task`, poll
 `get_task_status(task_id, wait_seconds: 30)` and **stop on the first**
 status of `paused`, `done`, `failed`, `cancelled` or `expired`. Do not
 wait only for `done`. A paused task is not still running: stop polling it.
-On `paused`, the next call is `resume_task` on that same `task_id`, or
-`abandon: true` if you are leaving it. Do not start a new `run_task` while
-a task is paused; it queues behind the paused one and the screen is held.
+On `paused`, the next call is `resume_task` on that same `task_id` when
+the step is still the one you want. To leave it, `cancel_task`. Do not
+use `abandon: true`. Do not start a new `run_task` while a task is paused;
+it queues behind the paused one and the screen is held. After
+`cancel_task`, read the status. If it is still `paused`, `cancel_task`
+again. A paused task left behind is not cancelled.
 On `failed`, do not poll again and do not repeat the same call. A Back
 task that reports `failed` often did press Back. `phone_screen` decides.
 
@@ -123,7 +128,7 @@ preceded by the same `current_app` check.
 ```json
 run_task({
   "phases": [{
-    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Do not open an app and do not tap a launcher icon. Do not press Back. If a filter sheet or popup is open, tap outside it or tap Close. Do not press Back to dismiss it. If a dialog asks 'Allow Threads to send you notifications?', tap Don't allow. Do not tap Allow. Do not tap Discard, Save draft, Start over, or Keep editing. Tap the right-most tab in the bottom bar. Its content description is Profile. Do not tap a Profile label that is not that right-most icon. Stop when that profile is open and the signed-in username is visible. Do not search. Do not tap Follow, Like, Reply, Repost or the composer.",
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Do not open an app, do not switch apps, and do not scroll. Do not press Back. If a filter sheet or popup is open, tap outside it or tap Close. Do not press Back to dismiss it. If a dialog asks 'Allow Threads to send you notifications?', tap Don't allow. Do not tap Allow. Do not tap Discard, Save draft, Start over, or Keep editing. Immediately tap the right-most tab in the bottom bar. Its content description is Profile. Do not scroll the feed first. Do not tap a Profile label that is not that right-most icon. Stop when that profile is open and the signed-in username is visible. Do not search. Do not tap Follow, Like, Reply, Repost or the composer.",
     "pauseWhen": "the signed-in Threads profile is open and its username is on screen",
     "pauseScreenshot": true,
     "maxSteps": 8
@@ -134,9 +139,9 @@ run_task({
 `pauseWhen` and `pauseScreenshot` belong on the `run_task` phase.
 `resume_task` does not accept them. Stop polling when status is `paused`.
 Read the username. It matches `account` only when the handle is the same,
-ignoring case and a leading @. Anything else: `resume_task` with
-`abandon: true` and that `task_id`, say which account was showing, and
-stop. Do not search and do not follow.
+ignoring case and a leading @. Anything else: `cancel_task` that id, and if it is still `paused`,
+`cancel_task` again. Say which account was showing, and stop. Do not
+`abandon`. Do not search and do not follow.
 
 **2. Search, then tap the query row, then Recent.** `outreach targets`
 returns one source post per keyword, starting at a keyword that changes
@@ -144,9 +149,20 @@ with the date. The rest are `keywords_later`. A dry or all-firm keyword is
 not the end of the day: go to the next dispatch.
 
 `phone_screen` first. `current_app` must still be
-`com.instagram.barcelona`. The profile task is paused. `resume_task` with
-`abandon: true` (that presses Back once). Look. If the foreground app
-changed, stop. Then a new task, no `launch`.
+`com.instagram.barcelona`. If a task has left Threads for any other
+package, including WeChat (`com.tencent.mm`) or Instagram, `cancel_task`
+that id and stop. Do not tap another app's icon and do not switch apps.
+The profile task, if still paused, is `cancel_task`, twice if it stays
+`paused`. Do not `abandon` it. Look. If the foreground app changed, stop.
+Then a new task, no `launch`.
+
+Do not tap a saved search. For a query with CJK characters, clear the
+search field completely before typing, then submit with Enter. After
+submit, read the field: it must equal the new query, ignoring case
+(`i-140 approved` and `I-140 approved` are the same). The results must
+not be the previous keyword's list. If the field or the results did not
+change, clear the field and submit once more. If they still match the
+previous keyword, stop that keyword and say the query was not submitted.
 
 A saved search with the same words makes a pause fire before you have
 typed anything. Do not tap a Recent searches row, a suggestion, or an
@@ -178,7 +194,7 @@ Do not tap a label shortened with `…`, and do not tap the post body.
 ```json
 run_task({
   "phases": [{
-    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Do not open an app. Do not press Back. Tap Search in the bottom bar, then tap the search field. If Recent searches is showing, do not tap any row. Type '<query>' into the field. Press the keyboard Search or Enter key once. Do not tap a saved search, a suggestion, or an account. Stop when the post results of the search you just submitted are on screen. Do not open a post. Do not tap Follow or Like. Do not tap Discard, Save draft, Start over, or Keep editing.",
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Do not open an app, do not switch apps, and do not tap WeChat or any other icon. Do not press Back. Tap Search in the bottom bar, then tap the search field. If Recent searches is showing, do not tap any row. If the field already has text, clear it completely, especially before a Chinese query. Type '<query>' into the field. Press the keyboard Search or Enter key once. Do not tap a saved search, a suggestion, or an account. Stop when the post results of this query are on screen and the search field shows '<query>'. Do not open a post. Do not tap Follow or Like. Do not tap Discard, Save draft, Start over, or Keep editing.",
     "typeTexts": ["<query>"],
     "pauseWhen": "Threads post results from a search just submitted with the keyboard are on screen, and the Recent searches list is not the screen",
     "pauseScreenshot": true,
@@ -198,10 +214,12 @@ resume_task({
 })
 ```
 
-Stop when the task leaves `running`. `phone_screen` is the check, not the
-task status. Recent posts must be the selected filter. If the screen still
-says Top posts, or the filter was never found, stop and report that. Do
-not open cards from Top. Do not search the keyword again.
+Stop when the task leaves `running`, including when it reports `failed`
+or `stuck`. `phone_screen` is the check, not the task status. If the
+filter shows Recent posts, the step worked. Do not run it again. If the
+screen still says Top posts, or the filter was never found, stop and
+report that. Do not open cards from Top. Do not search the keyword again.
+If `current_app` is not `com.instagram.barcelona`, cancel the task and stop.
 
 Opening one post is a new task, only after that check. No `launch`.
 
@@ -488,9 +506,15 @@ post's URL when they are on screen.
   full timestamp. An ellipsis is not a label. The author name opens the
   author. The author is not followed, and the source post's heart is not
   the like.
-- **The post text has to be NIW, EB-1A, EB1A, I-140, or EB-2.** The search
-  keyword is not the post. Skip married, spouse, wife, husband, marriage,
-  K-1, and I-130 in the post or the reply.
+- **Open a card only when it is a personal case.** NIW, EB-1A, or I-140
+  as a word, together with approved, approval, RFE, filed, PD, I-140, my,
+  获批, or 批了. Case does not matter. "niw I understand" is not a case.
+- **Stay in Threads.** No app-switch taps. After any step, if
+  `current_app` is not `com.instagram.barcelona`, cancel the task and
+  stop. WeChat and Instagram are not a recovery.
+- **The query on screen is the query you typed.** Clear the field before
+  Chinese. Enter submits it. If the field or the results still match the
+  previous keyword, do not accept that list.
 - **`repliers_per_post` is a maximum.** One eligible reply is enough.
   Then the next post or keyword, until the daily cap or the keywords run
   out. At most 4 scrolls on a keyword. No replies on the visible posts
@@ -520,10 +544,9 @@ post's URL when they are on screen.
 - **`phone_scroll` takes `direction` only.** `phone_swipe` is refused.
   Release the lease before the next task. Another holder's lease is not
   yours to use or release. Six `phone_status` polls, then stop.
-- **Seen on a phone through test 4.** Recent posts was selected, and
-  `reserve` refused an off-topic post. No follow or like: recent on-topic
-  posts had 0 to 2 replies, and the run treated that as not enough. A
-  saved search also paused the task before the query was typed. What this
-  revision still needs on a phone: a post with one eligible replier is
-  followed and liked, the keyboard Search key submits `i-140 approved`,
-  and a keyword with no visible replies is left within 4 scrolls.
+- **Seen on a phone through test 5.** Recent posts and the topic refusal
+  held, and still no follow: short keywords matched typos, ads, and news,
+  one search opened WeChat, and a Chinese query was never submitted. What
+  this revision still needs on a phone: one personal-case keyword on
+  Recent posts, inside Threads, with the field showing that query, and
+  one follow plus one like on a post from the last 7 days.

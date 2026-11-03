@@ -238,16 +238,19 @@ and like one of their latest posts.
 `outreach targets` shows today's keywords, `repliers_per_post` (default 3,
 a maximum, not a quota), `follows_per_day` (default 20, every replier
 together), `likes_per_day` (the same number unless the channel sets it),
-`max_post_age_hours` and `account`. A post with 1 or 2 eligible repliers
-is engaged, then the run moves to the next post or keyword until the
-daily cap is hit or the keywords run out. The keyword list is a person's
-own case (`NIW approved`, `applying for NIW`, `NIW PhD`, `EB1A approved`,
-`EB-1A approved`, `I-140 approved`, `NIW 获批`, `EB1A 获批`), not a bare
-`NIW` or `green card approved`. The post text itself must contain NIW,
-EB-1A, EB1A, I-140, or EB-2. Skip a post or a reply with married, spouse,
-wife, husband, marriage, K-1, or I-130, and skip `niw.nl`, PTA or phone
-approvals, retail posts, and Melania or other celebrity news. `reserve`
-refuses these (exit 3). It lists `skip_names_containing` and
+`max_post_age_hours` and `account`. The `date` is the UTC day, the same
+day the follow cap is counted on (`day_basis: utc`). A post with 1 or 2
+eligible repliers is engaged, then the run moves to the next post or
+keyword until the daily cap is hit or the keywords run out. The keyword
+list is a personal case, not a short token: `NIW approval`, `I-140
+approved NIW`, `EB1A I-140 approved`, `my NIW`, `NIW petition`, `got my
+green card NIW`, `PhD NIW approved`, `EB-1A I-140`, `绿卡 NIW`, `I140
+批了`. Before opening a card, its text needs NIW, EB-1A, or I-140 as a
+word together with a personal or case signal (approved, approval, RFE,
+filed, PD, I-140, my, 获批, 批了). Case does not matter. Skip a post or
+a reply with married, spouse, wife, husband, marriage, K-1, or I-130, and
+skip `niw.nl`, PTA or phone approvals, retail posts, and Melania or other
+celebrity news. `reserve` refuses these (exit 3). It lists `skip_names_containing` and
 `skip_bios_containing`: lawyer, attorney, law firm, immigration
 consultant, 中介, 移民, 律师, 律所, 咨询. It lists
 `skip_text_containing` for a reply that sells or says DM me (including
@@ -275,10 +278,17 @@ keyword that is all firms, your own posts, or too old is not the end of
 the day: open the next dispatch. After the query is typed, the screen is
 suggested accounts, and a saved search with the same text pauses the
 task before anything is typed. Do not tap a saved-search row. Type the
-query fresh and press the keyboard Search or Enter key. `i-140 approved`
-and `I-140 approved` are not a row to match. The
-results filter is at the top left. Select Recent posts, wait for the
-brief overlay to clear, and read the filter back.
+query fresh. For Chinese, clear the field completely, then press Enter.
+Read the field and the results: they must show this query, not the
+previous keyword's list. `i-140 approved` and `I-140 approved` are the
+same query. Stay in `com.instagram.barcelona`. If the foreground app
+changes, including to WeChat, cancel that task and stop. Do not switch
+apps. The results filter is at the top left. Select Recent posts only.
+Top posts are not scanned. Wait for the brief overlay to clear, and read
+the filter on the screen. A filter task that reports failed or stuck
+still succeeded when the screen says Recent posts. Profile is one tap on
+the right-most bottom tab, with no scrolling. `cancel_task` a paused task
+again if the first cancel leaves it paused. Do not use `abandon: true`.
 If that filter cannot be selected, stop and say so. Do not scan Top posts.
 The search task stops on the results list. Opening a post is a later task.
 A card whose author or date is off screen is scrolled or opened before it

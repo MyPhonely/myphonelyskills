@@ -596,10 +596,18 @@ test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "Submitted for my wife since Nov."), "wife");
   assert.equal(engageRefusal("threads", "Mina", "NIW approved after our marriage", "congrats"), "marriage");
   assert.equal(threadsTopic("NIW approved"), null);
-  assert.equal(threadsTopic("EB-1A"), null);
+  assert.equal(threadsTopic("niw approval"), null, "case does not matter");
+  assert.equal(threadsTopic("my NIW"), null);
+  assert.equal(threadsTopic("PhD NIW approved"), null);
+  assert.equal(threadsTopic("EB-1A"), "off-topic", "a case word with no personal signal is not a card to open");
   assert.equal(threadsTopic("EB1A approved"), null);
   assert.equal(threadsTopic("I-140 approved"), null);
-  assert.equal(threadsTopic("EB-2 worldwide"), null);
+  assert.equal(threadsTopic("i140 批了"), null);
+  assert.equal(threadsTopic("niw I understand"), "off-topic");
+  assert.equal(threadsTopic("EB-2 worldwide"), "off-topic");
+  const utcEvening = engageTargets(agent, "threads", new Date("2026-11-02T20:00:00-08:00"));
+  assert.equal(utcEvening.date, "2026-11-03", "the plan day is the UTC day the cap uses");
+  assert.equal(utcEvening.day_basis, "utc");
   assert.equal(threadsTopic("Sep 22 - I-485 & I-765 submitted"), "off-topic");
   assert.equal(threadsTopic("green card approved"), "off-topic");
   assert.equal(engageRefusal("threads", "Chen Law Firm", "NIW approved", "congrats"), "law firm");
@@ -617,8 +625,9 @@ test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips
   assert.match(y, /follows_per_day: 20/);
   assert.match(y, /likes_per_day: 20/);
   assert.match(y, /max_post_age_hours: 168/);
-  assert.match(y, /NIW approved/);
-  assert.match(y, /EB1A 获批/);
+  assert.match(y, /NIW approval/);
+  assert.match(y, /I140 批了/);
+  assert.match(y, /PhD NIW approved/);
   assert.match(y, /account: CHANGEME/);
 });
 

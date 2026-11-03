@@ -192,7 +192,7 @@ export function reserve(agent: Agent, channelArg: string, actionArg: string | un
     }
     if (action === "follow" && channel === "threads" && threadsTopic(t.title ?? "")) {
       die(
-        "refused: source post is off-topic. The post text needs NIW, EB-1A, EB1A, I-140, or EB-2. A keyword match is not enough, and the reply does not count.",
+        "refused: source post is off-topic. The card needs NIW, EB-1A, or I-140 together with a personal or case signal (approved, approval, RFE, filed, PD, I-140, my, 获批, 批了). A keyword match is not enough, and the reply does not count.",
         3,
       );
     }

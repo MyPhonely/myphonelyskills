@@ -152,15 +152,17 @@ channels:
   #   account: CHANGEME           # stop if Profile (bottom right) is a different handle
   #   lang: en
   #   posts_per_keyword: 2
-  #   keywords:                   # a person's own case, not news or a bare NIW
-  #     - NIW approved
-  #     - applying for NIW
-  #     - NIW PhD
-  #     - EB1A approved
-  #     - EB-1A approved
-  #     - I-140 approved
-  #     - NIW 获批
-  #     - EB1A 获批
+  #   keywords:                   # a personal case, not a short token or a news headline
+  #     - NIW approval
+  #     - I-140 approved NIW
+  #     - EB1A I-140 approved
+  #     - my NIW
+  #     - NIW petition
+  #     - got my green card NIW
+  #     - PhD NIW approved
+  #     - EB-1A I-140
+  #     - 绿卡 NIW
+  #     - I140 批了
   #   max_post_age_hours: 168
   #   repliers_per_post: 3        # maximum per post, not a quota; 1 reply is enough
   #   follows_per_day: 20         # one ceiling for every replier
