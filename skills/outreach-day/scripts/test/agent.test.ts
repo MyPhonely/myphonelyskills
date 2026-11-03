@@ -545,7 +545,8 @@ test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips
   assert.equal(plan.follow_author, false);
   assert.equal(plan.like_source, false);
   assert.equal(plan.sort, "recent");
-  assert.equal(plan.tab, "recent-if-offered");
+  assert.equal(plan.tab, "recent-posts");
+  assert.match(String(plan.recent_filter), /Recent posts/);
   assert.deepEqual(plan.skip_names_containing, [
     "immigration consultant",
     "law firm",

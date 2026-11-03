@@ -269,9 +269,17 @@ keyword. It returns one source post per keyword, starting at a keyword
 that changes with the date, and lists the rest as `keywords_later`. A
 keyword that is all firms, your own posts, or too old is not the end of
 the day: open the next dispatch. After the query is typed, the screen is
-suggested accounts. Tap the row whose text is exactly the query, then
-Recent or Latest if that chip is already showing. Skip `@quickfilingus`
-(the channel's `account`) and law-firm cards before opening a post.
+suggested accounts. Tap the row whose text is exactly the query. The
+results filter is at the top left. Select Recent posts and read it back.
+If that filter cannot be selected, stop and say so. Do not scan Top posts.
+The search task stops on the results list. Opening a post is a later task.
+A card whose author or date is off screen is scrolled or opened before it
+is rejected. `max_post_age_hours` stays 168. Skip `@quickfilingus` (the
+channel's `account`) and law-firm cards before treating a post as a
+candidate. A task still `running` after about 4 minutes is cancelled, then
+the foreground app is checked. One Back is one press. A Back task that
+reports `failed` is judged by the screen. Do not search that keyword
+again. A cancelled task that reports 0 credits is unknown usage, not zero.
 
 Leases, polling, one Back then a look, and `phone_scroll` (never
 `phone_swipe`) are the same rules as the Xiaohongshu engage channel.
@@ -283,11 +291,14 @@ empty after a like that took. `abandon: true` presses Back once.
    If the dialog "Allow Threads to send you notifications?" is showing, tap
    Don't allow. If the handle is not `account`, stop this channel. Do not
    search.
-2. **Open one post, once.** Step 2, with the keyword, not a title. Open
-   the post by tapping its timestamp (`5d`, `07/05`), never the author
-   name and never a truncated post-text label. `outreach age` parses
-   `5d`, `3h`, `2w`, and `07/05`. `within: false`: abandon (that Backs
-   once), look, and open the next post. `hours: null` is text that is
+2. **Recent posts, then one post.** Step 2, with the keyword, not a
+   title. Select Recent posts from the top-left filter and stop on the
+   results. Only then open a post, by its timestamp (`5d`, `07/05`), never
+   the author name and never a truncated post-text label. If the author or
+   the date is off the card, scroll once or open the post and read them
+   before rejecting it. `outreach age` parses `5d`, `3h`, `2w`, and
+   `07/05`. `within: false`: one Back, look, and open the next Recent
+   post. Do not search the keyword again. `hours: null` is text that is
    still not an age. Skip a post `reserve` will refuse, including one
    whose text is not NIW, EB-1A, EB1A, I-140, or EB-2. Keep up to
    `repliers_per_post` people. When fewer than that are on screen,

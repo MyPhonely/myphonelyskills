@@ -469,6 +469,71 @@ offer:`,
   }
 });
 
+test("reserve refuses a Threads post that is not NIW or EB, and a marriage reply", () => {
+  const agent = freshAgent((y) =>
+    y.replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, threads]").replace(
+      "\noffer:",
+      `
+  threads:
+    kind: engage
+    keywords: ["NIW approved"]
+
+offer:`,
+    ),
+  );
+  try {
+    cli(agent, ["init"]);
+    const offTopic = cli(agent, [
+      "reserve",
+      "--channel",
+      "threads",
+      "--action",
+      "follow",
+      "--name",
+      "Mina",
+      "--title",
+      "Sep 22 - I-485 & I-765 submitted",
+      "--body",
+      "So quick lol",
+    ]);
+    assert.equal(offTopic.code, 3);
+    assert.match(offTopic.err, /off-topic/);
+    const marriage = cli(agent, [
+      "reserve",
+      "--channel",
+      "threads",
+      "--action",
+      "follow",
+      "--name",
+      "Mina",
+      "--title",
+      "NIW approved after our marriage",
+      "--body",
+      "congrats",
+    ]);
+    assert.equal(marriage.code, 3);
+    assert.match(marriage.err, /marriage/);
+    const wife = cli(agent, [
+      "reserve",
+      "--channel",
+      "threads",
+      "--action",
+      "follow",
+      "--name",
+      "Tee",
+      "--title",
+      "I just finished my NIW",
+      "--body",
+      "Submitted for my wife since Nov.",
+    ]);
+    assert.equal(wife.code, 3);
+    assert.match(wife.err, /wife/);
+    assert.equal(json(cli(agent, ["budget", "--channel", "threads", "--action", "follow", "--json"])).left, 20);
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
+  }
+});
+
 test("threads engage follows repliers and likes one post, never replies, and skips firms", () => {
   const agent = freshAgent((y) =>
     y.replace("order: [linkedin, x, reddit]", "order: [linkedin, x, reddit, threads]").replace(

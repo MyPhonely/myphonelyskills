@@ -584,13 +584,14 @@ export function engageTargets(agent: Agent, channel: string, d: Date): Record<st
   plan.dm = false;
   if (typeof ch.account === "string" && ch.account.trim()) plan.account = ch.account.trim();
   if (channel === "threads") {
-    // Repliers, not the author. Recent is used when the chip is already on
-    // screen; Threads does not always offer a Latest tab.
+    // Repliers, not the author. The results filter at the top left must be
+    // Recent posts before any card is judged. Top posts are mostly weeks old.
     plan.audience = "repliers";
     plan.follow_repliers = ch.follow_repliers !== false;
     plan.repliers_per_post = limits.perNote;
     plan.sort = "recent";
-    plan.tab = "recent-if-offered";
+    plan.tab = "recent-posts";
+    plan.recent_filter = "top-left filter, select Recent posts, stop if it cannot be selected";
     plan.skip_names_containing = [...THREADS_NAME_MARKERS];
     plan.skip_bios_containing = [...THREADS_NAME_MARKERS];
     plan.skip_text_containing = [...THREADS_REPLY_MARKERS];

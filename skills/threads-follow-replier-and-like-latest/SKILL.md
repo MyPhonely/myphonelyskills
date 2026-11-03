@@ -66,11 +66,19 @@ After every `run_task` and `resume_task`, poll
 `get_task_status(task_id, wait_seconds: 30)` and **stop on the first**
 status of `paused`, `done`, `failed`, `cancelled` or `expired`. Do not
 wait only for `done`. A paused task is not still running: stop polling it.
-Cap the wait at six polls (about three minutes), then use the last status.
 On `paused`, the next call is `resume_task` on that same `task_id`, or
 `abandon: true` if you are leaving it. Do not start a new `run_task` while
 a task is paused; it queues behind the paused one and the screen is held.
-On `failed`, do not poll again and do not repeat the same call.
+On `failed`, do not poll again and do not repeat the same call. A Back
+task that reports `failed` often did press Back. `phone_screen` decides.
+
+If the status is still `running` about 4 minutes after the task was
+submitted (eight polls), `cancel_task` that id. Do not keep waiting. Then
+`phone_screen`. If `current_app` is not `com.instagram.barcelona`, stop.
+If it is, continue from the screen you actually see, or stop if you no
+longer know where the search went. A cancelled task often reports 0
+credits. That 0 is not the usage. Report a credit or usage field when it
+is greater than 0. When it is 0 or missing, report the credits as unknown.
 
 ## Inputs
 
@@ -131,15 +139,24 @@ not the end of the day: go to the next dispatch.
 `abandon: true` (that presses Back once). Look. If the foreground app
 changed, stop. Then a new task, no `launch`.
 
-Typing the query lands on suggested accounts, not posts. The goal pauses
-on that list. The next step, after the pause, is one tap on the row whose
-text is exactly the query. Do not tap an account. Then, if Recent or
-Latest is already on the post results, tap it. Skip a card whose author
-is `<account>` (the signed-in handle, such as `@quickfilingus`) and skip a
-law firm or promoter (law, lawyer, attorney, immigration, law office,
-律所, 律师, 移民, 中介) without opening it. Open a remaining post by its
-timestamp (`5d`, `3h`, `07/05`), the exact text. `phone_tap_label` takes
-`text`. Do not tap a label shortened with `…`, and do not tap the post body.
+Typing the query lands on suggested accounts, not posts. This first task
+stops there. It does not open a post. After the pause, one resume taps
+the row whose text is exactly the query, then opens the filter at the
+**top left** of the results and selects **Recent posts**. Top posts are
+relevance order. On 2026-11-02 almost every real approval there was 2 to
+52 weeks old, and the 168-hour check rejected them. If that filter cannot
+be found, or Recent posts does not become the selected value, stop and
+say so. Do not scan Top posts. This task also stops on the results list.
+It does not open a post.
+
+Skip a card whose author is `<account>` (the signed-in handle, such as
+`@quickfilingus`) and skip a law firm or promoter (law, lawyer, attorney,
+immigration, law office, 律所, 律师, 移民, 中介) without opening it. If
+the author or the date is not on the card, do not reject it for missing
+metadata. `phone_scroll` `direction` `down` once, or open that post by
+its timestamp, and read the author and the age there. Then decide.
+`phone_tap_label` takes `text`, the exact timestamp (`5d`, `3h`, `07/05`).
+Do not tap a label shortened with `…`, and do not tap the post body.
 
 ```json
 run_task({
@@ -159,8 +176,26 @@ Stop on `paused`. Confirm `current_app` is still
 ```json
 resume_task({
   "task_id": "<id>",
-  "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Tap the row whose text is exactly '<query>'. Do not tap an account. If a chip labelled Recent or Latest is then visible, tap it once. If it is not visible, leave the results. Skip cards by <account> and skip law-firm and promoter cards without opening them. Open one remaining post by tapping its timestamp, the exact text such as 5d or 07/05. Do not tap the author name, the post text, or a label that contains an ellipsis. On the post, scroll until one reply row is on screen, name and reply text both visible. Do not tap Follow, Like, Reply, Repost, or Quote.",
-  "maxSteps": 14
+  "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Tap the row whose text is exactly '<query>'. Do not tap an account. On the post results, tap the filter at the top left. It offers Recent posts and Top posts. Tap Recent posts. Stop when that filter shows Recent posts selected and the results list is on screen. Do not open a post. Do not scan the list while it still says Top posts. If the top-left filter is not there, stop and say the Recent posts filter was not found. Do not tap Follow, Like, Reply, Repost, or Quote.",
+  "maxSteps": 10
+})
+```
+
+Stop when the task leaves `running`. `phone_screen` is the check, not the
+task status. Recent posts must be the selected filter. If the screen still
+says Top posts, or the filter was never found, stop and report that. Do
+not open cards from Top. Do not search the keyword again.
+
+Opening one post is a new task, only after that check. No `launch`.
+
+```json
+run_task({
+  "phases": [{
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Recent posts is already selected. Do not change the filter and do not search again. Skip cards by <account> and skip law-firm cards. If a card's author or date is off screen, scroll down once or open it, and read them before you reject the card. Open one post that is not skipped by tapping its timestamp, the exact text such as 5d or 07/05. Do not tap the author name, the post text, or a label that contains an ellipsis. On the post, scroll until one reply row is on screen, name and reply text both visible. Do not tap Follow, Like, Reply, Repost, or Quote.",
+    "pauseWhen": "a Threads post from the '<query>' Recent posts results is open, and a reply row is on screen with the replier's name and the reply text",
+    "pauseScreenshot": true,
+    "maxSteps": 12
+  }]
 })
 ```
 
@@ -350,17 +385,18 @@ empty heart.
 ```json
 run_task({
   "phases": [{
-    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Press the in-app Back control exactly once, then stop immediately. Do not press Back a second time. Do not press Back on a Discard, Save draft, or Start over dialog. Do not tap Search and do not open a link.",
-    "maxSteps": 3
+    "goal": "Threads (com.instagram.barcelona) is the foreground app. If it is not, stop without tapping and without opening an app. Press Back exactly one time. The task ends after that single press. A second press is a failure. Do not press Back again in this task even if the screen looks unchanged. Do not press Back on a Discard, Save draft, or Start over dialog. Do not tap Search and do not type the keyword.",
+    "maxSteps": 2
   }]
 })
 ```
 
-A Back task often ends `failed` or `stuck` after a Back that landed. That
-status is not the outcome. `phone_screen` is. If you abandoned a paused
-task to get here, that abandon already pressed Back once, so this may
-already be the profile or the source post. Do not press Back again until
-you have looked.
+A single-Back task reports `failed` even when the one press worked. That
+status is not the outcome. `phone_screen` is. Do not send a second Back
+because the task said failed. If you abandoned a paused task to get here,
+that abandon already pressed Back once, so this may already be the profile
+or the source post. Do not press Back again until you have looked. If the
+results are gone, you went too far. Stop. Do not search the keyword again.
 
 - The replier's profile is showing: one more task, the same single Back, then look again.
 - The source post is showing, with its replies: stop. You are back. Scroll to the next reply only if you still need another replier.
@@ -406,9 +442,21 @@ post's URL when they are on screen.
   holder, or `busy: true`, stops the run. Say who holds it. Do not wait
   them out. `cancel_task` and the screen tools can leave a 15-minute
   lease: `release_phone` only an id this run acquired.
+- **Four minutes, then cancel.** A task still `running` after about 4
+  minutes is cancelled. Then `phone_screen`. Stay only if Threads is still
+  the foreground app. A cancelled task that reports 0 credits is unknown
+  usage, not zero.
 - **Poll paused, then resume or abandon.** Waiting only for `done` holds a
   paused task. On `paused`, `resume_task` that task or abandon it. Do not
   start another task while one is paused. A new pause is a new `run_task`.
+- **Recent posts, or stop.** The filter is at the top left of the results.
+  Select Recent posts and read it back. Top posts are not scanned. The
+  search task stops on that list. Opening a post is the next task. A card
+  with no author or date on screen is scrolled or opened before it is
+  rejected. `max_post_age_hours` stays 168.
+- **One Back is one press.** The task may report `failed` after a Back
+  that worked. The screen decides. Do not press Back again, and do not
+  search the same keyword again.
 - **The timestamp opens the post.** `phone_tap_label` `text` is the exact
   full timestamp. An ellipsis is not a label. The author name opens the
   author. The author is not followed, and the source post's heart is not
@@ -437,11 +485,11 @@ post's URL when they are on screen.
 - **`phone_scroll` takes `direction` only.** `phone_swipe` is refused.
   Release the lease before the next task. Another holder's lease is not
   yours to use or release. Six `phone_status` polls, then stop.
-- **Seen on a phone, 2026-11-02, twice.** The first run followed repliers
-  and liked one post, and also followed off a marriage post. The second
-  run wrote nothing: tasks opened Instagram or the launcher, search stopped
-  on suggested accounts, and the only keyword was firms and old posts.
-  What this revision still needs on a phone: `current_app` stays
-  `com.instagram.barcelona` through a search, the query row then Recent
-  shows posts, the next keyword runs when the first is firms or too old,
-  and a follow and a like happen only while that package is in front.
+- **Seen on a phone, 2026-11-02, three times.** Safety held each time.
+  Test 3 wrote nothing: results stayed on Top posts, so real approvals
+  were weeks old and failed the 168-hour check. A task also opened a post
+  by itself, a Back task pressed Back twice, and two tasks sat `running`
+  past five minutes. What this revision still needs on a phone: the
+  top-left filter switches to Recent posts and is read back as selected,
+  a post from that list is young enough to open, and one follow and one
+  like happen only while Threads is in front.
