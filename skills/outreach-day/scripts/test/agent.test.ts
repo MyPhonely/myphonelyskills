@@ -533,6 +533,8 @@ test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips
   assert.equal(plan.audience, "repliers");
   assert.equal(plan.account, "@QuickFiling");
   assert.equal(plan.repliers_per_post, 1);
+  assert.equal(plan.repliers_per_post_is, "maximum");
+  assert.equal(plan.scrolls_per_keyword, 4);
   assert.equal(plan.commenters_per_post, undefined);
   assert.equal(plan.follows_per_day, 4);
   assert.equal(plan.likes_per_day, 2);
@@ -568,6 +570,26 @@ test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips
   const first = (plan.dispatches as Array<{ keyword: string }>)[0].keyword;
   const second = (nextDay.dispatches as Array<{ keyword: string }>)[0].keyword;
   assert.notEqual(first, second, "the starting keyword moves by a day");
+  const thin = engageTargets(
+    {
+      id: "t",
+      audience: { titles: ["t"] },
+      channels: {
+        threads: {
+          kind: "engage",
+          follows_per_day: 6,
+          likes_per_day: 6,
+          repliers_per_post: 3,
+          posts_per_keyword: 1,
+          keywords: ["a", "b", "c", "d"],
+        },
+      },
+    },
+    "threads",
+    new Date("2026-10-01"),
+  );
+  const thinPosts = (thin.dispatches as Array<{ posts: number }>).reduce((sum, d) => sum + d.posts, 0);
+  assert.equal(thinPosts, 4, "repliers_per_post is a maximum, so it does not shrink how many posts are opened");
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "looking for a lawyer recommendation"), null);
   assert.equal(engageRefusal("threads", "Mina", "批了", "求律师推荐"), null);
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "my lawyer got the I-140 approved"), null);
@@ -582,6 +604,10 @@ test("a threads engage channel follows repliers, keeps the lawyer-ask, and skips
   assert.equal(threadsTopic("green card approved"), "off-topic");
   assert.equal(engageRefusal("threads", "Chen Law Firm", "NIW approved", "congrats"), "law firm");
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "thanks", "EB1A attorney"), "attorney");
+  assert.equal(engageRefusal("threads", "Mina", "NIW approved see niw.nl", "congrats"), "niw.nl");
+  assert.equal(engageRefusal("threads", "Mina", "Melania files EB-1A", "news"), "melania");
+  assert.equal(engageRefusal("threads", "Mina", "PTA phone approved and my NIW", "wow"), "phone approved");
+  assert.equal(engageRefusal("threads", "Mina", "applying for a NIW during my PhD", "one reply"), null);
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "DM me if you want this filed"), "dm me");
   assert.equal(engageRefusal("threads", "Mina", "NIW approved", "I am a lawyer and I file these"), "i am a lawyer");
   assert.equal(engageRefusal("xiaohongshu", "小王", "批了", "求律所推荐，求律师"), null, "Xiaohongshu still treats 求律师 as the audience");

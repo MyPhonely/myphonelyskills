@@ -528,6 +528,21 @@ offer:`,
     ]);
     assert.equal(wife.code, 3);
     assert.match(wife.err, /wife/);
+    const dutch = cli(agent, [
+      "reserve",
+      "--channel",
+      "threads",
+      "--action",
+      "follow",
+      "--name",
+      "Mina",
+      "--title",
+      "NIW approved niw.nl",
+      "--body",
+      "news",
+    ]);
+    assert.equal(dutch.code, 3);
+    assert.match(dutch.err, /niw\.nl/);
     assert.equal(json(cli(agent, ["budget", "--channel", "threads", "--action", "follow", "--json"])).left, 20);
   } finally {
     rmSync(agent, { recursive: true, force: true });

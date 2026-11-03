@@ -152,17 +152,17 @@ channels:
   #   account: CHANGEME           # stop if Profile (bottom right) is a different handle
   #   lang: en
   #   posts_per_keyword: 2
-  #   keywords:                   # people posting an approval or a process, not selling one
+  #   keywords:                   # a person's own case, not news or a bare NIW
   #     - NIW approved
+  #     - applying for NIW
+  #     - NIW PhD
   #     - EB1A approved
-  #     - NIW
-  #     - EB-1A
-  #     - green card approved
+  #     - EB-1A approved
   #     - I-140 approved
   #     - NIW 获批
   #     - EB1A 获批
   #   max_post_age_hours: 168
-  #   repliers_per_post: 3        # individual repliers per post; the author is not one
+  #   repliers_per_post: 3        # maximum per post, not a quota; 1 reply is enough
   #   follows_per_day: 20         # one ceiling for every replier
   #   likes_per_day: 20           # defaults to follows_per_day
 

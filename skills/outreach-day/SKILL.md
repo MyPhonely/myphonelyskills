@@ -235,15 +235,19 @@ replied, reposted, quoted, messaged or posted. The audience is people who
 source post. For each chosen replier, read the reply first, follow them,
 and like one of their latest posts.
 
-`outreach targets` shows today's keywords, `repliers_per_post` (default 3),
-`follows_per_day` (default 20, every replier together), `likes_per_day`
-(the same number unless the channel sets it), `max_post_age_hours` and
-`account`. A QuickFiling-style list is `NIW approved`, `EB1A approved`,
-`NIW`, `EB-1A`, `green card approved`, `I-140 approved`, `NIW 获批`,
-`EB1A 获批`: those are searches, not proof the post is on topic. The post
-text itself must contain NIW, EB-1A, EB1A, I-140, or EB-2. Skip a post or
-a reply with married, spouse, wife, husband, marriage, K-1, or I-130.
-`reserve` refuses both (exit 3). It lists `skip_names_containing` and
+`outreach targets` shows today's keywords, `repliers_per_post` (default 3,
+a maximum, not a quota), `follows_per_day` (default 20, every replier
+together), `likes_per_day` (the same number unless the channel sets it),
+`max_post_age_hours` and `account`. A post with 1 or 2 eligible repliers
+is engaged, then the run moves to the next post or keyword until the
+daily cap is hit or the keywords run out. The keyword list is a person's
+own case (`NIW approved`, `applying for NIW`, `NIW PhD`, `EB1A approved`,
+`EB-1A approved`, `I-140 approved`, `NIW 获批`, `EB1A 获批`), not a bare
+`NIW` or `green card approved`. The post text itself must contain NIW,
+EB-1A, EB1A, I-140, or EB-2. Skip a post or a reply with married, spouse,
+wife, husband, marriage, K-1, or I-130, and skip `niw.nl`, PTA or phone
+approvals, retail posts, and Melania or other celebrity news. `reserve`
+refuses these (exit 3). It lists `skip_names_containing` and
 `skip_bios_containing`: lawyer, attorney, law firm, immigration
 consultant, 中介, 移民, 律师, 律所, 咨询. It lists
 `skip_text_containing` for a reply that sells or says DM me (including
@@ -269,8 +273,12 @@ keyword. It returns one source post per keyword, starting at a keyword
 that changes with the date, and lists the rest as `keywords_later`. A
 keyword that is all firms, your own posts, or too old is not the end of
 the day: open the next dispatch. After the query is typed, the screen is
-suggested accounts. Tap the row whose text is exactly the query. The
-results filter is at the top left. Select Recent posts and read it back.
+suggested accounts, and a saved search with the same text pauses the
+task before anything is typed. Do not tap a saved-search row. Type the
+query fresh and press the keyboard Search or Enter key. `i-140 approved`
+and `I-140 approved` are not a row to match. The
+results filter is at the top left. Select Recent posts, wait for the
+brief overlay to clear, and read the filter back.
 If that filter cannot be selected, stop and say so. Do not scan Top posts.
 The search task stops on the results list. Opening a post is a later task.
 A card whose author or date is off screen is scrolled or opened before it
@@ -287,7 +295,10 @@ Leases, polling, one Back then a look, and `phone_scroll` (never
 empty after a like that took. `abandon: true` presses Back once.
 
 1. **Confirm the account, once.** `threads-follow-replier-and-like-latest`
-   step 1, with the channel's `account`. Profile is the bottom-right tab.
+   step 1, with the channel's `account`. Profile is the right-most bottom
+   tab, not a Profile label in the middle of the bar. Do not press Back
+   unless a step says to. A leftover filter sheet is tapped closed, not
+   dismissed with Back.
    If the dialog "Allow Threads to send you notifications?" is showing, tap
    Don't allow. If the handle is not `account`, stop this channel. Do not
    search.
@@ -301,9 +312,9 @@ empty after a like that took. `abandon: true` presses Back once.
    post. Do not search the keyword again. `hours: null` is text that is
    still not an age. Skip a post `reserve` will refuse, including one
    whose text is not NIW, EB-1A, EB1A, I-140, or EB-2. Keep up to
-   `repliers_per_post` people. When fewer than that are on screen,
-   `phone_scroll` `direction` `down` and read again, until the cap is met
-   or the screen stops changing. Include a reply that asks for a lawyer.
+   `repliers_per_post` people at most. One eligible replier is enough; then
+   the next post or keyword. At most 4 scrolls on a keyword. Visible posts
+   with no replies means the next keyword. Include a reply that asks for a lawyer.
    Read each chosen reply before you open that profile, and keep the
    words. Skip the author, the signed-in account, a marriage reply, and
    anyone `outreach check` already has. No one left: abandon, look, stay

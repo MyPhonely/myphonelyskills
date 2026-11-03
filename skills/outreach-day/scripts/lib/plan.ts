@@ -415,6 +415,12 @@ export const THREADS_NAME_MARKERS = [
  */
 export const THREADS_FAMILY_MARKERS = ["marriage", "married", "spouse", "husband", "wives", "wife", "k-1", "k1", "i-130", "i130"] as const;
 
+/**
+ * News and other "approved" posts that are not someone's own case.
+ * Dutch NIW coverage, PTA phone approvals, retail posts, celebrity EB-1A.
+ */
+export const THREADS_NOISE_MARKERS = ["phone approved", "niw.nl", "celebrity", "melania", "retail", "pta"] as const;
+
 /** The source post has to be an employment case, not merely a green-card keyword hit. */
 const THREADS_TOPIC = [/\bniw\b/, /\beb[-\s]?1a\b/, /\bi-?140\b/, /\beb[-\s]?2\b/];
 
@@ -494,6 +500,8 @@ export function engageRefusal(channel: string, person: string, title: string, bo
     const bioHit = bio ? markerHit(bio, THREADS_NAME_MARKERS) : null;
     if (bioHit) return bioHit;
     const reply = `${title}\n${body}`;
+    const noise = markerHit(reply, THREADS_NOISE_MARKERS);
+    if (noise) return noise;
     const family = markerHit(reply, THREADS_FAMILY_MARKERS);
     if (family) return family;
     return markerHit(reply, THREADS_REPLY_MARKERS) ?? threadsSelfId(reply);
@@ -564,7 +572,10 @@ export function engageTargets(agent: Agent, channel: string, d: Date): Record<st
   const keywords = ((ch.keywords as string[] | undefined) ?? []).filter(Boolean);
   if (keywords.length && !ch.targets) {
     const exclude = ((ch.exclude_terms as string[] | undefined) ?? []).filter(Boolean);
-    const spread = spreadKeywordPosts(keywords, num(ch.posts_per_keyword, 3), limits.notes, d, exclude);
+    // On Threads, repliers_per_post is a maximum per post, not a quota. A
+    // post often has one reply, so the day's post budget is the follow cap.
+    const postCap = channel === "threads" ? Math.min(limits.follows, limits.likes) : limits.notes;
+    const spread = spreadKeywordPosts(keywords, num(ch.posts_per_keyword, 3), postCap, d, exclude);
     const kept = ((plan.dispatches as Dispatch[] | undefined) ?? []).filter((item) => !item.keyword);
     plan.dispatches = [...kept, ...spread.today];
     plan.keywords_later = spread.later;
@@ -589,9 +600,12 @@ export function engageTargets(agent: Agent, channel: string, d: Date): Record<st
     plan.audience = "repliers";
     plan.follow_repliers = ch.follow_repliers !== false;
     plan.repliers_per_post = limits.perNote;
+    plan.repliers_per_post_is = "maximum";
+    plan.scrolls_per_keyword = 4;
     plan.sort = "recent";
     plan.tab = "recent-posts";
     plan.recent_filter = "top-left filter, select Recent posts, stop if it cannot be selected";
+    plan.skip_noise_containing = [...THREADS_NOISE_MARKERS];
     plan.skip_names_containing = [...THREADS_NAME_MARKERS];
     plan.skip_bios_containing = [...THREADS_NAME_MARKERS];
     plan.skip_text_containing = [...THREADS_REPLY_MARKERS];
