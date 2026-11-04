@@ -49,9 +49,11 @@ test("reads pass with no agent at all; direct writes and taps on Post never pass
   assert.equal(hook(null, "phone_screen", {}).decision, "allow");
   assert.equal(hook(null, "run_task", { phases: [{ goal: "read the feed" }] }).decision, "allow");
   assert.equal(hook(null, "phone_type", { text: "hi" }).decision, "deny");
+  assert.equal(hook(null, "phone_clear_text", {}).decision, "deny", "no message reservation, no clearing");
   assert.equal(hook(null, "phone_tap", { x: 1, y: 2 }).decision, "deny", "no like reservation, no coordinate tap");
   assert.equal(hook(null, "phone_tap_label", { text: "Post" }).decision, "deny");
   assert.equal(hook(null, "run_task", { allow_writes: true, request: "reply to a post" }).decision, "deny", "a planned run may not write");
+  assert.equal(hook(null, "dispatch_task", { allow_writes: true, request: "send a warmup" }).decision, "deny");
 });
 
 test("with no outreach agent (a news desk sharing), a paused write needs no reservation but the commit is still asked", () => {
@@ -82,6 +84,23 @@ test("a writing phase needs an open reservation and spends it; the commit is ask
 
     const unpaused = { allow_writes: true, phases: [{ goal: "reply", allowWrites: true }] };
     assert.equal(hook(agent, "run_task", unpaused).decision, "deny", "a write with no review pause");
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
+  }
+});
+
+test("phone_clear_text is allowed only while a message reservation is still open", () => {
+  const agent = freshAgent();
+  try {
+    run(agent, ["init"]);
+    run(agent, ["ledger", "add-person", "--name", "Peng-Nian Chen"]);
+    run(agent, ["ledger", "accept", "--name", "Peng-Nian Chen"]);
+    assert.equal(hook(agent, "phone_clear_text", {}).decision, "deny");
+    run(agent, ["reserve", "--channel", "linkedin", "--action", "message", "--name", "Peng-Nian Chen"]);
+    assert.equal(hook(agent, "phone_clear_text", {}).decision, "allow");
+    assert.equal(hook(agent, "phone_clear_text", {}).decision, "allow", "clearing does not spend the reservation");
+    run(agent, ["record", "--reservation", "r1", "--outcome", "failed", "--name", "Peng-Nian Chen"]);
+    assert.equal(hook(agent, "phone_clear_text", {}).decision, "deny", "a settled warmup is not a draft to clear");
   } finally {
     rmSync(agent, { recursive: true, force: true });
   }

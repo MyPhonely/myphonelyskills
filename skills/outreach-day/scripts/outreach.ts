@@ -14,6 +14,8 @@
  *   targets --channel <c>         today's searches for a channel
  *   cards [--pair "<school>"]     which search cards (JSON on stdin) to keep, by audience.card_filter
  *   message --name warmup         a message rendered from agent.yaml's offer
+ *   phases --flow warmup|xhs-follow --name "..." [--text "..."]
+ *                                 the phone phases for a warmup or a profile follow
  *   init                          create the records (idempotent)
  *
  * The rules around every write
@@ -54,6 +56,7 @@ import { cli, die, emit, loadAgent, parse, setCurrentAgent, splitCommand } from 
 import type { Options } from "./lib/common.ts";
 import { judgeCards } from "./lib/cards.ts";
 import type { Card } from "./lib/cards.ts";
+import { phasesFor } from "./lib/flows.ts";
 import { claudeHook } from "./lib/guard.ts";
 import { init, main as ledgerMain } from "./lib/ledger.ts";
 import { lint, newAgent } from "./lib/scaffold.ts";
@@ -94,6 +97,7 @@ const COMMANDS = [
   "targets",
   "cards",
   "message",
+  "phases",
   "init",
   "check",
   "budget",
@@ -119,6 +123,12 @@ function main(argv: string[]): number | Promise<number> {
     case "targets":
     case "message":
       return planMain([cmd, ...rest]);
+    case "phases": {
+      const v = parse(rest, { ...COMMON, flow: { type: "string" }, name: { type: "string" }, text: { type: "string" } });
+      if (!v.flow || !v.name) die("phases needs --flow warmup|xhs-follow and --name");
+      emit(phasesFor(String(v.flow), String(v.name), str(v.text)), true);
+      return 0;
+    }
     case "quota":
       return quotaMain(rest);
     case "ledger":
@@ -305,7 +315,7 @@ function main(argv: string[]): number | Promise<number> {
     }
     default:
       return die(
-        `expected a command: new, lint, show, channels, targets, cards, message, init, check, budget, reserve, record, release, report, draft, drafts, mark, guard, quota, ledger, age${cmd ? ` (got ${cmd})` : ""}`,
+        `expected a command: new, lint, show, channels, targets, cards, message, phases, init, check, budget, reserve, record, release, report, draft, drafts, mark, guard, quota, ledger, age${cmd ? ` (got ${cmd})` : ""}`,
       );
   }
 }

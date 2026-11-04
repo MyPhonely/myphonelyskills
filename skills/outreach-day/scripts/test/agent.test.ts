@@ -169,6 +169,41 @@ test("post_engagement is a second source into the same pipeline", () => {
   assert.throws(() => connectTargets(icp, "linkedin", new Date()), /post_keywords/);
 });
 
+test("invite sourcing keeps later searches and does not raise the caps", () => {
+  const agent = {
+    id: "t",
+    audience: { titles: ["PhD student"] },
+    channels: {
+      linkedin: {
+        kind: "connect",
+        source: "post_engagement",
+        connects_per_day: 15,
+        weekly_invite_cap: 150,
+        batch_size: 3,
+        discover_scrolls: 6,
+        post_keywords: ["one", "two", "three", "four", "five", "six", "seven"],
+      },
+    },
+  } as unknown as Agent;
+  const plan = connectTargets(agent, "linkedin", new Date(2026, 10, 3)) as {
+    connects_target: number;
+    weekly_invite_cap: number;
+    stop_when: string;
+    sourcing: string;
+    dispatches: Array<{ query: string; connects: number; read_cards: number; paging: boolean }>;
+  };
+  assert.deepEqual(
+    plan.dispatches.map((d) => d.query),
+    ["one", "two", "three", "four", "five", "six", "seven"],
+    "a first page that fills one batch does not drop the rest of the searches",
+  );
+  assert.equal(plan.connects_target, 15);
+  assert.equal(plan.weekly_invite_cap, 150, "150/week is the channel's cap, not a new one");
+  assert.equal(plan.stop_when, "daily_cap_or_sources_exhausted");
+  assert.equal(plan.sourcing, "page_then_next_search");
+  assert.ok(plan.dispatches.every((d) => d.connects === 3 && d.paging && d.read_cards === 48));
+});
+
 test("a name keeps its identity through LinkedIn's badge decorations", () => {
   // Observed live: a result card's accessibility text is the name with the
   // verified badge and the degree glued on. Every phase joins on the name, so

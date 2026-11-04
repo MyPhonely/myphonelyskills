@@ -113,6 +113,23 @@ export function pairFor(agent: Agent, d: Date): string[] {
 
 const num = (v: unknown, fallback: number): number => (v === undefined || v === null ? fallback : Number(v));
 
+/**
+ * How many People-search cards to read before a query counts as exhausted.
+ *
+ * One screen is what a connect run used to stop on. `discover_scrolls` is
+ * how far the agent asked to read; eight cards a screen, and at least three
+ * screens, so a thin first page does not end sourcing.
+ */
+export function readCards(ch: Channel): number {
+  const scrolls = num(ch.discover_scrolls, 6);
+  return Math.max(24, scrolls * 8);
+}
+
+/** One search in today's list. `connects` is the per-task batch, not a reason to stop the day. */
+function sourceDispatch(entry: Dispatch, ch: Channel, batch: number): Dispatch {
+  return { ...entry, connects: batch, read_cards: readCards(ch), paging: true };
+}
+
 export interface Dispatch {
   query?: string;
   search_term?: string;
@@ -128,6 +145,13 @@ export interface Dispatch {
   posts?: number;
   scope?: string;
   list?: string;
+  /**
+   * People-search cards to read before this query is exhausted. Several
+   * screens, never a single page: the card filter keeps a minority.
+   */
+  read_cards?: number;
+  /** Scroll later result pages of this query, then the next dispatch, until the cap. */
+  paging?: boolean;
 }
 
 /** Dispatch plan for a `kind: connect` channel (LinkedIn-shaped). */
@@ -160,24 +184,9 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
       die(`channel ${channel} has source: post_engagement but no post_keywords`);
     }
     for (const kw of keywords) {
-      dispatches.push({ query: kw, search_term: kw, connects: batch, source });
-      if (dispatches.reduce((s, p) => s + (p.connects ?? 0), 0) >= target) break;
+      dispatches.push(sourceDispatch({ query: kw, search_term: kw, source }, ch, batch));
     }
-    return {
-      date: iso(d),
-      platform: channel,
-      kind: "connect",
-      source,
-      rotate_by: rot.dimension,
-      rotation_today: sliceToday,
-      batch_size: batch,
-      connects_target: target,
-      warmups_target: num(ch.warmups_per_day, 10),
-      withdraw_after_days: num(ch.withdraw_after_days, 15),
-      withdraw_per_run: num(ch.withdraw_per_run, 25),
-      weekly_invite_cap: num(ch.weekly_invite_cap, 100),
-      dispatches,
-    };
+    return connectPlan(channel, d, ch, source, rot, sliceToday, batch, target, { dispatches });
   }
 
   // Two schools per search: a person with both on their profile is, most of
@@ -188,8 +197,10 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
   if (pairToday.length) {
     const template = agent.audience.pair?.query ?? "PhD {value} {pair}";
     const values: Array<string | null> = sliceToday.length ? sliceToday : [null];
-    // Interleave so a short day still spans several US schools.
-    outerPair: for (const paired of pairToday) {
+    // Interleave so a short day still spans several US schools. Every pair
+    // stays in the list: a first page that keeps fewer than the cap is not
+    // a reason to drop the rest of today's searches.
+    for (const paired of pairToday) {
       for (const value of values) {
         const query = template
           .replace("{value_short}", shortName(value ?? ""))
@@ -197,36 +208,23 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
           .replace("{pair}", paired)
           .replace(/\s+/g, " ")
           .trim();
-        const entry: Dispatch = { query, search_term: query, connects: batch, pair_value: paired };
+        const entry: Dispatch = { query, search_term: query, pair_value: paired };
         if (value !== null) {
           entry.rotate_by = rot.dimension;
           entry.rotation_value = value;
         }
-        dispatches.push(entry);
-        if (dispatches.reduce((s, p) => s + (p.connects ?? 0), 0) >= target) break outerPair;
+        dispatches.push(sourceDispatch(entry, ch, batch));
       }
     }
-    return {
-      date: iso(d),
-      platform: channel,
-      kind: "connect",
-      source,
-      rotate_by: rot.dimension,
-      rotation_today: sliceToday,
+    return connectPlan(channel, d, ch, source, rot, sliceToday, batch, target, {
       pair_today: pairToday,
       card_filter: agent.audience.card_filter ?? null,
-      batch_size: batch,
-      connects_target: target,
-      warmups_target: num(ch.warmups_per_day, 10),
-      withdraw_after_days: num(ch.withdraw_after_days, 15),
-      withdraw_per_run: num(ch.withdraw_per_run, 25),
-      weekly_invite_cap: num(ch.weekly_invite_cap, 100),
       dispatches,
-    };
+    });
   }
 
   const pool: Array<string | null> = sliceToday.length ? sliceToday : [null];
-  outer: for (const value of pool) {
+  for (const value of pool) {
     for (const term of titles) {
       // The rotation value goes INTO the search text. The server's LinkedIn
       // playbook says never to open the Filters panel for outreach: it is the
@@ -234,17 +232,34 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
       const entry: Dispatch = {
         query: value ? `${term} ${value}` : term,
         search_term: term,
-        connects: batch,
       };
       if (value !== null) {
         entry.rotate_by = rot.dimension;
         entry.rotation_value = value;
       }
-      dispatches.push(entry);
-      if (dispatches.reduce((s, p) => s + (p.connects ?? 0), 0) >= target) break outer;
+      dispatches.push(sourceDispatch(entry, ch, batch));
     }
   }
 
+  return connectPlan(channel, d, ch, source, rot, sliceToday, batch, target, { dispatches });
+}
+
+/**
+ * Shared connect-plan fields. Caps are copied from the channel and not raised.
+ * Sourcing walks every dispatch, paging each one, until the daily cap or the
+ * list is used up. `connects` on a dispatch is only the per-task batch.
+ */
+function connectPlan(
+  channel: string,
+  d: Date,
+  ch: Channel,
+  source: string,
+  rot: NormalRotation,
+  sliceToday: string[],
+  batch: number,
+  target: number,
+  extra: Record<string, unknown>,
+): Record<string, unknown> {
   return {
     date: iso(d),
     platform: channel,
@@ -258,7 +273,9 @@ export function connectTargets(agent: Agent, channel: string, d: Date): Record<s
     withdraw_after_days: num(ch.withdraw_after_days, 15),
     withdraw_per_run: num(ch.withdraw_per_run, 25),
     weekly_invite_cap: num(ch.weekly_invite_cap, 100),
-    dispatches,
+    sourcing: "page_then_next_search",
+    stop_when: "daily_cap_or_sources_exhausted",
+    ...extra,
   };
 }
 

@@ -569,7 +569,9 @@ stage is one of: {stages}
 A Lead has been discovered but NOT contacted -- it has no invited_on and does
 not count against the invite quota. invited_on is the date the request was sent; accepted_on is the date they
 accepted and stays empty until they do. Only a row with a stage at or past
-Connected has ever been messageable.
+Connected has ever been messageable. A warmup that did not send leaves the
+row where it was, with no last_message, and appends a note \`warmup retry\`
+so a later day can send it.
 
 ## Rows
 `,

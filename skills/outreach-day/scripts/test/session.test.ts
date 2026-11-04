@@ -129,6 +129,35 @@ test("a lead may be invited; anyone already contacted may not", () => {
   }
 });
 
+test("a warmup that did not send stays Connected and is marked for a later retry", () => {
+  const agent = freshAgent();
+  try {
+    cli(agent, ["init"]);
+    cli(agent, ["ledger", "add-person", "--name", "Peng-Nian Chen"]);
+    assert.equal(cli(agent, ["ledger", "accept", "--name", "Peng-Nian Chen"]).code, 0);
+    const reserved = json(cli(agent, ["reserve", "--channel", "linkedin", "--action", "message", "--name", "Peng-Nian Chen", "--json"]));
+    assert.equal(
+      cli(agent, ["record", "--reservation", String(reserved.reserved), "--outcome", "failed", "--name", "Peng-Nian Chen"]).code,
+      0,
+    );
+    const rows = JSON.parse(cli(agent, ["ledger", "check-person", "--name", "Peng-Nian Chen", "--json"]).out) as { rows: string[] };
+    const row = rows.rows[0] ?? "";
+    assert.match(row, /Connected \| Peng-Nian Chen/);
+    assert.match(row, /warmup retry/);
+    assert.doesNotMatch(row, /Warmup Sent/);
+    assert.match(cli(agent, ["ledger", "list-people", "--stage", "Connected", "--no-message"]).out, /Peng-Nian Chen/);
+
+    cli(agent, ["ledger", "add-person", "--name", "Answered Person"]);
+    cli(agent, ["ledger", "accept", "--name", "Answered Person"]);
+    const answer = json(cli(agent, ["reserve", "--channel", "linkedin", "--action", "message", "--name", "Answered Person", "--json"]));
+    cli(agent, ["record", "--reservation", String(answer.reserved), "--outcome", "failed", "--name", "Answered Person", "--note", "answer"]);
+    const answerRows = JSON.parse(cli(agent, ["ledger", "check-person", "--name", "Answered Person", "--json"]).out) as { rows: string[] };
+    assert.doesNotMatch(answerRows.rows.join("\n"), /warmup retry/, "an answer is not a warmup");
+  } finally {
+    rmSync(agent, { recursive: true, force: true });
+  }
+});
+
 test("the report shows each channel's sends, failures and what is still open", () => {
   const agent = freshAgent();
   try {

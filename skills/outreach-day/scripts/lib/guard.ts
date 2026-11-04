@@ -50,11 +50,32 @@ function heartTap(): Verdict {
   return { decision: "allow", reason: `one heart tap spent ${like.id}` };
 }
 
+/**
+ * Empty the composer after a warmup that did not send. Allowed only while a
+ * message reservation is still open or spent, so a sent thread and a screen
+ * with no outreach write cannot be cleared.
+ */
+function clearDraft(): Verdict {
+  if (!hasCurrentAgent()) {
+    return { decision: "deny", reason: "phone_clear_text only clears an unsent message draft, and only while that reservation is open" };
+  }
+  const day = loadDay();
+  const pending = day.items.some((r) => r.action === "message" && (r.state === "open" || r.state === "spent"));
+  if (!pending) {
+    return {
+      decision: "deny",
+      reason: "phone_clear_text only clears an unsent message draft, and only while that reservation is open",
+    };
+  }
+  return { decision: "allow", reason: "clear the unsent draft; do not send it" };
+}
+
 export function guard(toolName: string, input: Record<string, unknown>, unattended: boolean): Verdict {
   const d = decide(toolName, input, { unattended, ticketedTasks: new Set() });
   if (d.kind === "read") return { decision: "allow", reason: "" };
   if (d.kind === "blocked") return { decision: "deny", reason: d.reason };
   if (d.kind === "heart") return heartTap();
+  if (d.kind === "clear") return clearDraft();
 
   const isResumeCall = toolName.endsWith("__resume_task");
   // Not an outreach run (a news desk sharing its articles, say): no

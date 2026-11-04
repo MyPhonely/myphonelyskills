@@ -11,6 +11,9 @@
  *     model never sees a way to type or swipe a write. phone_tap stays
  *     visible: a video heart has no label, and the guard allows that one
  *     coordinate tap while a like reservation is held, then refuses another.
+ *     phone_clear_text stays visible for one job: emptying an unsent warmup
+ *     draft while that message reservation is still open. phone_task and
+ *     dispatch_task are the same guarded write path as run_task.
  *   - checks every MyPhonely call with the same guard as the Claude Code hook
  *     (lib/guard.ts): no write without an open reservation from
  *     `outreach reserve`, a review pause on every writing phase, and the
@@ -34,11 +37,10 @@ export default function (pi: ExtensionAPI) {
       url: process.env.MYPHONELY_MCP_URL ?? "https://api.myphonely.ai/mcp",
       headers: { Authorization: `Bearer ${key}` },
       description:
-        "The user's real Android phone. Poll get_task_status until the status is paused, done, failed, cancelled or expired, not only done, and stop after about six polls. On paused, resume or abandon that same task; do not start another run_task while one is paused. Abandon presses Back. phone_tap is one unlabeled heart tap, and only while a like reservation is held.",
+        "The user's real Android phone. Poll get_task_status until paused, done, failed, cancelled or expired, and stop after about six polls. On paused, resume or abandon that task; do not start another while one is paused. LinkedIn warmup: the invitation note is not a reply; type the approved text, pause with Send showing, tap Send once, and if that is not verified call phone_clear_text and record the message failed so the ledger marks warmup retry. Xiaohongshu: tap the profile header Follow or 关注, confirm it reads 已关注, Following, Friends, or 互相关注, one retry tap, and stop the app on 操作太频繁. LinkedIn invites: page through later result pages and the rest of today's searches until the daily cap or the sources are exhausted. phone_clear_text only clears an unsent message draft. phone_tap is one unlabeled heart, only while a like reservation is held.",
       exposure: "direct",
       toolExposure: {
         phone_type: "hidden",
-        phone_clear_text: "hidden",
         phone_long_press: "hidden",
         phone_swipe: "hidden",
         phone_push_file: "hidden",
